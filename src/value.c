@@ -132,3 +132,10 @@ int value_to_str(value* v, char* buffer) {
             return sprintf(buffer, "unknown value type: %d", v->type);
     }
 }
+
+value* value_add_child(value* parent, value* child) {
+    parent->car = child;
+    parent->cdr = value_new_null();
+
+    return parent->cdr;
+}

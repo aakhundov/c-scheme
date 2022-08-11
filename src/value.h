@@ -33,5 +33,6 @@ void value_dispose(value* v);
 
 int value_is_null(value* v);
 int value_to_str(value* v, char* buffer);
+value* value_add_child(value* parent, value* child);
 
 #endif  // VALUE_H_
