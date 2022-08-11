@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "str.h"
+
 value* value_new_number(double number) {
     value* v = malloc(sizeof(value));
 
@@ -47,6 +49,16 @@ value* value_new_error(char* error, ...) {
     return v;
 }
 
+value* value_new_string(char* string) {
+    value* v = malloc(sizeof(value));
+
+    v->type = VALUE_STRING;
+    v->symbol = malloc(strlen(string) + 1);
+    strcpy(v->symbol, string);
+
+    return v;
+}
+
 value* value_new_pair(value* car, value* cdr) {
     value* v = malloc(sizeof(value));
 
@@ -67,6 +79,7 @@ void value_dispose(value* v) {
             break;
         case VALUE_SYMBOL:
         case VALUE_ERROR:
+        case VALUE_STRING:
             free(v->symbol);
             break;
         case VALUE_PAIR:
@@ -88,6 +101,14 @@ int value_is_null(value* v) {
     } else {
         return 0;
     }
+}
+
+static int string_to_str(value* v, char* buffer) {
+    char* escaped = str_escape(v->symbol);
+    int result = sprintf(buffer, "\"%s\"", escaped);
+    free(escaped);
+
+    return result;
 }
 
 static int pair_to_str(value* v, char* buffer) {
@@ -126,6 +147,8 @@ int value_to_str(value* v, char* buffer) {
             return sprintf(buffer, "%s", v->symbol);
         case VALUE_ERROR:
             return sprintf(buffer, "\x1B[31m%s\x1B[0m", v->symbol);
+        case VALUE_STRING:
+            return string_to_str(v, buffer);
         case VALUE_PAIR:
             return pair_to_str(v, buffer);
         default:

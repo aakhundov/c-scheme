@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "str.h"
 #include "value.h"
 
 static const char* EXP_CHARS = "eE";
@@ -20,6 +21,7 @@ static const char* SYMBOL_CHARS =
 static char LIST_OPEN_CHAR = '(';
 static char LIST_CLOSE_CHAR = ')';
 static char COMMENT_CHAR = ';';
+static char STRING_CHAR = '"';
 static char QUOTE_CHAR = '\'';
 static char* QUOTE_SYMBOL = "quote";
 static char* DOT_SYMBOL = ".";
@@ -71,6 +73,21 @@ static value* make_number(char* content) {
     }
 }
 
+static value* make_string(char* content) {
+    size_t length = strlen(content);
+
+    // remove trailing quote
+    content[length - 1] = '\0';
+    // remove leading quote
+    content++;
+
+    char* unescaped = str_unescape(content);
+    value* result = value_new_string(unescaped);
+    free(unescaped);
+
+    return result;
+}
+
 static int parse_symbol(char* input, value** v) {
     char* running = input;
     while (*running != '\0' && strchr(SYMBOL_CHARS, *running)) {
@@ -89,6 +106,29 @@ static int parse_symbol(char* input, value** v) {
     }
 
     free(symbol);
+
+    return length;
+}
+
+static int parse_string(char* input, value** v) {
+    char* running = input + 1;
+    while (!(*running == STRING_CHAR && *(running - 1) != '\\')) {
+        if (*running == '\0') {
+            *v = value_new_error("unterminated string");
+            return running - input;
+        }
+        running++;
+    }
+    running++;  // skip the trailing quote
+
+    size_t length = running - input;
+    char* string = malloc(length + 1);
+    strncpy(string, input, length);
+    string[length] = '\0';
+
+    *v = make_string(string);
+
+    free(string);
 
     return length;
 }
@@ -193,6 +233,8 @@ static int parse_token(char* input, value** v) {
         running += parse_list(running + 1, v, LIST_CLOSE_CHAR) + 2;
     } else if (*input == QUOTE_CHAR) {
         running += parse_quoted(running, v);
+    } else if (*input == STRING_CHAR) {
+        running += parse_string(running, v);
     } else if (strchr(SYMBOL_CHARS, *running)) {
         running += parse_symbol(running, v);
     } else {

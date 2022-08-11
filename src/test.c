@@ -55,6 +55,7 @@ static void test_parse_error(char* input, char* expected) {
 }
 
 void test_parse() {
+    test_parse_output("", "()");
     test_parse_output("1", "(1)");
     test_parse_output("(1)", "((1))");
     test_parse_output("1 2 3", "(1 2 3)");
@@ -83,9 +84,19 @@ void test_parse() {
 
     test_parse_output("(1 2 3); comment", "((1 2 3))");
     test_parse_output("(1 2 3)   ;   comment  ", "((1 2 3))");
-    test_parse_output("(1 2 3)   ;   comment  \n  (4 5)", "((1 2 3) (4 5))");
+    test_parse_output("\n(1 2 3)   ;   comment  \n  (4 5)", "((1 2 3) (4 5))");
 
-    test_parse_output("", "()");
+    test_parse_output("\"abc\"", "(\"abc\")");
+    test_parse_output("\"\"", "(\"\")");
+    test_parse_output("\"x\" \"y\" \"z\"", "(\"x\" \"y\" \"z\")");
+    test_parse_output("\"a\\tb\"", "(\"a\\tb\")");
+    test_parse_output("\"a\tb\"", "(\"a\\tb\")");
+    test_parse_output("\"a\\nb\"", "(\"a\\nb\")");
+    test_parse_output("\"\na\nb\"", "(\"\\na\\nb\")");
+    test_parse_output("'\"abc\"", "((quote \"abc\"))");
+    test_parse_output("\"'abc\"", "(\"'abc\")");
+    test_parse_output("'\"x\" \"y\" \"z\"", "((quote \"x\") \"y\" \"z\")");
+    test_parse_output("'(\"x\" \"y\" \"z\")", "((quote (\"x\" \"y\" \"z\")))");
 
     test_parse_error("(1 2", "missing )");
     test_parse_error("1 2)", "premature )");
@@ -95,6 +106,10 @@ void test_parse() {
     test_parse_error("(1 . 2 3)", ". followed by 2+ items");
     test_parse_error("(1 . .)", ". followed by .");
     test_parse_error("(. 2)", "nothing before .");
+    test_parse_error("\"", "unterminated string");
+    test_parse_error("\"xyz", "unterminated string");
+    test_parse_error(" \" xyz ", "unterminated string");
+    test_parse_error("\"xyz\" \"a", "unterminated string");
 }
 
 void run_test() {
