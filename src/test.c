@@ -12,8 +12,8 @@ static void print_value(value* v) {
 
 void run_test() {
     value* v1 = value_new_number(1);
-    value* v2 = value_new_symbol("y");
-    value* v3 = value_new_symbol("xx");
+    value* v2 = value_new_symbol("x");
+    value* v3 = value_new_error("err");
 
     value* v_null = value_new_null();
     value* v_pair = value_new_pair(v1, v2);
