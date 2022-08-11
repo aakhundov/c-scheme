@@ -49,6 +49,22 @@ value* value_new_error(char* error, ...) {
     return v;
 }
 
+value* value_new_info_from_args(char* info, va_list args) {
+    value* v = value_new_symbol_from_args(info, args);
+    v->type = VALUE_INFO;
+
+    return v;
+}
+
+value* value_new_info(char* info, ...) {
+    va_list args;
+    va_start(args, info);
+    value* v = value_new_info_from_args(info, args);
+    va_end(args);
+
+    return v;
+}
+
 value* value_new_string(char* string) {
     value* v = malloc(sizeof(value));
 
@@ -69,7 +85,7 @@ value* value_new_pair(value* car, value* cdr) {
     return v;
 }
 
-value* value_new_null() {
+value* value_new_null_pair() {
     return value_new_pair(NULL, NULL);
 }
 
@@ -78,8 +94,9 @@ void value_dispose(value* v) {
         case VALUE_NUMBER:
             break;
         case VALUE_SYMBOL:
-        case VALUE_ERROR:
         case VALUE_STRING:
+        case VALUE_ERROR:
+        case VALUE_INFO:
             free(v->symbol);
             break;
         case VALUE_PAIR:
@@ -95,7 +112,7 @@ void value_dispose(value* v) {
     free(v);
 }
 
-int value_is_null(value* v) {
+int value_is_null_pair(value* v) {
     if (v->type == VALUE_PAIR && v->car == NULL && v->cdr == NULL) {
         return 1;
     } else {
@@ -115,12 +132,12 @@ static int pair_to_str(value* v, char* buffer) {
     char* running = buffer;
 
     running += sprintf(running, "(");
-    if (!value_is_null(v)) {
+    if (!value_is_null_pair(v)) {
         while (1) {
             running += value_to_str(v->car, running);
 
             if (v->cdr->type == VALUE_PAIR) {
-                if (!value_is_null(v->cdr)) {
+                if (!value_is_null_pair(v->cdr)) {
                     running += sprintf(running, " ");
                     v = v->cdr;
                 } else {
@@ -145,10 +162,12 @@ int value_to_str(value* v, char* buffer) {
             return sprintf(buffer, "%g", v->number);
         case VALUE_SYMBOL:
             return sprintf(buffer, "%s", v->symbol);
-        case VALUE_ERROR:
-            return sprintf(buffer, "\x1B[31m%s\x1B[0m", v->symbol);
         case VALUE_STRING:
             return string_to_str(v, buffer);
+        case VALUE_ERROR:
+            return sprintf(buffer, "\x1B[31m%s\x1B[0m", v->symbol);
+        case VALUE_INFO:
+            return sprintf(buffer, "\x1B[32m%s\x1B[0m", v->symbol);
         case VALUE_PAIR:
             return pair_to_str(v, buffer);
         default:
@@ -158,7 +177,7 @@ int value_to_str(value* v, char* buffer) {
 
 value* value_add_child(value* parent, value* child) {
     parent->car = child;
-    parent->cdr = value_new_null();
+    parent->cdr = value_new_null_pair();
 
     return parent->cdr;
 }

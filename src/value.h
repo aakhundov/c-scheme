@@ -6,8 +6,9 @@
 typedef enum {
     VALUE_NUMBER = 0,
     VALUE_SYMBOL = 1,
+    VALUE_STRING = 2,
     VALUE_ERROR = 3,
-    VALUE_STRING = 4,
+    VALUE_INFO = 4,
     VALUE_PAIR = 5
 } value_type;
 
@@ -25,15 +26,16 @@ struct value {
 
 value* value_new_number(double number);
 value* value_new_symbol(char* symbol);
+value* value_new_string(char* string);
 value* value_new_error(char* error, ...);
 value* value_new_error_from_args(char* error, va_list args);
-value* value_new_string(char* string);
+value* value_new_info(char* info, ...);
+value* value_new_info_from_args(char* info, va_list args);
 value* value_new_pair(value* car, value* cdr);
-value* value_new_null();
+value* value_new_null_pair();
 
 void value_dispose(value* v);
-
-int value_is_null(value* v);
+int value_is_null_pair(value* v);
 int value_to_str(value* v, char* buffer);
 value* value_add_child(value* parent, value* child);
 

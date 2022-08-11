@@ -135,14 +135,14 @@ static int parse_string(char* input, value** v) {
 
 static void replace_dot_in_list(value* v) {
     value* prev = NULL;
-    while (!value_is_null(v)) {
+    while (!value_is_null_pair(v)) {
         if (v->car->type == VALUE_SYMBOL && strstr(v->car->symbol, DOT_SYMBOL)) {
             value* error = NULL;
             if (prev == NULL) {
                 error = value_new_error("nothing before %s", DOT_SYMBOL);
-            } else if (value_is_null(v->cdr)) {
+            } else if (value_is_null_pair(v->cdr)) {
                 error = value_new_error("unfollowed %s", DOT_SYMBOL);
-            } else if (!value_is_null(v->cdr->cdr)) {
+            } else if (!value_is_null_pair(v->cdr->cdr)) {
                 error = value_new_error("%s followed by 2+ items", DOT_SYMBOL);
             } else if (v->cdr->car->type == VALUE_SYMBOL && strstr(v->cdr->car->symbol, DOT_SYMBOL)) {
                 error = value_new_error("%s followed by %s", DOT_SYMBOL, DOT_SYMBOL);
@@ -165,7 +165,7 @@ static void replace_dot_in_list(value* v) {
 }
 
 static int parse_list(char* input, value** v, char terminal) {
-    *v = value_new_null();
+    *v = value_new_null_pair();
 
     value* pair = *v;
     char* running = input;
@@ -211,7 +211,7 @@ static int parse_quoted(char* input, value** v) {
     }
 
     if (*running != '\0') {
-        *v = value_new_null();
+        *v = value_new_null_pair();
 
         value* quoted = NULL;
         running += parse_token(running, &quoted);
