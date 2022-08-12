@@ -114,4 +114,6 @@ void test_parse() {
 
 void run_test() {
     RUN_TEST_FN(test_parse);
+
+    printf("all tests have passed!\n");
 }
