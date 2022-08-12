@@ -103,7 +103,7 @@ void value_dispose(value* v) {
             if (v->car != NULL) {
                 value_dispose(v->car);
             }
-            if (v->car != NULL) {
+            if (v->cdr != NULL) {
                 value_dispose(v->cdr);
             }
             break;

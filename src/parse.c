@@ -153,10 +153,14 @@ static void replace_dot_in_list(value* v) {
                 v->cdr->car = NULL;
                 value_dispose(v);
                 prev->cdr = new_cdr;
-                break;
             } else {
+                while (!value_is_null_pair(v)) {
+                    v = v->cdr;
+                }
                 value_add_child(v, error);
             }
+
+            break;
         } else {
             prev = v;
             v = v->cdr;
