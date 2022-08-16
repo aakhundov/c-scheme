@@ -16,20 +16,27 @@
         printf("\n");                          \
     }
 
-static int counter = 0;
+static int test_counter = 0;
+
+static void report_test(char* output) {
+    printf(
+        "\x1B[34m%-5d\x1B[0m %s\n",
+        ++test_counter, output);
+}
 
 static value* get_parsed(char* input) {
     char output[1024];
-
     value* v = parse_values(input);
-
     value_to_str(v, output);
-    printf(
-        "\x1B[34m%-5d\x1B[0m "
+
+    char formatted[1024];
+    sprintf(
+        formatted,
         "\x1B[34m[\x1B[0m%s\x1B[34m]\x1B[0m "
         "\x1B[34m-->\x1B[0m "
-        "\x1B[34m[\x1B[0m%s\x1B[34m]\x1B[0m\n",
-        ++counter, input, output);
+        "\x1B[34m[\x1B[0m%s\x1B[34m]\x1B[0m",
+        input, output);
+    report_test(formatted);
 
     return v;
 }
@@ -118,19 +125,19 @@ void test_pool() {
     value* r1 = value_new_null_pair();
     value* r2 = value_new_null_pair();
 
-    printf("init...\n");
+    report_test("init");
     pool* p = malloc(sizeof(pool));
     pool_init(p);
     assert(p->size == 0);
 
-    printf("singleton values...\n");
+    report_test("singleton values");
     pool_new_number(p, 3.14);
     pool_new_symbol(p, "hello");
     assert(p->size == 2);
     pool_collect_garbage(p);
     assert(p->size == 0);
 
-    printf("compound values...\n");
+    report_test("compound values");
     pool_new_pair(
         p,
         pool_new_pair(
@@ -142,7 +149,7 @@ void test_pool() {
     pool_collect_garbage(p);
     assert(p->size == 0);
 
-    printf("memory roots...\n");
+    report_test("memory roots");
     pool_register_root(p, r1);
     r1->car = pool_new_pair(
         p,
@@ -168,7 +175,7 @@ void test_pool() {
     pool_collect_garbage(p);
     assert(p->size == 0);
 
-    printf("value cycle...\n");
+    report_test("value cycle");
     value* v1 = pool_new_pair(
         p,
         pool_new_number(p, 1),
@@ -189,7 +196,28 @@ void test_pool() {
     pool_collect_garbage(p);
     assert(p->size == 0);
 
-    printf("cleanup...\n");
+    report_test("import");
+    value* source = value_new_pair(
+        value_new_number(123),
+        value_new_pair(
+            value_new_symbol("abc"),
+            value_new_null_pair()));
+    value* dest = pool_import(p, source);
+    assert(p->size == 5);
+    assert(source != dest);
+    assert(source->car != dest->car);
+    assert(source->cdr != dest->cdr);
+    assert(source->cdr->car != dest->cdr->car);
+    assert(source->cdr->cdr != dest->cdr->cdr);
+    assert(dest->car->number == 123);
+    assert(strcmp(dest->cdr->car->symbol, "abc") == 0);
+    pool_collect_garbage(p);
+    assert(p->size == 0);
+    assert(source->car->number == 123);
+    assert(strcmp(source->cdr->car->symbol, "abc") == 0);
+    value_dispose(source);
+
+    report_test("cleanup");
     pool_new_number(p, 123);
     pool_new_symbol(p, "hello");
     pool_new_string(p, "world");
@@ -203,8 +231,6 @@ void test_pool() {
     r2->car = NULL;
     value_dispose(r1);
     value_dispose(r2);
-
-    printf("done\n");
 }
 
 void run_test() {
