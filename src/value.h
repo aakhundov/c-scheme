@@ -2,6 +2,7 @@
 #define VALUE_H_
 
 #include <stdarg.h>
+#include <stdlib.h>
 
 typedef enum {
     VALUE_NUMBER = 0,
@@ -16,10 +17,15 @@ typedef struct value value;
 
 struct value {
     value_type type;
+
     double number;
     char* symbol;
+
     value* car;
     value* cdr;
+
+    value* next;
+    size_t gen;
 };
 
 // without malloc

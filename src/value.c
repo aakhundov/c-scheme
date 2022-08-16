@@ -1,5 +1,6 @@
 #include "value.h"
 
+#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,34 +9,46 @@
 #include "str.h"
 
 void value_init_number(value* v, double number) {
+    assert(v != NULL);
+
     v->type = VALUE_NUMBER;
     v->number = number;
 }
 
 void value_init_symbol(value* v, char* symbol) {
+    assert(v != NULL);
+
     v->type = VALUE_SYMBOL;
     v->symbol = malloc(strlen(symbol) + 1);
     strcpy(v->symbol, symbol);
 }
 
 void value_init_string(value* v, char* string) {
+    assert(v != NULL);
+
     v->type = VALUE_STRING;
     v->symbol = malloc(strlen(string) + 1);
     strcpy(v->symbol, string);
 }
 
 static void value_init_symbol_from_args(value* v, char* format, va_list args) {
+    assert(v != NULL);
+
     char buffer[1024];
     vsnprintf(buffer, sizeof(buffer), format, args);
     value_init_symbol(v, buffer);
 }
 
 void value_init_error_from_args(value* v, char* error, va_list args) {
+    assert(v != NULL);
+
     value_init_symbol_from_args(v, error, args);
     v->type = VALUE_ERROR;
 }
 
 void value_init_error(value* v, char* error, ...) {
+    assert(v != NULL);
+
     va_list args;
     va_start(args, error);
     value_init_error_from_args(v, error, args);
@@ -43,11 +56,15 @@ void value_init_error(value* v, char* error, ...) {
 }
 
 void value_init_info_from_args(value* v, char* info, va_list args) {
+    assert(v != NULL);
+
     value_init_symbol_from_args(v, info, args);
     v->type = VALUE_INFO;
 }
 
 void value_init_info(value* v, char* info, ...) {
+    assert(v != NULL);
+
     va_list args;
     va_start(args, info);
     value_init_info_from_args(v, info, args);
@@ -55,38 +72,51 @@ void value_init_info(value* v, char* info, ...) {
 }
 
 void value_init_pair(value* v, value* car, value* cdr) {
+    assert(v != NULL);
+
     v->type = VALUE_PAIR;
     v->car = car;
     v->cdr = cdr;
 }
 
 void value_init_null_pair(value* v) {
+    assert(v != NULL);
+
     value_init_pair(v, NULL, NULL);
 }
 
-value* value_new_number(double number) {
+static value* value_new() {
     value* v = malloc(sizeof(value));
+
+    v->gen = 0;
+    v->next = NULL;
+
+    return v;
+}
+
+value* value_new_number(double number) {
+    value* v = value_new();
     value_init_number(v, number);
 
     return v;
 }
 
 value* value_new_symbol(char* symbol) {
-    value* v = malloc(sizeof(value));
+    value* v = value_new();
     value_init_symbol(v, symbol);
 
     return v;
 }
 
 value* value_new_string(char* string) {
-    value* v = malloc(sizeof(value));
+    value* v = value_new();
     value_init_string(v, string);
 
     return v;
 }
 
 value* value_new_error(char* error, ...) {
-    value* v = malloc(sizeof(value));
+    value* v = value_new();
 
     va_list args;
     va_start(args, error);
@@ -97,14 +127,14 @@ value* value_new_error(char* error, ...) {
 }
 
 value* value_new_error_from_args(char* error, va_list args) {
-    value* v = malloc(sizeof(value));
+    value* v = value_new();
     value_init_error_from_args(v, error, args);
 
     return v;
 }
 
 value* value_new_info(char* info, ...) {
-    value* v = malloc(sizeof(value));
+    value* v = value_new();
 
     va_list args;
     va_start(args, info);
@@ -115,57 +145,57 @@ value* value_new_info(char* info, ...) {
 }
 
 value* value_new_info_from_args(char* info, va_list args) {
-    value* v = malloc(sizeof(value));
+    value* v = value_new();
     value_init_info_from_args(v, info, args);
 
     return v;
 }
 
 value* value_new_pair(value* car, value* cdr) {
-    value* v = malloc(sizeof(value));
+    value* v = value_new();
     value_init_pair(v, car, cdr);
 
     return v;
 }
 
 value* value_new_null_pair() {
-    value* v = malloc(sizeof(value));
+    value* v = value_new();
     value_init_null_pair(v);
 
     return v;
 }
 
 void value_cleanup(value* v) {
-    switch (v->type) {
-        case VALUE_NUMBER:
-        case VALUE_PAIR:
-            break;
-        case VALUE_SYMBOL:
-        case VALUE_STRING:
-        case VALUE_ERROR:
-        case VALUE_INFO:
-            free(v->symbol);
-            break;
+    if (v != NULL) {
+        switch (v->type) {
+            case VALUE_NUMBER:
+            case VALUE_PAIR:
+                break;
+            case VALUE_SYMBOL:
+            case VALUE_STRING:
+            case VALUE_ERROR:
+            case VALUE_INFO:
+                free(v->symbol);
+                break;
+        }
     }
 }
 
 void value_dispose(value* v) {
-    if (v->type == VALUE_PAIR) {
-        if (v->car != NULL) {
+    if (v != NULL) {
+        value_cleanup(v);
+
+        if (v->type == VALUE_PAIR) {
             value_dispose(v->car);
-        }
-        if (v->cdr != NULL) {
             value_dispose(v->cdr);
         }
-    } else {
-        value_cleanup(v);
-    }
 
-    free(v);
+        free(v);
+    }
 }
 
 int value_is_null_pair(value* v) {
-    if (v->type == VALUE_PAIR && v->car == NULL && v->cdr == NULL) {
+    if (v != NULL && v->type == VALUE_PAIR && v->car == NULL && v->cdr == NULL) {
         return 1;
     } else {
         return 0;
@@ -209,25 +239,32 @@ static int pair_to_str(value* v, char* buffer) {
 }
 
 int value_to_str(value* v, char* buffer) {
-    switch (v->type) {
-        case VALUE_NUMBER:
-            return sprintf(buffer, "%g", v->number);
-        case VALUE_SYMBOL:
-            return sprintf(buffer, "%s", v->symbol);
-        case VALUE_STRING:
-            return string_to_str(v, buffer);
-        case VALUE_ERROR:
-            return sprintf(buffer, "\x1B[31m%s\x1B[0m", v->symbol);
-        case VALUE_INFO:
-            return sprintf(buffer, "\x1B[32m%s\x1B[0m", v->symbol);
-        case VALUE_PAIR:
-            return pair_to_str(v, buffer);
-        default:
-            return sprintf(buffer, "unknown value type: %d", v->type);
+    if (v == NULL) {
+        return sprintf(buffer, "<NULL>");
+    } else {
+        switch (v->type) {
+            case VALUE_NUMBER:
+                return sprintf(buffer, "%g", v->number);
+            case VALUE_SYMBOL:
+                return sprintf(buffer, "%s", v->symbol);
+            case VALUE_STRING:
+                return string_to_str(v, buffer);
+            case VALUE_ERROR:
+                return sprintf(buffer, "\x1B[31m%s\x1B[0m", v->symbol);
+            case VALUE_INFO:
+                return sprintf(buffer, "\x1B[32m%s\x1B[0m", v->symbol);
+            case VALUE_PAIR:
+                return pair_to_str(v, buffer);
+            default:
+                return sprintf(buffer, "unknown value type: %d", v->type);
+        }
     }
 }
 
 value* value_add_child(value* parent, value* child) {
+    assert(parent != NULL);
+    assert(parent->type == VALUE_PAIR);
+
     parent->car = child;
     parent->cdr = value_new_null_pair();
 
@@ -235,6 +272,9 @@ value* value_add_child(value* parent, value* child) {
 }
 
 void value_copy(value* dest, value* source) {
+    assert(dest != NULL);
+    assert(source != NULL);
+
     switch (source->type) {
         case VALUE_NUMBER:
             value_init_number(dest, source->number);
@@ -258,13 +298,17 @@ void value_copy(value* dest, value* source) {
 }
 
 value* value_clone(value* source) {
-    value* dest = malloc(sizeof(value));
-    value_copy(dest, source);
+    if (source == NULL) {
+        return NULL;
+    } else {
+        value* dest = value_new();
+        value_copy(dest, source);
 
-    if (dest->type == VALUE_PAIR) {
-        dest->car = value_clone(dest->car);
-        dest->cdr = value_clone(dest->cdr);
+        if (dest->type == VALUE_PAIR) {
+            dest->car = value_clone(dest->car);
+            dest->cdr = value_clone(dest->cdr);
+        }
+
+        return dest;
     }
-
-    return dest;
 }
