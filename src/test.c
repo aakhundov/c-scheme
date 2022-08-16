@@ -131,9 +131,17 @@ void test_pool() {
     assert(p->size == 0);
 
     report_test("singleton values");
-    pool_new_number(p, 3.14);
-    pool_new_symbol(p, "hello");
-    assert(p->size == 2);
+    value* num = pool_new_number(p, 3.14);
+    value* sym = pool_new_symbol(p, "hello");
+    value* str = pool_new_string(p, "world");
+    value* err = pool_new_error(p, "error %d %s", 123, "x");
+    value* inf = pool_new_error(p, "info %d %s", 456, "y");
+    assert(p->size == 5);
+    assert(num->number == 3.14);
+    assert(strcmp(sym->symbol, "hello") == 0);
+    assert(strcmp(str->symbol, "world") == 0);
+    assert(strcmp(err->symbol, "error 123 x") == 0);
+    assert(strcmp(inf->symbol, "info 456 y") == 0);
     pool_collect_garbage(p);
     assert(p->size == 0);
 
