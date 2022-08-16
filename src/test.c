@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "parse.h"
+#include "pool.h"
 #include "value.h"
 
 #define RUN_TEST_FN(fn)                        \
@@ -112,8 +113,103 @@ void test_parse() {
     test_parse_error("\"xyz\" \"a", "unterminated string");
 }
 
+void test_pool() {
+    // setup
+    value* r1 = value_new_null_pair();
+    value* r2 = value_new_null_pair();
+
+    printf("init...\n");
+    pool* p = malloc(sizeof(pool));
+    pool_init(p);
+    assert(p->size == 0);
+
+    printf("singleton values...\n");
+    pool_new_number(p, 3.14);
+    pool_new_symbol(p, "hello");
+    assert(p->size == 2);
+    pool_collect_garbage(p);
+    assert(p->size == 0);
+
+    printf("compound values...\n");
+    pool_new_pair(
+        p,
+        pool_new_pair(
+            p,
+            pool_new_number(p, 2.71),
+            pool_new_null_pair(p)),
+        pool_new_symbol(p, "xyz"));
+    assert(p->size == 5);
+    pool_collect_garbage(p);
+    assert(p->size == 0);
+
+    printf("memory roots...\n");
+    pool_register_root(p, r1);
+    r1->car = pool_new_pair(
+        p,
+        pool_new_number(p, 1),
+        pool_new_pair(
+            p,
+            pool_new_number(p, 2),
+            pool_new_null_pair(p)));
+    pool_register_root(p, r2);
+    r2->car = r1->car->cdr;
+    assert(p->size == 5);
+    pool_collect_garbage(p);
+    assert(p->size == 5);
+    pool_unregister_root(p, r2);
+    pool_collect_garbage(p);
+    assert(p->size == 5);
+    r1->car = NULL;
+    pool_register_root(p, r2);
+    pool_collect_garbage(p);
+    assert(p->size == 3);
+    pool_unregister_root(p, r1);
+    pool_unregister_root(p, r2);
+    pool_collect_garbage(p);
+    assert(p->size == 0);
+
+    printf("value cycle...\n");
+    value* v1 = pool_new_pair(
+        p,
+        pool_new_number(p, 1),
+        pool_new_pair(
+            p,
+            pool_new_number(p, 2),
+            pool_new_pair(
+                p,
+                pool_new_number(p, 3),
+                NULL)));
+    v1->cdr->cdr->cdr = v1;
+    pool_register_root(p, r1);
+    r1->car = v1->cdr;
+    assert(p->size == 6);
+    pool_collect_garbage(p);
+    assert(p->size == 6);
+    pool_unregister_root(p, r1);
+    pool_collect_garbage(p);
+    assert(p->size == 0);
+
+    printf("cleanup...\n");
+    pool_new_number(p, 123);
+    pool_new_symbol(p, "hello");
+    pool_new_string(p, "world");
+    assert(p->size == 3);
+    pool_cleanup(p);
+    assert(p->size == 0);
+    free(p);
+
+    // teardown
+    r1->car = NULL;
+    r2->car = NULL;
+    value_dispose(r1);
+    value_dispose(r2);
+
+    printf("done\n");
+}
+
 void run_test() {
     RUN_TEST_FN(test_parse);
+    RUN_TEST_FN(test_pool);
 
     printf("all tests have passed!\n");
 }

@@ -180,10 +180,10 @@ value* pool_new_info_from_args(pool* p, char* info, va_list args) {
 }
 
 value* pool_new_pair(pool* p, value* car, value* cdr) {
-    // make sure the car and cdr
-    // are from the pool: gen is set
-    assert(car->gen > 0);
-    assert(cdr->gen > 0);
+    // make sure the car and cdr are from
+    // the pool: i.e., their gen is set
+    assert(car == NULL || car->gen > 0);
+    assert(cdr == NULL || cdr->gen > 0);
 
     value* v = value_new_pair(car, cdr);
 
