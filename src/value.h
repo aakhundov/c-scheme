@@ -37,7 +37,6 @@ void value_init_error_from_args(value* v, char* error, va_list args);
 void value_init_info(value* v, char* info, ...);
 void value_init_info_from_args(value* v, char* info, va_list args);
 void value_init_pair(value* v, value* car, value* cdr);
-void value_init_null_pair(value* v);
 
 // with malloc
 value* value_new_number(double number);
@@ -48,15 +47,11 @@ value* value_new_error_from_args(char* error, va_list args);
 value* value_new_info(char* info, ...);
 value* value_new_info_from_args(char* info, va_list args);
 value* value_new_pair(value* car, value* cdr);
-value* value_new_null_pair();
 
 void value_cleanup(value* v);  // without free
 void value_dispose(value* v);  // with free
 
-int value_is_null_pair(value* v);
 int value_to_str(value* v, char* buffer);
-value* value_add_child(value* parent, value* child);
-
 void value_copy(value* dest, value* source);  // without malloc
 value* value_clone(value* source);            // with malloc
 

@@ -49,9 +49,9 @@ static void sweep_chain(pool* p) {
 void pool_init(pool* p) {
     p->size = 0;
     p->gen = 1;
-    p->roots = value_new_null_pair();  // sentinel value
-    p->chain = value_new_null_pair();  // dummy head value
-    p->chain->next = NULL;             // initially empty chain
+    p->roots = NULL;
+    p->chain = value_new_number(0);  // dummy head value
+    p->chain->next = NULL;           // initially empty chain
 }
 
 void pool_cleanup(pool* p) {
@@ -60,10 +60,10 @@ void pool_cleanup(pool* p) {
     p->gen++;
     sweep_chain(p);
 
-    // clear externally set roots
+    // unlink externally set roots
     // not to dispose them recursively
     value* pair = p->roots;
-    while (!value_is_null_pair(pair)) {
+    while (pair != NULL) {
         pair->car = NULL;
         pair = pair->cdr;
     }
@@ -73,17 +73,17 @@ void pool_cleanup(pool* p) {
 }
 
 void pool_register_root(pool* p, value* root) {
+    assert(root != NULL);
     assert(root->type == VALUE_PAIR);
+    assert(root->gen == 0);  // external
 
     p->roots = value_new_pair(root, p->roots);
 }
 
 void pool_unregister_root(pool* p, value* root) {
-    assert(root->type == VALUE_PAIR);
-
     value* prev = NULL;
     value* curr = p->roots;
-    while (!value_is_null_pair(curr)) {
+    while (curr != NULL) {
         if (curr->car == root) {
             if (prev == NULL) {
                 p->roots = curr->cdr;
@@ -92,10 +92,10 @@ void pool_unregister_root(pool* p, value* root) {
             }
 
             // manually free the
-            // root container value
+            // root container pair
             curr->car = NULL;
             curr->cdr = NULL;
-            free(curr);
+            value_dispose(curr);
             break;
         } else {
             prev = curr;
@@ -108,7 +108,7 @@ void pool_collect_garbage(pool* p) {
     p->gen++;
 
     value* pair = p->roots;
-    while (!value_is_null_pair(pair)) {
+    while (pair != NULL) {
         value* root = pair->car;
         mark_value(p, root->car);
         pair = pair->cdr;
@@ -186,14 +186,6 @@ value* pool_new_pair(pool* p, value* car, value* cdr) {
     assert(cdr == NULL || cdr->gen > 0);
 
     value* v = value_new_pair(car, cdr);
-
-    add_to_chain(p, v);
-
-    return v;
-}
-
-value* pool_new_null_pair(pool* p) {
-    value* v = value_new_null_pair();
 
     add_to_chain(p, v);
 

@@ -79,12 +79,6 @@ void value_init_pair(value* v, value* car, value* cdr) {
     v->cdr = cdr;
 }
 
-void value_init_null_pair(value* v) {
-    assert(v != NULL);
-
-    value_init_pair(v, NULL, NULL);
-}
-
 static value* value_new() {
     value* v = malloc(sizeof(value));
 
@@ -158,13 +152,6 @@ value* value_new_pair(value* car, value* cdr) {
     return v;
 }
 
-value* value_new_null_pair() {
-    value* v = value_new();
-    value_init_null_pair(v);
-
-    return v;
-}
-
 void value_cleanup(value* v) {
     if (v != NULL) {
         switch (v->type) {
@@ -194,14 +181,6 @@ void value_dispose(value* v) {
     }
 }
 
-int value_is_null_pair(value* v) {
-    if (v != NULL && v->type == VALUE_PAIR && v->car == NULL && v->cdr == NULL) {
-        return 1;
-    } else {
-        return 0;
-    }
-}
-
 static int string_to_str(value* v, char* buffer) {
     char* escaped = str_escape(v->symbol);
     int result = sprintf(buffer, "\"%s\"", escaped);
@@ -214,22 +193,15 @@ static int pair_to_str(value* v, char* buffer) {
     char* running = buffer;
 
     running += sprintf(running, "(");
-    if (!value_is_null_pair(v)) {
-        while (1) {
+    running += value_to_str(v->car, running);
+    while ((v = v->cdr) != NULL) {
+        if (v->type == VALUE_PAIR) {
+            running += sprintf(running, " ");
             running += value_to_str(v->car, running);
-
-            if (v->cdr->type == VALUE_PAIR) {
-                if (!value_is_null_pair(v->cdr)) {
-                    running += sprintf(running, " ");
-                    v = v->cdr;
-                } else {
-                    break;
-                }
-            } else {
-                running += sprintf(running, " . ");
-                running += value_to_str(v->cdr, running);
-                break;
-            }
+        } else {
+            running += sprintf(running, " . ");
+            running += value_to_str(v, running);
+            break;
         }
     }
     running += sprintf(running, ")");
@@ -240,7 +212,7 @@ static int pair_to_str(value* v, char* buffer) {
 
 int value_to_str(value* v, char* buffer) {
     if (v == NULL) {
-        return sprintf(buffer, "<NULL>");
+        return sprintf(buffer, "()");
     } else {
         switch (v->type) {
             case VALUE_NUMBER:
@@ -256,19 +228,9 @@ int value_to_str(value* v, char* buffer) {
             case VALUE_PAIR:
                 return pair_to_str(v, buffer);
             default:
-                return sprintf(buffer, "unknown value type: %d", v->type);
+                return sprintf(buffer, "<unknown type: %d>", v->type);
         }
     }
-}
-
-value* value_add_child(value* parent, value* child) {
-    assert(parent != NULL);
-    assert(parent->type == VALUE_PAIR);
-
-    parent->car = child;
-    parent->cdr = value_new_null_pair();
-
-    return parent->cdr;
 }
 
 void value_copy(value* dest, value* source) {

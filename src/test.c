@@ -44,33 +44,35 @@ static value* get_parsed(char* input) {
 static void test_parse_output(char* input, char* expected) {
     value* p = get_parsed(input);
 
-    if (p != NULL) {
-        char buffer[1024];
-        value_to_str(p, buffer);
-        assert(strcmp(buffer, expected) == 0);
-        value_dispose(p);
-    }
+    char buffer[1024];
+    value_to_str(p, buffer);
+    assert(strcmp(buffer, expected) == 0);
+    value_dispose(p);
 }
 
 static void test_parse_error(char* input, char* expected) {
     value* p = get_parsed(input);
 
-    if (p != NULL) {
-        assert(p->type == VALUE_ERROR);
-        assert(strstr(p->symbol, expected));
-        value_dispose(p);
-    }
+    assert(p != NULL);
+    assert(p->type == VALUE_ERROR);
+    assert(strstr(p->symbol, expected));
+    value_dispose(p);
 }
 
 void test_parse() {
     test_parse_output("", "()");
+    test_parse_output("()", "(())");
+    test_parse_output("(() ((()) () ())) ()", "((() ((()) () ())) ())");
+
     test_parse_output("1", "(1)");
     test_parse_output("(1)", "((1))");
+    test_parse_output("(1 () 2)", "((1 () 2))");
     test_parse_output("1 2 3", "(1 2 3)");
     test_parse_output("(1 2 3)", "((1 2 3))");
     test_parse_output("  (  1    2 3 )  ", "((1 2 3))");
     test_parse_output("1 (2 3 (4) 5 ((6 7) 8 9) 10)", "(1 (2 3 (4) 5 ((6 7) 8 9) 10))");
     test_parse_output("  1  (  2 3 (4  ) 5 (( 6  7 )))", "(1 (2 3 (4) 5 ((6 7))))");
+    test_parse_output("(() 1 (() 2) (3 ()) 4 (5 (()) 6) 7 ())", "((() 1 (() 2) (3 ()) 4 (5 (()) 6) 7 ()))");
 
     test_parse_output("1 2.0 3.14 4 -5.67 .123", "(1 2 3.14 4 -5.67 0.123)");
     test_parse_output("123. 1e0 1e2 1e-2 1e-10", "(123 1 100 0.01 1e-10)");
@@ -122,8 +124,8 @@ void test_parse() {
 
 void test_pool() {
     // setup
-    value* r1 = value_new_null_pair();
-    value* r2 = value_new_null_pair();
+    value* r1 = value_new_pair(NULL, NULL);
+    value* r2 = value_new_pair(NULL, NULL);
 
     report_test("init");
     pool* p = malloc(sizeof(pool));
@@ -151,9 +153,9 @@ void test_pool() {
         pool_new_pair(
             p,
             pool_new_number(p, 2.71),
-            pool_new_null_pair(p)),
+            NULL),
         pool_new_symbol(p, "xyz"));
-    assert(p->size == 5);
+    assert(p->size == 4);
     pool_collect_garbage(p);
     assert(p->size == 0);
 
@@ -165,19 +167,19 @@ void test_pool() {
         pool_new_pair(
             p,
             pool_new_number(p, 2),
-            pool_new_null_pair(p)));
+            NULL));
     pool_register_root(p, r2);
     r2->car = r1->car->cdr;
-    assert(p->size == 5);
+    assert(p->size == 4);
     pool_collect_garbage(p);
-    assert(p->size == 5);
+    assert(p->size == 4);
     pool_unregister_root(p, r2);
     pool_collect_garbage(p);
-    assert(p->size == 5);
+    assert(p->size == 4);
     r1->car = NULL;
     pool_register_root(p, r2);
     pool_collect_garbage(p);
-    assert(p->size == 3);
+    assert(p->size == 2);
     pool_unregister_root(p, r1);
     pool_unregister_root(p, r2);
     pool_collect_garbage(p);
@@ -209,14 +211,13 @@ void test_pool() {
         value_new_number(123),
         value_new_pair(
             value_new_symbol("abc"),
-            value_new_null_pair()));
+            NULL));
     value* dest = pool_import(p, source);
-    assert(p->size == 5);
+    assert(p->size == 4);
     assert(source != dest);
     assert(source->car != dest->car);
     assert(source->cdr != dest->cdr);
     assert(source->cdr->car != dest->cdr->car);
-    assert(source->cdr->cdr != dest->cdr->cdr);
     assert(dest->car->number == 123);
     assert(strcmp(dest->cdr->car->symbol, "abc") == 0);
     pool_collect_garbage(p);

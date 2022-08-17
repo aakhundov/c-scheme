@@ -1,5 +1,6 @@
 #include "parse.h"
 
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -133,16 +134,27 @@ static int parse_string(char* input, value** v) {
     return length;
 }
 
+static value** add_child(value** parent, value* child) {
+    if (*parent == NULL) {
+        *parent = value_new_pair(child, NULL);
+        return parent;
+    } else {
+        assert((*parent)->cdr == NULL);
+        (*parent)->cdr = value_new_pair(child, NULL);
+        return &((*parent)->cdr);
+    }
+}
+
 static void replace_dot_in_list(value* v) {
     value* prev = NULL;
-    while (!value_is_null_pair(v)) {
-        if (v->car->type == VALUE_SYMBOL && strstr(v->car->symbol, DOT_SYMBOL)) {
+    while (v != NULL) {
+        if (v->car != NULL && v->car->type == VALUE_SYMBOL && strstr(v->car->symbol, DOT_SYMBOL)) {
             value* error = NULL;
             if (prev == NULL) {
                 error = value_new_error("nothing before %s", DOT_SYMBOL);
-            } else if (value_is_null_pair(v->cdr)) {
+            } else if (v->cdr == NULL) {
                 error = value_new_error("unfollowed %s", DOT_SYMBOL);
-            } else if (!value_is_null_pair(v->cdr->cdr)) {
+            } else if (v->cdr->cdr != NULL) {
                 error = value_new_error("%s followed by 2+ items", DOT_SYMBOL);
             } else if (v->cdr->car->type == VALUE_SYMBOL && strstr(v->cdr->car->symbol, DOT_SYMBOL)) {
                 error = value_new_error("%s followed by %s", DOT_SYMBOL, DOT_SYMBOL);
@@ -154,10 +166,10 @@ static void replace_dot_in_list(value* v) {
                 value_dispose(v);
                 prev->cdr = new_cdr;
             } else {
-                while (!value_is_null_pair(v)) {
+                while (v->cdr != NULL) {
                     v = v->cdr;
                 }
-                value_add_child(v, error);
+                add_child(&v, error);
             }
 
             break;
@@ -169,15 +181,15 @@ static void replace_dot_in_list(value* v) {
 }
 
 static int parse_list(char* input, value** v, char terminal) {
-    *v = value_new_null_pair();
+    *v = NULL;
 
-    value* pair = *v;
+    value** pair = v;
     char* running = input;
     while (*running != terminal) {
         if (*running == '\0') {
             // non-terminal end of the input
             value* error = value_new_error("missing %c", terminal);
-            pair = value_add_child(pair, error);
+            pair = add_child(pair, error);
             break;
         } else if (strchr(WHITESPACE_CHARS, *running)) {
             // skip all whitespace chars
@@ -185,7 +197,7 @@ static int parse_list(char* input, value** v, char terminal) {
         } else if (*running == LIST_CLOSE_CHAR) {
             // non-terminal closing symbol
             value* error = value_new_error("premature %c", *running);
-            pair = value_add_child(pair, error);
+            pair = add_child(pair, error);
             break;
         } else if (*running == COMMENT_CHAR) {
             // skip the comment till the end of the line
@@ -195,8 +207,8 @@ static int parse_list(char* input, value** v, char terminal) {
         } else {
             value* child = NULL;
             running += parse_token(running, &child);
-            pair = value_add_child(pair, child);
-            if (child->type == VALUE_ERROR) {
+            pair = add_child(pair, child);
+            if (child != NULL && child->type == VALUE_ERROR) {
                 break;
             }
         }
@@ -215,15 +227,15 @@ static int parse_quoted(char* input, value** v) {
     }
 
     if (*running != '\0') {
-        *v = value_new_null_pair();
+        *v = NULL;
 
         value* quoted = NULL;
         running += parse_token(running, &quoted);
         value* quote = value_new_symbol(QUOTE_SYMBOL);
 
-        value* pair = *v;
-        pair = value_add_child(pair, quote);
-        pair = value_add_child(pair, quoted);
+        value** pair = v;
+        pair = add_child(pair, quote);
+        pair = add_child(pair, quoted);
     } else {
         *v = value_new_error("unfollowed %c", QUOTE_CHAR);
     }

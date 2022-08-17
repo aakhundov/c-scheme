@@ -29,7 +29,6 @@ value* pool_new_error_from_args(pool* p, char* error, va_list args);
 value* pool_new_info(pool* p, char* info, ...);
 value* pool_new_info_from_args(pool* p, char* info, va_list args);
 value* pool_new_pair(pool* p, value* car, value* cdr);
-value* pool_new_null_pair(pool* p);
 
 value* pool_import(pool* p, value* source);
 

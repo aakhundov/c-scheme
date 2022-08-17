@@ -64,7 +64,7 @@ static command_type get_command_type(char* line) {
 static void process_repl_command(char* input, char* output) {
     value* parsed = parse_values(input);
 
-    if (parsed->type != VALUE_ERROR) {
+    if (parsed == NULL || parsed->type != VALUE_ERROR) {
         char tidy_input[16384];
         size_t tidy_len = value_to_str(parsed, tidy_input);
         if (tidy_len > 2) {
@@ -75,7 +75,7 @@ static void process_repl_command(char* input, char* output) {
 
         output[0] = '\0';
         value* token = parsed;
-        while (!value_is_null_pair(token)) {
+        while (token != NULL) {
             output += value_to_str(token->car, output);
             output[0] = '\n';
             output[1] = '\0';
