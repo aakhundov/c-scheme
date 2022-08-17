@@ -214,7 +214,10 @@ static int parse_list(char* input, value** v, char terminal) {
         }
     }
 
-    replace_dot_in_list(*v);
+    // ignore dots in the outermost list
+    if (terminal != '\0') {
+        replace_dot_in_list(*v);
+    }
 
     return running - input;
 }
