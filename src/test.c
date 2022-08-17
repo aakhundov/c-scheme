@@ -86,6 +86,8 @@ void test_parse() {
     test_parse_output("1 2 ' (3 4 (5 6 7))", "(1 2 (quote (3 4 (5 6 7))))");
     test_parse_output("''(1 2 3)", "((quote (quote (1 2 3))))");
 
+    test_parse_output(".", "(.)");
+    test_parse_output("1 . 2 . 3", "(1 . 2 . 3)");
     test_parse_output("(1 . 2)", "((1 . 2))");
     test_parse_output("(.1 . 2.)", "((0.1 . 2))");
     test_parse_output("(1.2 . 3.4)", "((1.2 . 3.4))");
