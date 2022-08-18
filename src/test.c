@@ -1,9 +1,11 @@
 #include "test.h"
 
 #include <assert.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "machine.h"
 #include "parse.h"
 #include "pool.h"
 #include "value.h"
@@ -18,10 +20,17 @@
 
 static int test_counter = 0;
 
-static void report_test(char* output) {
+static void report_test(char* output, ...) {
+    char buffer[1024];
+
+    va_list args;
+    va_start(args, output);
+    vsnprintf(buffer, sizeof(buffer), output, args);
+    va_end(args);
+
     printf(
         "\x1B[34m%-5d\x1B[0m %s\n",
-        ++test_counter, output);
+        ++test_counter, buffer);
 }
 
 static value* get_parsed(char* input) {
@@ -59,7 +68,7 @@ static void test_parse_error(char* input, char* expected) {
     value_dispose(p);
 }
 
-void test_parse() {
+static void test_parse() {
     test_parse_output("", "()");
     test_parse_output("()", "(())");
     test_parse_output("(() ((()) () ())) ()", "((() ((()) () ())) ())");
@@ -124,7 +133,7 @@ void test_parse() {
     test_parse_error("\"xyz\" \"a", "unterminated string");
 }
 
-void test_pool() {
+static void test_pool() {
     // setup
     value* r1 = value_new_pair(NULL, NULL);
     value* r2 = value_new_pair(NULL, NULL);
@@ -244,9 +253,77 @@ void test_pool() {
     value_dispose(r2);
 }
 
+static value* op_rem(machine* m, value* args) {
+    value* x = args->car->car;
+    value* y = args->cdr->car->car;
+
+    return pool_new_number(m->pool, (int)x->number % (int)y->number);
+}
+
+static value* op_eq(machine* m, value* args) {
+    value* x = args->car->car;
+    value* y = args->cdr->car->car;
+
+    return pool_new_number(m->pool, x->number == y->number);
+}
+
+static void test_gcd_machine() {
+    value* code = parse_values(
+        "\
+        test-b \
+            (test (op =) (reg b) (const 0)) \
+            (branch (label gcd-done)) \
+            (assign t (op rem) (reg a) (reg b)) \
+            (assign a (reg b)) \
+            (assign b (reg t)) \
+            (goto (label test-b)) \
+        gcd-done \
+    ");
+    int test_data[][3] = {
+        {24, 36, 12},
+        {9, 16, 1},
+        {10, 10, 10},
+        {72, 54, 18},
+        {5, 125, 5},
+    };
+
+    machine* m = malloc(sizeof(machine));
+    machine_init(m, code, "a");
+    machine_add_op(m, "rem", op_rem);
+    machine_add_op(m, "=", op_eq);
+
+    for (size_t i = 0; i < sizeof(test_data) / sizeof(test_data[0]); i++) {
+        int a = test_data[i][0];
+        int b = test_data[i][1];
+        int expected = test_data[i][2];
+
+        machine_write_to_register(m, "a", pool_new_number(m->pool, a));
+        machine_write_to_register(m, "b", pool_new_number(m->pool, b));
+        machine_run(m);
+
+        value* result = machine_read_output(m);
+
+        char buffer[1024];
+        value_to_str(result, buffer);
+        report_test("gcd(%d, %d) --> %s", a, b, buffer);
+        assert(result->number == expected);
+        value_dispose(result);
+    }
+
+    machine_cleanup(m);
+    free(m);
+
+    value_dispose(code);
+}
+
+static void test_machine() {
+    test_gcd_machine();
+}
+
 void run_test() {
     RUN_TEST_FN(test_parse);
     RUN_TEST_FN(test_pool);
+    RUN_TEST_FN(test_machine);
 
     printf("all tests have passed!\n");
 }

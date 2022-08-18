@@ -75,7 +75,6 @@ void pool_cleanup(pool* p) {
 void pool_register_root(pool* p, value* root) {
     assert(root != NULL);
     assert(root->type == VALUE_PAIR);
-    assert(root->gen == 0);  // external
 
     p->roots = value_new_pair(root, p->roots);
 }
@@ -110,7 +109,7 @@ void pool_collect_garbage(pool* p) {
     value* pair = p->roots;
     while (pair != NULL) {
         value* root = pair->car;
-        mark_value(p, root->car);
+        mark_value(p, root);
         pair = pair->cdr;
     }
 
@@ -209,4 +208,8 @@ value* pool_import(pool* p, value* source) {
 
         return dest;
     }
+}
+
+value* pool_export(pool* p, value* source) {
+    return value_clone(source);
 }

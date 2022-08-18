@@ -210,6 +210,22 @@ static int pair_to_str(value* v, char* buffer) {
     return running - buffer;
 }
 
+int value_to_bool(value* v) {
+    if (v == NULL) {
+        return 0;
+    } else {
+        switch (v->type) {
+            case VALUE_NUMBER:
+                return v->number != 0;
+            case VALUE_SYMBOL:
+            case VALUE_STRING:
+                return strlen(v->symbol) > 0;
+            default:
+                return 1;
+        }
+    }
+}
+
 int value_to_str(value* v, char* buffer) {
     if (v == NULL) {
         return sprintf(buffer, "()");

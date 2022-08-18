@@ -51,8 +51,9 @@ value* value_new_pair(value* car, value* cdr);
 void value_cleanup(value* v);  // without free
 void value_dispose(value* v);  // with free
 
+int value_to_bool(value* v);
 int value_to_str(value* v, char* buffer);
-void value_copy(value* dest, value* source);  // without malloc
-value* value_clone(value* source);            // with malloc
+void value_copy(value* dest, value* source);  // without malloc (shallow copy)
+value* value_clone(value* source);            // with malloc (deep copy)
 
 #endif  // VALUE_H_

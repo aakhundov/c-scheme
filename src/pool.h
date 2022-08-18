@@ -31,5 +31,6 @@ value* pool_new_info_from_args(pool* p, char* info, va_list args);
 value* pool_new_pair(pool* p, value* car, value* cdr);
 
 value* pool_import(pool* p, value* source);
+value* pool_export(pool* p, value* source);
 
 #endif  // POOL_H_
