@@ -49,7 +49,7 @@ static value* get_constant(machine* m, value* source) {
     value* constant = pool_import(m->pool, source);
     m->constants->cdr = pool_new_pair(m->pool, constant, m->constants->cdr);
 
-    return m->constants;
+    return m->constants->cdr;
 }
 
 static void create_backbone(machine* m, char* output_register_name) {

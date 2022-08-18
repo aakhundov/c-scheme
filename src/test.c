@@ -18,6 +18,13 @@
         printf("\n");                          \
     }
 
+#define PRINT_VALUE(name, v)               \
+    {                                      \
+        char buffer[1024];                 \
+        value_to_str(v, buffer);           \
+        printf("%s = %s\n", name, buffer); \
+    }
+
 static int test_counter = 0;
 
 static void report_test(char* output, ...) {
