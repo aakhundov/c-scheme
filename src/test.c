@@ -263,15 +263,37 @@ static void test_pool() {
 static value* op_rem(machine* m, value* args) {
     value* x = args->car->car;
     value* y = args->cdr->car->car;
-
     return pool_new_number(m->pool, (int)x->number % (int)y->number);
 }
 
 static value* op_eq(machine* m, value* args) {
     value* x = args->car->car;
     value* y = args->cdr->car->car;
-
     return pool_new_number(m->pool, x->number == y->number);
+}
+
+static value* op_lt(machine* m, value* args) {
+    value* x = args->car->car;
+    value* y = args->cdr->car->car;
+    return pool_new_number(m->pool, x->number < y->number);
+}
+
+static value* op_plus(machine* m, value* args) {
+    value* x = args->car->car;
+    value* y = args->cdr->car->car;
+    return pool_new_number(m->pool, x->number + y->number);
+}
+
+static value* op_minus(machine* m, value* args) {
+    value* x = args->car->car;
+    value* y = args->cdr->car->car;
+    return pool_new_number(m->pool, x->number - y->number);
+}
+
+static value* op_mult(machine* m, value* args) {
+    value* x = args->car->car;
+    value* y = args->cdr->car->car;
+    return pool_new_number(m->pool, x->number * y->number);
 }
 
 static void test_gcd_machine() {
@@ -286,6 +308,7 @@ static void test_gcd_machine() {
             (goto (label test-b)) \
         gcd-done \
     ");
+
     int test_data[][3] = {
         {24, 36, 12},
         {9, 16, 1},
@@ -302,7 +325,7 @@ static void test_gcd_machine() {
     for (size_t i = 0; i < sizeof(test_data) / sizeof(test_data[0]); i++) {
         int a = test_data[i][0];
         int b = test_data[i][1];
-        int expected = test_data[i][2];
+        int val = test_data[i][2];
 
         machine_write_to_register(m, "a", pool_new_number(m->pool, a));
         machine_write_to_register(m, "b", pool_new_number(m->pool, b));
@@ -313,18 +336,147 @@ static void test_gcd_machine() {
         char buffer[1024];
         value_to_str(result, buffer);
         report_test("gcd(%d, %d) --> %s", a, b, buffer);
-        assert(result->number == expected);
+        assert(result->number == val);
         value_dispose(result);
     }
 
+    value_dispose(code);
     machine_cleanup(m);
     free(m);
+}
+
+static void test_fact_machine() {
+    value* code = parse_values(
+        "\
+            (assign continue (label fact-done)) \
+        fact-loop \
+            (test (op =) (reg n) (const 1)) \
+            (branch (label base-case)) \
+            (save continue) \
+            (save n) \
+            (assign n (op -) (reg n) (const 1)) \
+            (assign continue (label after-fact)) \
+            (goto (label fact-loop)) \
+        after-fact \
+            (restore n) \
+            (restore continue) \
+            (assign val (op *) (reg n) (reg val)) \
+            (goto (reg continue)) \
+        base-case \
+            (assign val (const 1)) \
+            (goto (reg continue)) \
+        fact-done \
+     ");
+
+    int test_data[][2] = {
+        {1, 1},
+        {2, 2},
+        {3, 6},
+        {5, 120},
+        {7, 5040},
+        {10, 3628800},
+    };
+
+    machine* m = malloc(sizeof(machine));
+    machine_init(m, code, "val");
+    machine_add_op(m, "-", op_minus);
+    machine_add_op(m, "*", op_mult);
+    machine_add_op(m, "=", op_eq);
+
+    for (size_t i = 0; i < sizeof(test_data) / sizeof(test_data[0]); i++) {
+        int n = test_data[i][0];
+        int val = test_data[i][1];
+
+        machine_write_to_register(m, "n", pool_new_number(m->pool, n));
+        machine_run(m);
+
+        value* result = machine_read_output(m);
+
+        char buffer[1024];
+        value_to_str(result, buffer);
+        report_test("fact(%d) --> %s", n, buffer);
+        assert(result->number == val);
+        value_dispose(result);
+    }
 
     value_dispose(code);
+    machine_cleanup(m);
+    free(m);
+}
+
+static void test_fib_machine() {
+    value* code = parse_values(
+        "\
+            (assign continue (label fib-done)) \
+        fib-loop \
+            (test (op <) (reg n) (const 2)) \
+            (branch (label immediate-answer)) \
+            (save continue) \
+            (assign continue (label afterfib-n-1)) \
+            (save n) \
+            (assign n (op -) (reg n) (const 1)) \
+            (goto (label fib-loop)) \
+        afterfib-n-1 \
+            (restore n) \
+            (restore continue) \
+            (assign n (op -) (reg n) (const 2)) \
+            (save continue) \
+            (assign continue (label afterfib-n-2)) \
+            (save val) \
+            (goto (label fib-loop)) \
+        afterfib-n-2 \
+            (assign n (reg val)) \
+            (restore val) \
+            (restore continue) \
+            (assign val \
+            (op +) (reg val) (reg n)) \
+            (goto (reg continue)) \
+        immediate-answer \
+            (assign val (reg n)) \
+            (goto (reg continue)) \
+        fib-done \
+     ");
+
+    int test_data[][2] = {
+        {0, 0},
+        {1, 1},
+        {2, 1},
+        {5, 5},
+        {8, 21},
+        {10, 55},
+    };
+
+    machine* m = malloc(sizeof(machine));
+    machine_init(m, code, "val");
+    machine_add_op(m, "<", op_lt);
+    machine_add_op(m, "+", op_plus);
+    machine_add_op(m, "-", op_minus);
+
+    for (size_t i = 0; i < sizeof(test_data) / sizeof(test_data[0]); i++) {
+        int n = test_data[i][0];
+        int val = test_data[i][1];
+
+        machine_write_to_register(m, "n", pool_new_number(m->pool, n));
+        machine_run(m);
+
+        value* result = machine_read_output(m);
+
+        char buffer[1024];
+        value_to_str(result, buffer);
+        report_test("fib(%d) --> %s", n, buffer);
+        assert(result->number == val);
+        value_dispose(result);
+    }
+
+    value_dispose(code);
+    machine_cleanup(m);
+    free(m);
 }
 
 static void test_machine() {
     test_gcd_machine();
+    test_fact_machine();
+    test_fib_machine();
 }
 
 void run_test() {

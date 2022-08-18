@@ -435,6 +435,8 @@ static void execute_save(machine* m, value* inst) {
 
     // push the src register to the stack
     push_to_stack(m, src->car);
+    // advance the pc
+    m->pc = m->pc->cdr;
 }
 
 static void execute_restore(machine* m, value* inst) {
@@ -442,6 +444,8 @@ static void execute_restore(machine* m, value* inst) {
 
     // pop the src register from the stack
     dst->car = pop_from_stack(m);
+    // advance the pc
+    m->pc = m->pc->cdr;
 }
 
 static void (*execute_fns[])(machine*, value*) = {
