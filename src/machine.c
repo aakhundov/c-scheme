@@ -19,16 +19,21 @@ typedef enum {
 static value* get_or_create_record(machine* m, value* table, char* name) {
     value* pair = table->cdr;
     value* record = NULL;
+    value* key = NULL;
+
     while (pair != NULL) {
         record = pair->car;
-        if (strcmp(record->cdr->symbol, name) == 0) {
+        key = record->cdr;
+        if (strcmp(key->symbol, name) == 0) {
+            // found: the key matches the name
             return record;
         }
         pair = pair->cdr;
     }
 
-    record = pool_new_pair(m->pool, NULL, pool_new_symbol(m->pool, name));
-    table->cdr = pool_new_pair(m->pool, record, table->cdr);
+    key = pool_new_symbol(m->pool, name);                     // new key
+    record = pool_new_pair(m->pool, NULL, key);               // NULL value
+    table->cdr = pool_new_pair(m->pool, record, table->cdr);  // add to the table
 
     return record;
 }
@@ -45,14 +50,16 @@ static value* get_op(machine* m, char* name) {
     return get_or_create_record(m, m->ops, name);
 }
 
-static value* get_constant(machine* m, value* source) {
-    value* constant = pool_import(m->pool, source);
+static value* make_constant(machine* m, value* source) {
+    value* constant = pool_import(m->pool, source);  // clone locally
     m->constants->cdr = pool_new_pair(m->pool, constant, m->constants->cdr);
 
     return m->constants->cdr;
 }
 
 static void create_backbone(machine* m, char* output_register_name) {
+    // chain of containers to keep the machine state:
+    // cars are used as links, cdrs are for the content
     m->registers = pool_new_pair(m->pool, NULL, NULL);
     m->constants = pool_new_pair(m->pool, m->registers, NULL);
     m->labels = pool_new_pair(m->pool, m->constants, NULL);
@@ -61,21 +68,22 @@ static void create_backbone(machine* m, char* output_register_name) {
     m->stack = pool_new_pair(m->pool, m->ops, NULL);
     m->flag = pool_new_pair(m->pool, m->stack, NULL);
     m->pc = pool_new_pair(m->pool, m->flag, NULL);
-    m->root = pool_new_pair(m->pool, m->pc, NULL);
+    m->root = pool_new_pair(m->pool, m->pc, NULL);  // memory root
 
-    m->flag->cdr = pool_new_number(m->pool, 0);
-    m->val = get_register(m, output_register_name);
+    m->flag->cdr = pool_new_number(m->pool, 0);      // test/branch flag
+    m->val = get_register(m, output_register_name);  // output register
 }
 
 static void push_to_stack(machine* m, value* v) {
+    // add a new record to the stack with the value as car
     m->stack->cdr = pool_new_pair(m->pool, v, m->stack->cdr);
 }
 
 static value* pop_from_stack(machine* m) {
     assert(m->stack->cdr != NULL);
 
-    value* v = m->stack->cdr->car;
-    m->stack->cdr = m->stack->cdr->cdr;
+    value* v = m->stack->cdr->car;       // pop the value
+    m->stack->cdr = m->stack->cdr->cdr;  // evict the record
 
     return v;
 }
@@ -92,11 +100,29 @@ static int get_flag(machine* m) {
     return (int)m->flag->cdr->number;
 }
 
-static value* make_args(machine* m, value* arg_list) {
+static value* call_op(machine* m, value* op, value* args) {
+    // call the builtin op
     value* result = NULL;
+    if (op->car == NULL) {
+        // the op record is not bound to a builtin function
+        result = pool_new_error(m->pool, "unbound op '%s'", op->cdr->symbol);
+    } else {
+        // restore the function pointer from the op record's car
+        builtin fn = (builtin)(long)op->car->number;
+        // call the builtin
+        result = fn(m, args);
+    }
+
+    return result;
+}
+
+static value* make_args(machine* m, value* arg_list) {
+    value* args = NULL;
     value* tail = NULL;
 
     while (arg_list != NULL) {
+        // the args are represented
+        // as a list of (type value) pairs
         value* arg_pair = arg_list->car;
         assert(arg_pair->type == VALUE_PAIR);
         assert(arg_pair->car != NULL);
@@ -107,17 +133,21 @@ static value* make_args(machine* m, value* arg_list) {
 
         value* src = NULL;
         if (strcmp(arg_type->symbol, "reg") == 0) {
+            // the arg comes from the (reg name)
             assert(arg_value->type == VALUE_SYMBOL);
             src = get_register(m, arg_value->symbol);
         } else if (strcmp(arg_type->symbol, "const") == 0) {
-            src = get_constant(m, arg_value);
+            // the arg comes from the (const value)
+            src = make_constant(m, arg_value);
         }
         assert(src != NULL);
 
-        if (result == NULL) {
-            result = pool_new_pair(m->pool, src, NULL);
-            tail = result;
+        if (args == NULL) {
+            // first arg in the list
+            args = pool_new_pair(m->pool, src, NULL);
+            tail = args;
         } else {
+            // next arg appended to the end of the list
             tail->cdr = pool_new_pair(m->pool, src, NULL);
             tail = tail->cdr;
         }
@@ -125,12 +155,15 @@ static value* make_args(machine* m, value* arg_list) {
         arg_list = arg_list->cdr;
     }
 
-    return result;
+    return args;
 }
 
 static value* process_assign(machine* m, value* source) {
+    // destination register
     value* dst_reg = source->car;
     assert(dst_reg->type == VALUE_SYMBOL);
+    // source pair: (op name), (reg name),
+    // (label name), or (const value)
     value* src_pair = source->cdr->car;
     assert(src_pair->type == VALUE_PAIR);
     assert(src_pair->car != NULL);
@@ -146,14 +179,14 @@ static value* process_assign(machine* m, value* source) {
         // the result to the register
         return pool_new_pair(
             m->pool,
-            pool_new_number(m->pool, INST_CALL),
+            pool_new_number(m->pool, INST_CALL),  // instruction
             pool_new_pair(
                 m->pool,
-                get_register(m, dst_reg->symbol),
+                get_register(m, dst_reg->symbol),  // dst register
                 pool_new_pair(
                     m->pool,
-                    get_op(m, src_value->symbol),
-                    make_args(m, source->cdr->cdr))));
+                    get_op(m, src_value->symbol),       // src op
+                    make_args(m, source->cdr->cdr))));  // src op's args
     } else {
         value* src = NULL;
         if (strcmp(src_type->symbol, "reg") == 0) {
@@ -166,23 +199,23 @@ static value* process_assign(machine* m, value* source) {
             src = get_label(m, src_value->symbol);
         } else if (strcmp(src_type->symbol, "const") == 0) {
             // the src is the const
-            src = get_constant(m, src_value);
+            src = make_constant(m, src_value);
         }
         assert(src != NULL);
 
         // assign the src
         return pool_new_pair(
             m->pool,
-            pool_new_number(m->pool, INST_ASSIGN),
+            pool_new_number(m->pool, INST_ASSIGN),  // instruction
             pool_new_pair(
                 m->pool,
-                get_register(m, dst_reg->symbol),
-                src));
+                get_register(m, dst_reg->symbol),  // dst register
+                src));                             // src register, label, or const
     }
 }
 
 static value* process_perform(machine* m, value* source) {
-    value* op_pair = source->car;
+    value* op_pair = source->car;  // (op name) pair
     assert(op_pair->type == VALUE_PAIR);
     assert(op_pair->car != NULL);
     assert(op_pair->cdr != NULL);
@@ -196,18 +229,18 @@ static value* process_perform(machine* m, value* source) {
     // the result to a register
     return pool_new_pair(
         m->pool,
-        pool_new_number(m->pool, INST_CALL),
+        pool_new_number(m->pool, INST_CALL),  // instruction
         pool_new_pair(
             m->pool,
             NULL,  // no dst register
             pool_new_pair(
                 m->pool,
-                get_op(m, op_name->symbol),
-                make_args(m, source->cdr))));
+                get_op(m, op_name->symbol),    // op
+                make_args(m, source->cdr))));  // op's args
 }
 
 static value* process_test(machine* m, value* source) {
-    value* op_pair = source->car;
+    value* op_pair = source->car;  // (op name) pair
     assert(op_pair->type == VALUE_PAIR);
     assert(op_pair->car != NULL);
     assert(op_pair->cdr != NULL);
@@ -221,14 +254,15 @@ static value* process_test(machine* m, value* source) {
     // the result to the flag
     return pool_new_pair(
         m->pool,
-        pool_new_number(m->pool, INST_TEST),
+        pool_new_number(m->pool, INST_TEST),  // instruction
         pool_new_pair(
             m->pool,
-            get_op(m, op_name->symbol),
-            make_args(m, source->cdr)));
+            get_op(m, op_name->symbol),   // op
+            make_args(m, source->cdr)));  // op's args
 }
 
 static value* process_branch(machine* m, value* source) {
+    // (label name) pair
     value* label_pair = source->car;
     assert(label_pair->type == VALUE_PAIR);
     assert(label_pair->car != NULL);
@@ -242,11 +276,12 @@ static value* process_branch(machine* m, value* source) {
     // jump to the label
     return pool_new_pair(
         m->pool,
-        pool_new_number(m->pool, INST_BRANCH),
-        get_label(m, label_name->symbol));
+        pool_new_number(m->pool, INST_BRANCH),  // instruction
+        get_label(m, label_name->symbol));      // label
 }
 
 static value* process_goto(machine* m, value* source) {
+    // (reg name) or (label name) pair
     value* taret_pair = source->car;
     assert(taret_pair->type == VALUE_PAIR);
     assert(taret_pair->car != NULL);
@@ -269,11 +304,12 @@ static value* process_goto(machine* m, value* source) {
     // jump to the target
     return pool_new_pair(
         m->pool,
-        pool_new_number(m->pool, INST_GOTO),
-        target);
+        pool_new_number(m->pool, INST_GOTO),  // instruction
+        target);                              // target: register or label
 }
 
 static value* process_save(machine* m, value* source) {
+    // register to save from
     value* src_reg = source->car;
     assert(src_reg->type == VALUE_SYMBOL);
 
@@ -281,11 +317,12 @@ static value* process_save(machine* m, value* source) {
     // to the stack
     return pool_new_pair(
         m->pool,
-        pool_new_number(m->pool, INST_SAVE),
-        get_register(m, src_reg->symbol));
+        pool_new_number(m->pool, INST_SAVE),  // instruction
+        get_register(m, src_reg->symbol));    // src register
 }
 
 static value* process_restore(machine* m, value* source) {
+    // register to restore into
     value* dst_reg = source->car;
     assert(dst_reg->type == VALUE_SYMBOL);
 
@@ -293,8 +330,8 @@ static value* process_restore(machine* m, value* source) {
     // from the stack
     return pool_new_pair(
         m->pool,
-        pool_new_number(m->pool, INST_RESTORE),
-        get_register(m, dst_reg->symbol));
+        pool_new_number(m->pool, INST_RESTORE),  // instruction
+        get_register(m, dst_reg->symbol));       // dst register
 }
 
 static void process_code(machine* m, value* source) {
@@ -304,38 +341,42 @@ static void process_code(machine* m, value* source) {
     while (source != NULL) {
         value* line = source->car;
         if (line->type == VALUE_SYMBOL) {
-            // create the label
+            // create the label and add a pointer
+            // to the code in the next iteration
             label = get_label(m, line->symbol);
         } else {
+            // line is a list starting with a statement
             assert(line->type == VALUE_PAIR);
             assert(line->car != NULL);
             assert(line->cdr != NULL);
             assert(line->car->type == VALUE_SYMBOL);
 
             value* inst = NULL;
-            if (strcmp(line->car->symbol, "assign") == 0) {
+            char* statement = line->car->symbol;
+            if (strcmp(statement, "assign") == 0) {
                 inst = process_assign(m, line->cdr);
-            } else if (strcmp(line->car->symbol, "perform") == 0) {
+            } else if (strcmp(statement, "perform") == 0) {
                 inst = process_perform(m, line->cdr);
-            } else if (strcmp(line->car->symbol, "test") == 0) {
+            } else if (strcmp(statement, "test") == 0) {
                 inst = process_test(m, line->cdr);
-            } else if (strcmp(line->car->symbol, "branch") == 0) {
+            } else if (strcmp(statement, "branch") == 0) {
                 inst = process_branch(m, line->cdr);
-            } else if (strcmp(line->car->symbol, "goto") == 0) {
+            } else if (strcmp(statement, "goto") == 0) {
                 inst = process_goto(m, line->cdr);
-            } else if (strcmp(line->car->symbol, "save") == 0) {
+            } else if (strcmp(statement, "save") == 0) {
                 inst = process_save(m, line->cdr);
-            } else if (strcmp(line->car->symbol, "restore") == 0) {
+            } else if (strcmp(statement, "restore") == 0) {
                 inst = process_restore(m, line->cdr);
             }
             assert(inst != NULL);
 
+            // append the new instruction to the end of the code
             code->cdr = pool_new_pair(m->pool, inst, NULL);
             code = code->cdr;
 
             if (label != NULL) {
-                // point the label to the
-                // following code statement
+                // point the label above to
+                // the current instruction
                 label->car = code;
                 label = NULL;
             }
@@ -346,8 +387,8 @@ static void process_code(machine* m, value* source) {
 }
 
 static void execute_assign(machine* m, value* inst) {
-    value* dst_reg = inst->car;
-    value* src = inst->cdr;
+    value* dst_reg = inst->car;  // dst register
+    value* src = inst->cdr;      // src: register, label, or const
 
     // assign to the dst register from
     // src register, label, or const
@@ -357,18 +398,11 @@ static void execute_assign(machine* m, value* inst) {
 }
 
 static void execute_call(machine* m, value* inst) {
-    value* dst = inst->car;
-    value* op_record = inst->cdr->car;
-    value* args = inst->cdr->cdr;
+    value* dst = inst->car;        // dst register (if any)
+    value* op = inst->cdr->car;    // op record (pointer . name)
+    value* args = inst->cdr->cdr;  // op's args
 
-    // call the builtin op
-    value* result = NULL;
-    if (op_record->car == NULL) {
-        result = pool_new_error(m->pool, "undefined op '%s'", op_record->cdr->symbol);
-    } else {
-        builtin op = (builtin)(long)op_record->car->number;
-        result = op(m, args);
-    }
+    value* result = call_op(m, op, args);
 
     if (result != NULL && result->type == VALUE_ERROR) {
         // set the output register to the error
@@ -386,20 +420,13 @@ static void execute_call(machine* m, value* inst) {
 }
 
 static void execute_test(machine* m, value* inst) {
-    value* op_record = inst->car;
-    value* args = inst->cdr;
+    value* op = inst->car;    // op record (pointer . name)
+    value* args = inst->cdr;  // op's args
 
-    // call the builtin op
-    value* result = NULL;
-    if (op_record->car == NULL) {
-        result = pool_new_error(m->pool, "undefined op '%s'", op_record->cdr->symbol);
-    } else {
-        builtin op = (builtin)(long)op_record->car->number;
-        result = op(m, args);
-    }
+    value* result = call_op(m, op, args);
 
     if (result != NULL && result->type == VALUE_ERROR) {
-        // set the output register to the error and halt
+        // set the output register to the error
         m->val->car = result;
         // halt immediately
         m->pc = NULL;
@@ -415,10 +442,10 @@ static void execute_branch(machine* m, value* inst) {
     value* label = inst;
 
     if (get_flag(m)) {
-        // flag is 1: jump to the label
+        // jump to the label
         m->pc = label->car;
     } else {
-        // flag is 0: advance the pc
+        // advance the pc
         m->pc = m->pc->cdr;
     }
 }
@@ -448,6 +475,7 @@ static void execute_restore(machine* m, value* inst) {
     m->pc = m->pc->cdr;
 }
 
+// array of execution functions for quick dispatch
 static void (*execute_fns[])(machine*, value*) = {
     execute_assign,
     execute_call,
@@ -459,7 +487,7 @@ static void (*execute_fns[])(machine*, value*) = {
 };
 
 static void execute_next_instruction(machine* m) {
-    value* inst = m->pc->car;
+    value* inst = m->pc->car;  // current instruction
     instruction_type type = (int)inst->car->number;
     execute_fns[type](m, inst->cdr);
 }
@@ -480,26 +508,27 @@ void machine_cleanup(machine* m) {
     free(m->pool);
 }
 
-void machine_add_op(machine* m, char* name, builtin op) {
-    value* op_record = get_op(m, name);
-    op_record->car = pool_new_number(m->pool, (long)op);
+void machine_bind_builtin(machine* m, char* name, builtin fn) {
+    value* op = get_op(m, name);
+    op->car = pool_new_number(m->pool, (long)fn);
 }
 
 void machine_write_to_register(machine* m, char* name, value* v) {
-    value* reg_record = get_register(m, name);
-    reg_record->car = pool_import(m->pool, v);
+    value* reg = get_register(m, name);
+    reg->car = pool_import(m->pool, v);
 }
 
 value* machine_read_from_register(machine* m, char* name) {
-    value* reg_record = get_register(m, name);
-    return pool_export(m->pool, reg_record->car);
+    value* reg = get_register(m, name);
+
+    return pool_export(m->pool, reg->car);
 }
 
 value* machine_read_output(machine* m) {
     return pool_export(m->pool, m->val->car);
 }
 
-void machine_run(machine* m) {
+void machine_execute(machine* m) {
     clear_stack(m);
 
     m->pc = m->code->cdr;
@@ -507,5 +536,6 @@ void machine_run(machine* m) {
         execute_next_instruction(m);
     }
 
+    // inefficient, yet simple
     pool_collect_garbage(m->pool);
 }

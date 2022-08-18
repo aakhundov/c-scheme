@@ -26,10 +26,10 @@ struct machine {
 void machine_init(machine* m, value* code, char* output_register_name);
 void machine_cleanup(machine* m);
 
-void machine_add_op(machine* m, char* name, builtin op);
+void machine_bind_builtin(machine* m, char* name, builtin fn);
 void machine_write_to_register(machine* m, char* name, value* v);
 value* machine_read_from_register(machine* m, char* name);
 value* machine_read_output(machine* m);
-void machine_run(machine* m);
+void machine_execute(machine* m);
 
 #endif  // MACHINE_H_
