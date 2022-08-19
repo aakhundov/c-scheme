@@ -38,6 +38,13 @@ void value_init_bool(value* v, int truth) {
     v->number = truth;
 }
 
+void value_init_builtin(value* v, void* ptr) {
+    assert(v != NULL);
+
+    v->type = VALUE_BUILTIN;
+    v->ptr = ptr;
+}
+
 static void value_init_symbol_from_args(value* v, char* format, va_list args) {
     assert(v != NULL);
 
@@ -86,6 +93,22 @@ void value_init_pair(value* v, value* car, value* cdr) {
     v->cdr = cdr;
 }
 
+void value_init_lambda(value* v, value* car, value* cdr) {
+    assert(v != NULL);
+
+    v->type = VALUE_LAMBDA;
+    v->car = car;
+    v->cdr = cdr;
+}
+
+void value_init_code(value* v, value* car, value* cdr) {
+    assert(v != NULL);
+
+    v->type = VALUE_CODE;
+    v->car = car;
+    v->cdr = cdr;
+}
+
 static value* value_new() {
     value* v = malloc(sizeof(value));
 
@@ -119,6 +142,13 @@ value* value_new_string(char* string) {
 value* value_new_bool(int truth) {
     value* v = value_new();
     value_init_bool(v, truth);
+
+    return v;
+}
+
+value* value_new_builtin(void* ptr) {
+    value* v = value_new();
+    value_init_builtin(v, ptr);
 
     return v;
 }
@@ -166,12 +196,63 @@ value* value_new_pair(value* car, value* cdr) {
     return v;
 }
 
+value* value_new_lambda(value* car, value* cdr) {
+    value* v = value_new();
+    value_init_lambda(v, car, cdr);
+
+    return v;
+}
+
+value* value_new_code(value* car, value* cdr) {
+    value* v = value_new();
+    value_init_code(v, car, cdr);
+
+    return v;
+}
+
+int is_compound_type(value_type t) {
+    return (
+        t == VALUE_PAIR ||
+        t == VALUE_LAMBDA ||
+        t == VALUE_CODE);
+}
+
+char* get_type_name(value_type t) {
+    switch (t) {
+        case VALUE_NUMBER:
+            return "number";
+        case VALUE_SYMBOL:
+            return "symbol";
+        case VALUE_STRING:
+            return "string";
+        case VALUE_BOOL:
+            return "bool";
+        case VALUE_BUILTIN:
+            return "builtin";
+        case VALUE_ERROR:
+            return "error";
+        case VALUE_INFO:
+            return "info";
+        case VALUE_PAIR:
+            return "pair";
+        case VALUE_LAMBDA:
+            return "lambda";
+        case VALUE_CODE:
+            return "code";
+        default:
+            return "unknown";
+    }
+}
+
 void value_cleanup(value* v) {
     if (v != NULL) {
         switch (v->type) {
             case VALUE_NUMBER:
             case VALUE_BOOL:
+            case VALUE_BUILTIN:
             case VALUE_PAIR:
+            case VALUE_LAMBDA:
+            case VALUE_CODE:
                 break;
             case VALUE_SYMBOL:
             case VALUE_STRING:
@@ -187,12 +268,63 @@ void value_dispose(value* v) {
     if (v != NULL) {
         value_cleanup(v);
 
-        if (v->type == VALUE_PAIR) {
+        if (is_compound_type(v->type)) {
             value_dispose(v->car);
             value_dispose(v->cdr);
         }
 
         free(v);
+    }
+}
+
+int value_is_true(value* v) {
+    if (v == NULL) {
+        return 0;
+    } else {
+        switch (v->type) {
+            case VALUE_NUMBER:
+            case VALUE_BOOL:
+                return v->number != 0;
+            case VALUE_BUILTIN:
+                return v->ptr != NULL;
+            case VALUE_SYMBOL:
+            case VALUE_STRING:
+                return strlen(v->symbol) > 0;
+            default:
+                return 1;
+        }
+    }
+}
+
+int value_equal(value* v1, value* v2) {
+    if (v1 == NULL && v2 == NULL) {
+        return 1;
+    } else if (v1 == NULL || v2 == NULL) {
+        return 0;
+    } else if (v1->type != v2->type) {
+        return 0;
+    } else {
+        switch (v1->type) {
+            case VALUE_NUMBER:
+            case VALUE_BOOL:
+                return v1->number == v2->number;
+            case VALUE_BUILTIN:
+                return v1->ptr == v2->ptr;
+            case VALUE_SYMBOL:
+            case VALUE_STRING:
+            case VALUE_ERROR:
+            case VALUE_INFO:
+                return strcmp(v1->symbol, v2->symbol) == 0;
+            case VALUE_PAIR:
+            case VALUE_LAMBDA:
+                // may run into cycles
+                return (
+                    value_equal(v1->car, v2->car) &&
+                    value_equal(v1->cdr, v2->cdr));
+            case VALUE_CODE:
+                // not to run into cycles
+                return 0;
+        }
     }
 }
 
@@ -237,48 +369,6 @@ static int pair_to_str(value* v, char* buffer) {
     return running - buffer;
 }
 
-int value_is_true(value* v) {
-    if (v == NULL) {
-        return 0;
-    } else {
-        switch (v->type) {
-            case VALUE_NUMBER:
-            case VALUE_BOOL:
-                return v->number != 0;
-            case VALUE_SYMBOL:
-            case VALUE_STRING:
-                return strlen(v->symbol) > 0;
-            default:
-                return 1;
-        }
-    }
-}
-
-int value_equal(value* v1, value* v2) {
-    if (v1 == NULL && v2 == NULL) {
-        return 1;
-    } else if (v1 == NULL || v2 == NULL) {
-        return 0;
-    } else if (v1->type != v2->type) {
-        return 0;
-    } else {
-        switch (v1->type) {
-            case VALUE_NUMBER:
-            case VALUE_BOOL:
-                return v1->number == v2->number;
-            case VALUE_SYMBOL:
-            case VALUE_STRING:
-            case VALUE_ERROR:
-            case VALUE_INFO:
-                return strcmp(v1->symbol, v2->symbol) == 0;
-            case VALUE_PAIR:
-                return (
-                    value_equal(v1->car, v2->car) &&
-                    value_equal(v1->cdr, v2->cdr));
-        }
-    }
-}
-
 int value_to_str(value* v, char* buffer) {
     if (v == NULL) {
         return sprintf(buffer, "()");
@@ -299,7 +389,7 @@ int value_to_str(value* v, char* buffer) {
             case VALUE_PAIR:
                 return pair_to_str(v, buffer);
             default:
-                return sprintf(buffer, "<unknown type: %d>", v->type);
+                return sprintf(buffer, "<%s>", get_type_name(v->type));
         }
     }
 }
@@ -321,6 +411,9 @@ void value_copy(value* dest, value* source) {
         case VALUE_BOOL:
             value_init_bool(dest, source->number);
             break;
+        case VALUE_BUILTIN:
+            value_init_builtin(dest, source->ptr);
+            break;
         case VALUE_ERROR:
             value_init_error(dest, source->symbol);
             break;
@@ -329,6 +422,12 @@ void value_copy(value* dest, value* source) {
             break;
         case VALUE_PAIR:
             value_init_pair(dest, source->car, source->cdr);
+            break;
+        case VALUE_LAMBDA:
+            value_init_lambda(dest, source->car, source->cdr);
+            break;
+        case VALUE_CODE:
+            value_init_code(dest, source->car, source->cdr);
             break;
     }
 }
@@ -340,7 +439,8 @@ value* value_clone(value* source) {
         value* dest = value_new();
         value_copy(dest, source);
 
-        if (dest->type == VALUE_PAIR) {
+        if (is_compound_type(dest->type)) {
+            // may run into cycles
             dest->car = value_clone(dest->car);
             dest->cdr = value_clone(dest->cdr);
         }
