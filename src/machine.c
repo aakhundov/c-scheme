@@ -93,7 +93,7 @@ static void clear_stack(machine* m) {
 }
 
 static void set_flag(machine* m, value* v) {
-    m->flag->cdr->number = value_to_bool(v);
+    m->flag->cdr->number = value_is_true(v);
 }
 
 static int get_flag(machine* m) {

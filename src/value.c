@@ -31,6 +31,13 @@ void value_init_string(value* v, char* string) {
     strcpy(v->symbol, string);
 }
 
+void value_init_bool(value* v, int truth) {
+    assert(v != NULL);
+
+    v->type = VALUE_BOOL;
+    v->number = truth;
+}
+
 static void value_init_symbol_from_args(value* v, char* format, va_list args) {
     assert(v != NULL);
 
@@ -109,6 +116,13 @@ value* value_new_string(char* string) {
     return v;
 }
 
+value* value_new_bool(int truth) {
+    value* v = value_new();
+    value_init_bool(v, truth);
+
+    return v;
+}
+
 value* value_new_error(char* error, ...) {
     value* v = value_new();
 
@@ -156,6 +170,7 @@ void value_cleanup(value* v) {
     if (v != NULL) {
         switch (v->type) {
             case VALUE_NUMBER:
+            case VALUE_BOOL:
             case VALUE_PAIR:
                 break;
             case VALUE_SYMBOL:
@@ -189,6 +204,18 @@ static int string_to_str(value* v, char* buffer) {
     return result;
 }
 
+static int bool_to_str(value* v, char* buffer) {
+    char* running = buffer;
+
+    if (v->number) {
+        running += sprintf(running, "true");
+    } else {
+        running += sprintf(running, "false");
+    }
+
+    return running - buffer;
+}
+
 static int pair_to_str(value* v, char* buffer) {
     char* running = buffer;
 
@@ -210,12 +237,13 @@ static int pair_to_str(value* v, char* buffer) {
     return running - buffer;
 }
 
-int value_to_bool(value* v) {
+int value_is_true(value* v) {
     if (v == NULL) {
         return 0;
     } else {
         switch (v->type) {
             case VALUE_NUMBER:
+            case VALUE_BOOL:
                 return v->number != 0;
             case VALUE_SYMBOL:
             case VALUE_STRING:
@@ -237,6 +265,8 @@ int value_to_str(value* v, char* buffer) {
                 return sprintf(buffer, "%s", v->symbol);
             case VALUE_STRING:
                 return string_to_str(v, buffer);
+            case VALUE_BOOL:
+                return bool_to_str(v, buffer);
             case VALUE_ERROR:
                 return sprintf(buffer, "\x1B[31m%s\x1B[0m", v->symbol);
             case VALUE_INFO:
@@ -262,6 +292,9 @@ void value_copy(value* dest, value* source) {
             break;
         case VALUE_STRING:
             value_init_string(dest, source->symbol);
+            break;
+        case VALUE_BOOL:
+            value_init_bool(dest, source->number);
             break;
         case VALUE_ERROR:
             value_init_error(dest, source->symbol);
