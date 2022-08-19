@@ -75,9 +75,10 @@ static value* make_number(char* symbol) {
 }
 
 static int is_special(char* symbol) {
-    return (strcmp(symbol, "nil") == 0 ||
-            strcmp(symbol, "true") == 0 ||
-            strcmp(symbol, "false") == 0);
+    return (
+        strcmp(symbol, "nil") == 0 ||
+        strcmp(symbol, "true") == 0 ||
+        strcmp(symbol, "false") == 0);
 }
 
 static value* make_special(char* symbol) {

@@ -254,6 +254,31 @@ int value_is_true(value* v) {
     }
 }
 
+int value_equal(value* v1, value* v2) {
+    if (v1 == NULL && v2 == NULL) {
+        return 1;
+    } else if (v1 == NULL || v2 == NULL) {
+        return 0;
+    } else if (v1->type != v2->type) {
+        return 0;
+    } else {
+        switch (v1->type) {
+            case VALUE_NUMBER:
+            case VALUE_BOOL:
+                return v1->number == v2->number;
+            case VALUE_SYMBOL:
+            case VALUE_STRING:
+            case VALUE_ERROR:
+            case VALUE_INFO:
+                return strcmp(v1->symbol, v2->symbol) == 0;
+            case VALUE_PAIR:
+                return (
+                    value_equal(v1->car, v2->car) &&
+                    value_equal(v1->cdr, v2->cdr));
+        }
+    }
+}
+
 int value_to_str(value* v, char* buffer) {
     if (v == NULL) {
         return sprintf(buffer, "()");
