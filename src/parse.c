@@ -63,14 +63,32 @@ static int is_number(char* symbol) {
     return digit_seen;
 }
 
-static value* make_number(char* content) {
+static value* make_number(char* symbol) {
     errno = 0;
-    double result = strtod(content, NULL);
+    double result = strtod(symbol, NULL);
 
     if (errno == 0) {
         return value_new_number(result);
     } else {
-        return value_new_error("malformed number: %s", content);
+        return value_new_error("malformed number: %s", symbol);
+    }
+}
+
+static int is_special(char* symbol) {
+    return (strcmp(symbol, "nil") == 0 ||
+            strcmp(symbol, "true") == 0 ||
+            strcmp(symbol, "false") == 0);
+}
+
+static value* make_special(char* symbol) {
+    if (strcmp(symbol, "nil") == 0) {
+        return NULL;
+    } else if (strcmp(symbol, "true") == 0) {
+        return value_new_bool(1);
+    } else if (strcmp(symbol, "false") == 0) {
+        return value_new_bool(0);
+    } else {
+        return value_new_error("unknown special symbol: %s", symbol);
     }
 }
 
@@ -102,6 +120,8 @@ static int parse_symbol(char* input, value** v) {
 
     if (is_number(symbol)) {
         *v = make_number(symbol);
+    } else if (is_special(symbol)) {
+        *v = make_special(symbol);
     } else {
         *v = value_new_symbol(symbol);
     }

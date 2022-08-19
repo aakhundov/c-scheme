@@ -126,6 +126,10 @@ static void test_parse() {
     test_parse_output("'\"x\" \"y\" \"z\"", "((quote \"x\") \"y\" \"z\")");
     test_parse_output("'(\"x\" \"y\" \"z\")", "((quote (\"x\" \"y\" \"z\")))");
 
+    test_parse_output("nil", "(())");
+    test_parse_output("true", "(true)");
+    test_parse_output("false", "(false)");
+
     test_parse_error("(1 2", "missing )");
     test_parse_error("1 2)", "premature )");
     test_parse_error("( 1 (2", "missing )");
