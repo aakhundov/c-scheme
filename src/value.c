@@ -327,6 +327,15 @@ int value_equal(value* v1, value* v2) {
     }
 }
 
+static int number_to_str(value* v, char* buffer) {
+    long num = (long)v->number;
+    if (num == v->number) {
+        return sprintf(buffer, "%ld", num);
+    } else {
+        return sprintf(buffer, "%g", v->number);
+    }
+}
+
 static int string_to_str(value* v, char* buffer) {
     char* escaped = str_escape(v->symbol);
     int result = sprintf(buffer, "\"%s\"", escaped);
@@ -370,7 +379,7 @@ int value_to_str(value* v, char* buffer) {
     } else {
         switch (v->type) {
             case VALUE_NUMBER:
-                return sprintf(buffer, "%g", v->number);
+                return number_to_str(v, buffer);
             case VALUE_SYMBOL:
                 return sprintf(buffer, "%s", v->symbol);
             case VALUE_STRING:
