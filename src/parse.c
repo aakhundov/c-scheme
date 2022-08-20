@@ -303,7 +303,7 @@ value* find_error(value* v) {
     return NULL;
 }
 
-value* parse_values(char* input) {
+value* parse_from_str(char* input) {
     value* result = NULL;
     // parse till the end of the input
     parse_list(input, &result, '\0');
@@ -316,4 +316,28 @@ value* parse_values(char* input) {
     }
 
     return result;
+}
+
+value* parse_from_file(char* path) {
+    FILE* file = fopen(path, "r");
+    if (file) {
+        // open and read the file
+        fseek(file, 0, SEEK_END);
+        long length = ftell(file);
+        fseek(file, 0, SEEK_SET);
+        char* content = malloc(length + 1);
+        fread(content, 1, length, file);
+        content[length] = '\0';
+
+        // parse the full content of the file
+        value* result = parse_from_str(content);
+
+        // cleanup
+        free(content);
+        fclose(file);
+
+        return result;
+    } else {
+        return value_new_error("failed to open file: %s", path);
+    }
 }

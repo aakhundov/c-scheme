@@ -42,7 +42,7 @@ static void report_test(char* output, ...) {
 
 static value* get_parsed(char* input) {
     char output[1024];
-    value* v = parse_values(input);
+    value* v = parse_from_str(input);
     value_to_str(v, output);
 
     char formatted[1024];
@@ -301,17 +301,8 @@ static value* op_mult(machine* m, value* args) {
 }
 
 static void test_gcd_machine() {
-    value* code = parse_values(
-        "\
-        test-b \
-            (test (op =) (reg b) (const 0)) \
-            (branch (label gcd-done)) \
-            (assign t (op rem) (reg a) (reg b)) \
-            (assign a (reg b)) \
-            (assign b (reg t)) \
-            (goto (label test-b)) \
-        gcd-done \
-    ");
+    value* code = parse_from_file("./lib/machines/gcd.scm");
+    assert(code->type != VALUE_ERROR);
 
     int test_data[][3] = {
         {24, 36, 12},
@@ -350,27 +341,8 @@ static void test_gcd_machine() {
 }
 
 static void test_fact_machine() {
-    value* code = parse_values(
-        "\
-            (assign continue (label fact-done)) \
-        fact-loop \
-            (test (op =) (reg n) (const 1)) \
-            (branch (label base-case)) \
-            (save continue) \
-            (save n) \
-            (assign n (op -) (reg n) (const 1)) \
-            (assign continue (label after-fact)) \
-            (goto (label fact-loop)) \
-        after-fact \
-            (restore n) \
-            (restore continue) \
-            (assign val (op *) (reg n) (reg val)) \
-            (goto (reg continue)) \
-        base-case \
-            (assign val (const 1)) \
-            (goto (reg continue)) \
-        fact-done \
-     ");
+    value* code = parse_from_file("./lib/machines/factorial.scm");
+    assert(code->type != VALUE_ERROR);
 
     int test_data[][2] = {
         {1, 1},
@@ -398,7 +370,7 @@ static void test_fact_machine() {
 
         char buffer[1024];
         value_to_str(result, buffer);
-        report_test("fact(%d) --> %s", n, buffer);
+        report_test("factorial(%d) --> %s", n, buffer);
         assert(result->number == val);
         value_dispose(result);
     }
@@ -409,37 +381,8 @@ static void test_fact_machine() {
 }
 
 static void test_fib_machine() {
-    value* code = parse_values(
-        "\
-            (assign continue (label fib-done)) \
-        fib-loop \
-            (test (op <) (reg n) (const 2)) \
-            (branch (label immediate-answer)) \
-            (save continue) \
-            (assign continue (label afterfib-n-1)) \
-            (save n) \
-            (assign n (op -) (reg n) (const 1)) \
-            (goto (label fib-loop)) \
-        afterfib-n-1 \
-            (restore n) \
-            (restore continue) \
-            (assign n (op -) (reg n) (const 2)) \
-            (save continue) \
-            (assign continue (label afterfib-n-2)) \
-            (save val) \
-            (goto (label fib-loop)) \
-        afterfib-n-2 \
-            (assign n (reg val)) \
-            (restore val) \
-            (restore continue) \
-            (assign val \
-            (op +) (reg val) (reg n)) \
-            (goto (reg continue)) \
-        immediate-answer \
-            (assign val (reg n)) \
-            (goto (reg continue)) \
-        fib-done \
-     ");
+    value* code = parse_from_file("./lib/machines/fibonacci.scm");
+    assert(code->type != VALUE_ERROR);
 
     int test_data[][2] = {
         {0, 0},
@@ -467,7 +410,7 @@ static void test_fib_machine() {
 
         char buffer[1024];
         value_to_str(result, buffer);
-        report_test("fib(%d) --> %s", n, buffer);
+        report_test("fibonacci(%d) --> %s", n, buffer);
         assert(result->number == val);
         value_dispose(result);
     }

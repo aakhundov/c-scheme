@@ -62,7 +62,7 @@ static command_type get_command_type(char* line) {
 }
 
 static void process_repl_command(char* input, char* output) {
-    value* parsed = parse_values(input);
+    value* parsed = parse_from_str(input);
 
     if (parsed == NULL || parsed->type != VALUE_ERROR) {
         char tidy_input[16384];
