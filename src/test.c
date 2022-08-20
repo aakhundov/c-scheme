@@ -323,8 +323,8 @@ static void test_gcd_machine() {
 
     machine* m = malloc(sizeof(machine));
     machine_init(m, code, "a");
-    machine_bind_builtin(m, "rem", op_rem);
-    machine_bind_builtin(m, "=", op_eq);
+    machine_bind_op(m, "rem", op_rem);
+    machine_bind_op(m, "=", op_eq);
 
     for (size_t i = 0; i < sizeof(test_data) / sizeof(test_data[0]); i++) {
         int a = test_data[i][0];
@@ -333,9 +333,9 @@ static void test_gcd_machine() {
 
         machine_write_to_register(m, "a", pool_new_number(m->pool, a));
         machine_write_to_register(m, "b", pool_new_number(m->pool, b));
-        machine_execute(m);
+        machine_run(m);
 
-        value* result = machine_read_output(m);
+        value* result = machine_get_output(m);
 
         char buffer[1024];
         value_to_str(result, buffer);
@@ -383,18 +383,18 @@ static void test_fact_machine() {
 
     machine* m = malloc(sizeof(machine));
     machine_init(m, code, "val");
-    machine_bind_builtin(m, "-", op_minus);
-    machine_bind_builtin(m, "*", op_mult);
-    machine_bind_builtin(m, "=", op_eq);
+    machine_bind_op(m, "-", op_minus);
+    machine_bind_op(m, "*", op_mult);
+    machine_bind_op(m, "=", op_eq);
 
     for (size_t i = 0; i < sizeof(test_data) / sizeof(test_data[0]); i++) {
         int n = test_data[i][0];
         int val = test_data[i][1];
 
         machine_write_to_register(m, "n", pool_new_number(m->pool, n));
-        machine_execute(m);
+        machine_run(m);
 
-        value* result = machine_read_output(m);
+        value* result = machine_get_output(m);
 
         char buffer[1024];
         value_to_str(result, buffer);
@@ -452,18 +452,18 @@ static void test_fib_machine() {
 
     machine* m = malloc(sizeof(machine));
     machine_init(m, code, "val");
-    machine_bind_builtin(m, "<", op_lt);
-    machine_bind_builtin(m, "+", op_plus);
-    machine_bind_builtin(m, "-", op_minus);
+    machine_bind_op(m, "<", op_lt);
+    machine_bind_op(m, "+", op_plus);
+    machine_bind_op(m, "-", op_minus);
 
     for (size_t i = 0; i < sizeof(test_data) / sizeof(test_data[0]); i++) {
         int n = test_data[i][0];
         int val = test_data[i][1];
 
         machine_write_to_register(m, "n", pool_new_number(m->pool, n));
-        machine_execute(m);
+        machine_run(m);
 
-        value* result = machine_read_output(m);
+        value* result = machine_get_output(m);
 
         char buffer[1024];
         value_to_str(result, buffer);

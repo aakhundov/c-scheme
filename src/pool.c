@@ -17,7 +17,7 @@ static void mark_value(pool* p, value* v) {
     if (v != NULL && v->gen != p->gen) {
         // not marked yet
         v->gen = p->gen;
-        if (v->type == VALUE_PAIR) {
+        if (is_compound_type(v->type)) {
             // mark recursively
             mark_value(p, v->car);
             mark_value(p, v->cdr);
@@ -74,7 +74,6 @@ void pool_cleanup(pool* p) {
 
 void pool_register_root(pool* p, value* root) {
     assert(root != NULL);
-    assert(root->type == VALUE_PAIR);
 
     p->roots = value_new_pair(root, p->roots);
 }
@@ -140,6 +139,22 @@ value* pool_new_string(pool* p, char* string) {
     return v;
 }
 
+value* pool_new_bool(pool* p, int truth) {
+    value* v = value_new_bool(truth);
+
+    add_to_chain(p, v);
+
+    return v;
+}
+
+value* pool_new_builtin(pool* p, void* ptr) {
+    value* v = value_new_builtin(ptr);
+
+    add_to_chain(p, v);
+
+    return v;
+}
+
 value* pool_new_error(pool* p, char* error, ...) {
     va_list args;
     va_start(args, error);
@@ -191,6 +206,32 @@ value* pool_new_pair(pool* p, value* car, value* cdr) {
     return v;
 }
 
+value* pool_new_lambda(pool* p, value* car, value* cdr) {
+    // make sure the car and cdr are from
+    // the pool: i.e., their gen is set
+    assert(car == NULL || car->gen > 0);
+    assert(cdr == NULL || cdr->gen > 0);
+
+    value* v = value_new_lambda(car, cdr);
+
+    add_to_chain(p, v);
+
+    return v;
+}
+
+value* pool_new_code(pool* p, value* car, value* cdr) {
+    // make sure the car and cdr are from
+    // the pool: i.e., their gen is set
+    assert(car == NULL || car->gen > 0);
+    assert(cdr == NULL || cdr->gen > 0);
+
+    value* v = value_new_code(car, cdr);
+
+    add_to_chain(p, v);
+
+    return v;
+}
+
 value* pool_import(pool* p, value* source) {
     if (source == NULL) {
         return NULL;
@@ -201,7 +242,7 @@ value* pool_import(pool* p, value* source) {
         value_copy(dest, source);
         add_to_chain(p, dest);
 
-        if (dest->type == VALUE_PAIR) {
+        if (is_compound_type(dest->type)) {
             dest->car = pool_import(p, dest->car);
             dest->cdr = pool_import(p, dest->cdr);
         }

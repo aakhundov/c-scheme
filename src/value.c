@@ -321,9 +321,8 @@ int value_equal(value* v1, value* v2) {
                 return (
                     value_equal(v1->car, v2->car) &&
                     value_equal(v1->cdr, v2->cdr));
-            case VALUE_CODE:
-                // not to run into cycles
-                return 0;
+            default:
+                return v1 == v2;
         }
     }
 }
@@ -337,15 +336,11 @@ static int string_to_str(value* v, char* buffer) {
 }
 
 static int bool_to_str(value* v, char* buffer) {
-    char* running = buffer;
-
     if (v->number) {
-        running += sprintf(running, "true");
+        return sprintf(buffer, "true");
     } else {
-        running += sprintf(running, "false");
+        return sprintf(buffer, "false");
     }
-
-    return running - buffer;
 }
 
 static int pair_to_str(value* v, char* buffer) {

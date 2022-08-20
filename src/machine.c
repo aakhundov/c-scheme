@@ -1,6 +1,7 @@
 #include "machine.h"
 
 #include <assert.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "pool.h"
@@ -68,10 +69,12 @@ static void create_backbone(machine* m, char* output_register_name) {
     m->stack = pool_new_pair(m->pool, m->ops, NULL);
     m->flag = pool_new_pair(m->pool, m->stack, NULL);
     m->pc = pool_new_pair(m->pool, m->flag, NULL);
-    m->root = pool_new_pair(m->pool, m->pc, NULL);  // memory root
+    m->trace = pool_new_pair(m->pool, m->pc, NULL);
+    m->root = pool_new_pair(m->pool, m->trace, NULL);  // memory root
 
     m->flag->cdr = pool_new_number(m->pool, 0);      // test/branch flag
     m->val = get_register(m, output_register_name);  // output register
+    m->trace->cdr = pool_new_number(m->pool, 0);     // trace flag
 }
 
 static void push_to_stack(machine* m, value* v) {
@@ -100,6 +103,10 @@ static int get_flag(machine* m) {
     return (int)m->flag->cdr->number;
 }
 
+static int in_trace_mode(machine* m) {
+    return m->trace->cdr->number == 1;
+}
+
 static value* call_op(machine* m, value* op, value* args) {
     // call the builtin op
     value* result = NULL;
@@ -107,10 +114,8 @@ static value* call_op(machine* m, value* op, value* args) {
         // the op record is not bound to a builtin function
         result = pool_new_error(m->pool, "unbound op '%s'", op->cdr->symbol);
     } else {
-        // restore the function pointer from the op record's car
-        builtin fn = (builtin)(long)op->car->number;
         // call the builtin
-        result = fn(m, args);
+        result = ((builtin)op->car->ptr)(m, args);
     }
 
     return result;
@@ -334,6 +339,24 @@ static value* process_restore(machine* m, value* source) {
         get_register(m, dst_reg->symbol));       // dst register
 }
 
+static void instrument_code(machine* m, value* line) {
+    value* running = line;
+    while (running != NULL) {
+        // locate all (reg name) pairs
+        if (running->car->type == VALUE_PAIR) {
+            assert(running->car->car->type == VALUE_SYMBOL);
+            char* type = running->car->car->symbol;
+            if (strcmp(type, "reg") == 0) {
+                // replace "name" in (reg name) with the real register
+                assert(running->car->cdr->car->type == VALUE_SYMBOL);
+                char* name = running->car->cdr->car->symbol;
+                running->car->cdr = get_register(m, name);
+            }
+        }
+        running = running->cdr;
+    }
+}
+
 static void process_code(machine* m, value* source) {
     value* code = m->code;
     value* label = NULL;
@@ -351,27 +374,38 @@ static void process_code(machine* m, value* source) {
             assert(line->cdr != NULL);
             assert(line->car->type == VALUE_SYMBOL);
 
-            value* inst = NULL;
+            value* instruction = NULL;
             char* statement = line->car->symbol;
             if (strcmp(statement, "assign") == 0) {
-                inst = process_assign(m, line->cdr);
+                instruction = process_assign(m, line->cdr);
             } else if (strcmp(statement, "perform") == 0) {
-                inst = process_perform(m, line->cdr);
+                instruction = process_perform(m, line->cdr);
             } else if (strcmp(statement, "test") == 0) {
-                inst = process_test(m, line->cdr);
+                instruction = process_test(m, line->cdr);
             } else if (strcmp(statement, "branch") == 0) {
-                inst = process_branch(m, line->cdr);
+                instruction = process_branch(m, line->cdr);
             } else if (strcmp(statement, "goto") == 0) {
-                inst = process_goto(m, line->cdr);
+                instruction = process_goto(m, line->cdr);
             } else if (strcmp(statement, "save") == 0) {
-                inst = process_save(m, line->cdr);
+                instruction = process_save(m, line->cdr);
             } else if (strcmp(statement, "restore") == 0) {
-                inst = process_restore(m, line->cdr);
+                instruction = process_restore(m, line->cdr);
             }
-            assert(inst != NULL);
+            assert(instruction != NULL);
 
-            // append the new instruction to the end of the code
-            code->cdr = pool_new_pair(m->pool, inst, NULL);
+            // save and instrument the line locally
+            value* local_line = pool_import(m->pool, line);
+            instrument_code(m, local_line);
+
+            // append the new instruction along with
+            // the local line to the end of the code
+            code->cdr = pool_new_code(
+                m->pool,
+                pool_new_pair(
+                    m->pool,
+                    instruction,
+                    local_line),
+                NULL);
             code = code->cdr;
 
             if (label != NULL) {
@@ -476,7 +510,7 @@ static void execute_restore(machine* m, value* inst) {
 }
 
 // array of execution functions for quick dispatch
-static void (*execute_fns[])(machine*, value*) = {
+static void (*execution_fns[])(machine*, value*) = {
     execute_assign,
     execute_call,
     execute_test,
@@ -486,10 +520,63 @@ static void (*execute_fns[])(machine*, value*) = {
     execute_restore,
 };
 
+static void trace_before(machine* m, value* line, value* instruction) {
+    static char message[16348];
+    // print the instrumented line
+    value_to_str(line, message);
+    printf("%s", message);
+}
+
+static void trace_after(machine* m, value* line, value* instruction) {
+    static char message[16348];
+    switch ((int)instruction->car->number) {
+        case INST_ASSIGN:
+            // print the destination register
+            value_to_str(instruction->cdr->car, message);
+        case INST_CALL:
+            if (instruction->cdr->car != NULL) {
+                // print the destination register
+                value_to_str(instruction->cdr->car, message);
+            }
+            break;
+        case INST_TEST:
+            // print the result of the test
+            sprintf(message, "%s", (get_flag(m) ? "true" : "false"));
+            break;
+        case INST_BRANCH:
+            // print the outcome of the branch
+            sprintf(message, "%s", (get_flag(m) ? "true" : "false"));
+            break;
+        case INST_SAVE:
+        case INST_RESTORE:
+            // print the associated register
+            value_to_str(instruction->cdr, message);
+            break;
+        default:
+            message[0] = '\0';
+    }
+
+    if (message[0]) {
+        printf("\x1B[32m ==> %s\n\x1B[0m", message);
+    } else {
+        printf("\n");
+    }
+}
+
 static void execute_next_instruction(machine* m) {
-    value* inst = m->pc->car;  // current instruction
-    instruction_type type = (int)inst->car->number;
-    execute_fns[type](m, inst->cdr);
+    value* instruction = m->pc->car->car;  // current instruction
+    value* line = m->pc->car->cdr;         // current line of code
+
+    if (in_trace_mode(m)) {
+        trace_before(m, line, instruction);
+    }
+
+    instruction_type type = (int)instruction->car->number;
+    execution_fns[type](m, instruction->cdr);
+
+    if (in_trace_mode(m)) {
+        trace_after(m, line, instruction);
+    }
 }
 
 void machine_init(machine* m, value* code, char* output_register_name) {
@@ -508,27 +595,31 @@ void machine_cleanup(machine* m) {
     free(m->pool);
 }
 
-void machine_bind_builtin(machine* m, char* name, builtin fn) {
+void machine_set_trace(machine* m, int on) {
+    m->trace->cdr->number = (on ? 1 : 0);
+}
+
+void machine_bind_op(machine* m, char* name, builtin fn) {
     value* op = get_op(m, name);
-    op->car = pool_new_number(m->pool, (long)fn);
+    op->car = pool_new_builtin(m->pool, fn);
 }
 
 void machine_write_to_register(machine* m, char* name, value* v) {
-    value* reg = get_register(m, name);
-    reg->car = pool_import(m->pool, v);
+    value* dst_reg = get_register(m, name);
+    dst_reg->car = pool_import(m->pool, v);
 }
 
 value* machine_read_from_register(machine* m, char* name) {
-    value* reg = get_register(m, name);
+    value* src_reg = get_register(m, name);
 
-    return pool_export(m->pool, reg->car);
+    return pool_export(m->pool, src_reg->car);
 }
 
-value* machine_read_output(machine* m) {
+value* machine_get_output(machine* m) {
     return pool_export(m->pool, m->val->car);
 }
 
-void machine_execute(machine* m) {
+void machine_run(machine* m) {
     clear_stack(m);
 
     m->pc = m->code->cdr;
