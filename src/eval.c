@@ -495,7 +495,7 @@ static void bind_machine_ops(eval* e) {
 static void add_primitive(eval* e, value* env, char* name, builtin fn) {
     pool* p = e->machine->pool;
 
-    add_to_env(env, name, pool_new_builtin(p, fn), p);
+    add_to_env(env, name, pool_new_builtin(p, fn, name), p);
 }
 
 static value* make_global_environment(eval* e) {

@@ -38,11 +38,13 @@ void value_init_bool(value* v, int truth) {
     v->number = truth;
 }
 
-void value_init_builtin(value* v, void* ptr) {
+void value_init_builtin(value* v, void* ptr, char* name) {
     assert(v != NULL);
 
     v->type = VALUE_BUILTIN;
     v->ptr = ptr;
+    v->symbol = malloc(strlen(name) + 1);
+    strcpy(v->symbol, name);
 }
 
 static void value_init_symbol_from_args(value* v, char* format, va_list args) {
@@ -154,9 +156,9 @@ value* value_new_bool(int truth) {
     return v;
 }
 
-value* value_new_builtin(void* ptr) {
+value* value_new_builtin(void* ptr, char* name) {
     value* v = value_new();
-    value_init_builtin(v, ptr);
+    value_init_builtin(v, ptr, name);
 
     return v;
 }
@@ -267,7 +269,6 @@ void value_cleanup(value* v) {
         switch (v->type) {
             case VALUE_NUMBER:
             case VALUE_BOOL:
-            case VALUE_BUILTIN:
             case VALUE_PAIR:
             case VALUE_LAMBDA:
             case VALUE_CODE:
@@ -277,6 +278,7 @@ void value_cleanup(value* v) {
             case VALUE_STRING:
             case VALUE_ERROR:
             case VALUE_INFO:
+            case VALUE_BUILTIN:
                 free(v->symbol);
                 break;
         }
@@ -371,6 +373,10 @@ static int bool_to_str(value* v, char* buffer) {
     }
 }
 
+static int builtin_to_str(value* v, char* buffer) {
+    return sprintf(buffer, "<builtin '%s'>", v->symbol);
+}
+
 static int pair_to_str(value* v, char* buffer) {
     char* running = buffer;
 
@@ -405,6 +411,8 @@ int value_to_str(value* v, char* buffer) {
                 return string_to_str(v, buffer);
             case VALUE_BOOL:
                 return bool_to_str(v, buffer);
+            case VALUE_BUILTIN:
+                return builtin_to_str(v, buffer);
             case VALUE_ERROR:
                 return sprintf(buffer, "\x1B[31m%s\x1B[0m", v->symbol);
             case VALUE_INFO:
@@ -435,7 +443,7 @@ void value_copy(value* dest, value* source) {
             value_init_bool(dest, source->number);
             break;
         case VALUE_BUILTIN:
-            value_init_builtin(dest, source->ptr);
+            value_init_builtin(dest, source->ptr, source->symbol);
             break;
         case VALUE_ERROR:
             value_init_error(dest, source->symbol);

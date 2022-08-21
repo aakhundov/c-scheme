@@ -603,7 +603,7 @@ void machine_set_trace(machine* m, int on) {
 
 void machine_bind_op(machine* m, char* name, builtin fn) {
     value* op = get_op(m, name);
-    op->car = pool_new_builtin(m->pool, fn);
+    op->car = pool_new_builtin(m->pool, fn, name);
 }
 
 void machine_copy_to_register(machine* m, char* name, value* v) {
