@@ -410,7 +410,7 @@ static value* op_signal_error(machine* m, value* args) {
 
 static value* prim_car(machine* m, value* args) {
     if (args == NULL || args->cdr != NULL) {
-        return pool_new_error(m->pool, "exactly one arg is expected");
+        return pool_new_error(m->pool, "exactly 1 arg expected");
     } else if (args->car == NULL || args->car->type != VALUE_PAIR) {
         return pool_new_error(m->pool, "the arg is not a pair");
     }
@@ -422,7 +422,7 @@ static value* prim_car(machine* m, value* args) {
 
 static value* prim_cdr(machine* m, value* args) {
     if (args == NULL || args->cdr != NULL) {
-        return pool_new_error(m->pool, "exactly one arg is expected");
+        return pool_new_error(m->pool, "exactly 1 arg expected");
     } else if (args->car == NULL || args->car->type != VALUE_PAIR) {
         return pool_new_error(m->pool, "the arg is not a pair");
     }
@@ -434,7 +434,7 @@ static value* prim_cdr(machine* m, value* args) {
 
 static value* prim_cons(machine* m, value* args) {
     if (args == NULL || args->cdr == NULL || args->cdr->cdr != NULL) {
-        return pool_new_error(m->pool, "exactly two args are expected");
+        return pool_new_error(m->pool, "exactly 2 args expected");
     }
 
     value* first = args->car;

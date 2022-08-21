@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "eval.h"
 #include "machine.h"
 #include "parse.h"
 #include "pool.h"
@@ -15,6 +16,15 @@
         printf("[%s]\n", #fn);                 \
         printf("=========================\n"); \
         fn();                                  \
+        printf("\n");                          \
+    }
+
+#define RUN_EVAL_TEST_FN(e, fn)                \
+    {                                          \
+        eval_reset_env(e);                     \
+        printf("[%s]\n", #fn);                 \
+        printf("=========================\n"); \
+        fn(e);                                 \
         printf("\n");                          \
     }
 
@@ -40,9 +50,17 @@ static void report_test(char* output, ...) {
         ++test_counter, buffer);
 }
 
-static value* get_parsed(char* input) {
-    static char output[16384];
+static value* get_evaluated(eval* ev, char* input) {
     value* v = parse_from_str(input);
+
+    if (ev != NULL && v != NULL && v->type != VALUE_ERROR) {
+        assert(v->cdr == NULL);
+        value* e = eval_evaluate(ev, v->car);
+        value_dispose(v);
+        v = e;
+    }
+
+    static char output[16384];
     value_to_str(v, output);
 
     static char formatted[16384];
@@ -58,7 +76,7 @@ static value* get_parsed(char* input) {
 }
 
 static void test_parse_output(char* input, char* expected) {
-    value* p = get_parsed(input);
+    value* p = get_evaluated(NULL, input);
 
     static char buffer[16384];
     value_to_str(p, buffer);
@@ -67,13 +85,51 @@ static void test_parse_output(char* input, char* expected) {
 }
 
 static void test_parse_error(char* input, char* expected) {
-    value* p = get_parsed(input);
+    value* p = get_evaluated(NULL, input);
 
     assert(p != NULL);
     assert(p->type == VALUE_ERROR);
     assert(strstr(p->symbol, expected));
     value_dispose(p);
 }
+
+static void test_eval_output(eval* ev, char* input, char* expected) {
+    value* e = get_evaluated(ev, input);
+
+    static char buffer[16384];
+    value_to_str(e, buffer);
+    assert(strcmp(buffer, expected) == 0);
+    value_dispose(e);
+}
+
+static void test_eval_error(eval* ev, char* input, char* expected) {
+    value* e = get_evaluated(ev, input);
+
+    assert(e != NULL);
+    assert(e->type == VALUE_ERROR);
+    assert(strstr(e->symbol, expected));
+    value_dispose(e);
+}
+
+/*
+static void test_eval_number(eval* ev, char* input, double expected) {
+    value* e = get_evaluated(ev, input);
+
+    assert(e != NULL);
+    assert(e->type == VALUE_NUMBER);
+    assert(e->number == expected);
+    value_dispose(e);
+}
+
+static void test_eval_info(eval* ev, char* input, char* expected) {
+    value* e = get_evaluated(ev, input);
+
+    assert(e != NULL);
+    assert(e->type == VALUE_INFO);
+    assert(strstr(e->symbol, expected));
+    value_dispose(e);
+}
+*/
 
 static void test_parse() {
     test_parse_output("", "()");
@@ -426,10 +482,56 @@ static void test_machine() {
     test_fib_machine();
 }
 
+static void test_structural(eval* e) {
+    test_eval_output(e, "(car '(1))", "1");
+    test_eval_output(e, "(car '(1 2 3))", "1");
+    test_eval_output(e, "(car '((1 2) 3))", "(1 2)");
+    test_eval_output(e, "(car '(() 3))", "()");
+
+    test_eval_output(e, "(cdr '(1))", "()");
+    test_eval_output(e, "(cdr '(1 2 3))", "(2 3)");
+    test_eval_output(e, "(cdr '((1 2) 3))", "(3)");
+    test_eval_output(e, "(cdr '((1 2)))", "()");
+    test_eval_output(e, "(cdr '((1 2) ()))", "(())");
+
+    test_eval_output(e, "(cons 1 2)", "(1 . 2)");
+    test_eval_output(e, "(cons 1 '(2))", "(1 2)");
+    test_eval_output(e, "(cons '(1) 2)", "((1) . 2)");
+    test_eval_output(e, "(cons '(1) '(2))", "((1) 2)");
+    test_eval_output(e, "(car (cons 1 2))", "1");
+    test_eval_output(e, "(cdr (cons 1 2))", "2");
+
+    test_eval_error(e, "(car 1)", "the arg is not a pair");
+    test_eval_error(e, "(car \"abc\")", "the arg is not a pair");
+    test_eval_error(e, "(car '())", "the arg is not a pair");
+    test_eval_error(e, "(car)", "exactly 1 arg expected");
+    test_eval_error(e, "(car 1 2)", "exactly 1 arg expected");
+    test_eval_error(e, "(car '(1 2) '(3 4))", "exactly 1 arg expected");
+
+    test_eval_error(e, "(cdr 1)", "the arg is not a pair");
+    test_eval_error(e, "(cdr \"abc\")", "the arg is not a pair");
+    test_eval_error(e, "(cdr '())", "the arg is not a pair");
+    test_eval_error(e, "(cdr)", "exactly 1 arg expected");
+    test_eval_error(e, "(cdr 1 2)", "exactly 1 arg expected");
+    test_eval_error(e, "(cdr '(1 2) '(3 4))", "exactly 1 arg expected");
+
+    test_eval_error(e, "(cons)", "exactly 2 args expected");
+    test_eval_error(e, "(cons 1)", "exactly 2 args expected");
+    test_eval_error(e, "(cons 1 2 3)", "exactly 2 args expected");
+}
+
 void run_test() {
+    eval* e = malloc(sizeof(eval));
+    eval_init(e, "./lib/machines/evaluator.scm");
+
     RUN_TEST_FN(test_parse);
     RUN_TEST_FN(test_pool);
     RUN_TEST_FN(test_machine);
 
+    RUN_EVAL_TEST_FN(e, test_structural);
+
     printf("all tests have passed!\n");
+
+    eval_cleanup(e);
+    free(e);
 }
