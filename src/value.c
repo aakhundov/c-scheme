@@ -285,21 +285,42 @@ void value_cleanup(value* v) {
     }
 }
 
-void value_dispose(value* v) {
-    if (v != NULL && v->gen != -1) {
-        value_cleanup(v);
-
-        // to avoid cycles; although risky, because accessing
-        // already free'd memory's gen may cause a segfault
+static void break_cycles(value* v) {
+    if (v != NULL && is_compound_type(v->type)) {
         v->gen = -1;
 
+        if (v->car != NULL && v->car->gen == -1) {
+            // break the cycle
+            v->car = NULL;
+        } else {
+            break_cycles(v->car);
+        }
+
+        if (v->cdr != NULL && v->cdr->gen == -1) {
+            // break the cycle
+            v->cdr = NULL;
+        } else {
+            break_cycles(v->cdr);
+        }
+    }
+}
+
+static void value_dispose_rec(value* v) {
+    if (v != NULL) {
+        value_cleanup(v);
+
         if (is_compound_type(v->type)) {
-            value_dispose(v->car);
-            value_dispose(v->cdr);
+            value_dispose_rec(v->car);
+            value_dispose_rec(v->cdr);
         }
 
         free(v);
     }
+}
+
+void value_dispose(value* v) {
+    break_cycles(v);
+    value_dispose_rec(v);
 }
 
 int value_is_true(value* v) {
