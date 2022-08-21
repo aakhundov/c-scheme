@@ -200,6 +200,59 @@ static void test_parse() {
     test_parse_error("\"xyz\" \"a", "unterminated string");
 }
 
+void test_cycle_to_str() {
+    value* v = NULL;
+    static char buffer[16384];
+
+    v = value_new_pair(
+        value_new_number(1),
+        value_new_pair(
+            value_new_number(2),
+            value_new_pair(
+                value_new_number(3),
+                NULL)));
+    v->cdr->cdr->car = v;
+    value_to_str(v, buffer);
+    report_test("car cycle: %s", buffer);
+    assert(strcmp(buffer, "(1 2 <...>)") == 0);
+    value_dispose(v);
+
+    v = value_new_pair(
+        value_new_number(1),
+        value_new_pair(
+            value_new_number(2),
+            value_new_pair(
+                value_new_number(3),
+                NULL)));
+    v->cdr->cdr->cdr = v;
+    value_to_str(v, buffer);
+    report_test("cdr cycle: %s", buffer);
+    assert(strcmp(buffer, "(1 2 3)") == 0);
+    value_dispose(v);
+
+    v = value_new_pair(
+        value_new_number(1),
+        value_new_pair(
+            value_new_number(2),
+            value_new_pair(
+                value_new_number(3),
+                NULL)));
+    v->cdr->car = v;
+    v->cdr->cdr->cdr = v;
+    value_to_str(v, buffer);
+    report_test("car and cdr cycle: %s", buffer);
+    assert(strcmp(buffer, "(1 <...> 3)") == 0);
+    value_dispose(v);
+
+    v = value_new_pair(NULL, NULL);
+    v->car = v;
+    v->cdr = v;
+    value_to_str(v, buffer);
+    report_test("self cycle: %s", buffer);
+    assert(strcmp(buffer, "(<...>)") == 0);
+    value_dispose(v);
+}
+
 static void test_pool() {
     // setup
     value* r1 = value_new_pair(NULL, NULL);
@@ -589,6 +642,7 @@ void run_test() {
     eval_new(&e, "./lib/machines/evaluator.scm");
 
     RUN_TEST_FN(test_parse);
+    RUN_TEST_FN(test_cycle_to_str);
     RUN_TEST_FN(test_pool);
     RUN_TEST_FN(test_machine);
 

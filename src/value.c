@@ -451,7 +451,7 @@ static int value_to_str_rec(value* v, char* buffer) {
     if (v == NULL) {
         return sprintf(buffer, "()");
     } else if (v->gen == -1) {
-        return sprintf(buffer, "<cycle>");
+        return sprintf(buffer, "<...>");
     } else {
         v->gen = -1;
         switch (v->type) {
