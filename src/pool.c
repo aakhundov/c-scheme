@@ -13,18 +13,6 @@ static void add_to_chain(pool* p, value* v) {
     p->size++;
 }
 
-static void mark_value(value* v, size_t gen) {
-    if (v != NULL && v->gen != gen) {
-        // not marked yet
-        v->gen = gen;
-        if (is_compound_type(v->type)) {
-            // mark recursively
-            mark_value(v->car, gen);
-            mark_value(v->cdr, gen);
-        }
-    }
-}
-
 static void sweep_chain(pool* p) {
     value* prev = p->chain;
     value* curr = p->chain->next;
@@ -113,7 +101,7 @@ void pool_collect_garbage(pool* p) {
     value* pair = p->roots;
     while (pair != NULL) {
         value* root = pair->car;
-        mark_value(root, p->gen);
+        value_update_gen(root, p->gen);
         pair = pair->cdr;
     }
 
@@ -256,6 +244,8 @@ static value* pool_copy(pool* p, value* source, int add) {
 
         if (add) {
             add_to_chain(p, dest);
+        } else {
+            dest->gen = 0;
         }
 
         // temporarily setup a "broken heart"
@@ -274,17 +264,17 @@ static value* pool_copy(pool* p, value* source, int add) {
 value* pool_import(pool* p, value* source) {
     size_t old_gen = source->gen;
 
-    mark_value(source, 0);
+    value_update_gen(source, 0);
     value* dest = pool_copy(p, source, 1);
-    mark_value(source, old_gen);
+    value_update_gen(source, old_gen);
 
     return dest;
 }
 
 value* pool_export(pool* p, value* source) {
-    mark_value(source, 0);
+    value_update_gen(source, 0);
     value* dest = pool_copy(p, source, 0);
-    mark_value(source, p->gen);
+    value_update_gen(source, p->gen);
 
     return dest;
 }

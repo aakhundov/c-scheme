@@ -64,6 +64,8 @@ value* value_new_lambda(value* car, value* cdr);
 value* value_new_code(value* car, value* cdr);
 value* value_new_env();
 
+void value_update_gen(value* v, size_t gen);
+
 void value_cleanup(value* v);  // without free
 void value_dispose(value* v);  // with free
 
@@ -73,7 +75,6 @@ char* get_type_name(value_type t);
 int value_is_true(value* v);
 int value_equal(value* v1, value* v2);
 int value_to_str(value* v, char* buffer);
-void value_copy(value* dest, value* source);  // without malloc (shallow copy)
-value* value_clone(value* source);            // with malloc (deep copy)
+void value_copy(value* dest, value* source);
 
 #endif  // VALUE_H_

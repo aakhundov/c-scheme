@@ -264,6 +264,16 @@ char* get_type_name(value_type t) {
     }
 }
 
+void value_update_gen(value* v, size_t gen) {
+    if (v != NULL && v->gen != gen) {
+        v->gen = gen;
+        if (is_compound_type(v->type)) {
+            value_update_gen(v->car, gen);
+            value_update_gen(v->cdr, gen);
+        }
+    }
+}
+
 void value_cleanup(value* v) {
     if (v != NULL) {
         switch (v->type) {
@@ -319,6 +329,7 @@ static void value_dispose_rec(value* v) {
 }
 
 void value_dispose(value* v) {
+    value_update_gen(v, 0);
     break_cycles(v);
     value_dispose_rec(v);
 }
@@ -373,6 +384,8 @@ int value_equal(value* v1, value* v2) {
     }
 }
 
+static int value_to_str_rec(value* v, char* buffer);
+
 static int number_to_str(value* v, char* buffer) {
     long num = (long)v->number;
     if (num == v->number) {
@@ -406,14 +419,15 @@ static int pair_to_str(value* v, char* buffer) {
     char* running = buffer;
 
     running += sprintf(running, "(");
-    running += value_to_str(v->car, running);
-    while ((v = v->cdr) != NULL) {
+    running += value_to_str_rec(v->car, running);
+    while ((v = v->cdr) != NULL && (v->gen != -1)) {
         if (v->type == VALUE_PAIR) {
+            v->gen = -1;
             running += sprintf(running, " ");
-            running += value_to_str(v->car, running);
+            running += value_to_str_rec(v->car, running);
         } else {
             running += sprintf(running, " . ");
-            running += value_to_str(v, running);
+            running += value_to_str_rec(v, running);
             break;
         }
     }
@@ -423,20 +437,23 @@ static int pair_to_str(value* v, char* buffer) {
     return running - buffer;
 }
 
-int lambda_to_str(value* v, char* buffer) {
+static int lambda_to_str(value* v, char* buffer) {
     static char params[16384];
     static char body[16384];
 
-    value_to_str(v->car->car, params);
-    value_to_str(v->car->cdr, body);
+    value_to_str_rec(v->car->car, params);
+    value_to_str_rec(v->car->cdr, body);
 
     return sprintf(buffer, "<lambda %s %s>", params, body);
 }
 
-int value_to_str(value* v, char* buffer) {
+static int value_to_str_rec(value* v, char* buffer) {
     if (v == NULL) {
         return sprintf(buffer, "()");
+    } else if (v->gen == -1) {
+        return sprintf(buffer, "<cycle>");
     } else {
+        v->gen = -1;
         switch (v->type) {
             case VALUE_NUMBER:
                 return number_to_str(v, buffer);
@@ -460,6 +477,16 @@ int value_to_str(value* v, char* buffer) {
                 return sprintf(buffer, "<%s>", get_type_name(v->type));
         }
     }
+}
+
+int value_to_str(value* v, char* buffer) {
+    size_t old_gen = (v != NULL ? v->gen : 0);
+
+    value_update_gen(v, 0);
+    int result = value_to_str_rec(v, buffer);
+    value_update_gen(v, old_gen);
+
+    return result;
 }
 
 void value_copy(value* dest, value* source) {
@@ -500,26 +527,5 @@ void value_copy(value* dest, value* source) {
         case VALUE_ENV:
             value_init_env(dest, source->car, source->cdr);
             break;
-    }
-}
-
-value* value_clone(value* source) {
-    if (source == NULL) {
-        return NULL;
-    } else {
-        value* dest = value_new();
-        value_copy(dest, source);
-
-        if (dest->type == VALUE_LAMBDA) {
-            // set env to NULL to avoid cycles
-            dest->car = value_clone(dest->car);
-            dest->cdr = NULL;
-        } else if (is_compound_type(dest->type)) {
-            // may run into cycles
-            dest->car = value_clone(dest->car);
-            dest->cdr = value_clone(dest->cdr);
-        }
-
-        return dest;
     }
 }
