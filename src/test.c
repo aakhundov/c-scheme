@@ -209,7 +209,7 @@ void test_cycle_to_str() {
         value_new_pair(
             value_new_number(2),
             value_new_pair(
-                value_new_number(3),
+                NULL,
                 NULL)));
     v->cdr->cdr->car = v;
     value_to_str(v, buffer);
@@ -233,7 +233,7 @@ void test_cycle_to_str() {
     v = value_new_pair(
         value_new_number(1),
         value_new_pair(
-            value_new_number(2),
+            NULL,
             value_new_pair(
                 value_new_number(3),
                 NULL)));
