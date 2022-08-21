@@ -286,8 +286,12 @@ void value_cleanup(value* v) {
 }
 
 void value_dispose(value* v) {
-    if (v != NULL) {
+    if (v != NULL && v->gen != -1) {
         value_cleanup(v);
+
+        // to avoid cycles; although risky, because accessing
+        // already free'd memory's gen may cause a segfault
+        v->gen = -1;
 
         if (is_compound_type(v->type)) {
             value_dispose(v->car);
