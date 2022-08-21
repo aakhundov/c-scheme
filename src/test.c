@@ -322,11 +322,11 @@ static void test_gcd_machine() {
         int b = test_data[i][1];
         int val = test_data[i][2];
 
-        machine_write_to_register(m, "a", pool_new_number(m->pool, a));
-        machine_write_to_register(m, "b", pool_new_number(m->pool, b));
+        machine_copy_to_register(m, "a", pool_new_number(m->pool, a));
+        machine_copy_to_register(m, "b", pool_new_number(m->pool, b));
         machine_run(m);
 
-        value* result = machine_get_output(m);
+        value* result = machine_export_output(m);
 
         char buffer[1024];
         value_to_str(result, buffer);
@@ -363,10 +363,10 @@ static void test_fact_machine() {
         int n = test_data[i][0];
         int val = test_data[i][1];
 
-        machine_write_to_register(m, "n", pool_new_number(m->pool, n));
+        machine_copy_to_register(m, "n", pool_new_number(m->pool, n));
         machine_run(m);
 
-        value* result = machine_get_output(m);
+        value* result = machine_export_output(m);
 
         char buffer[1024];
         value_to_str(result, buffer);
@@ -403,10 +403,10 @@ static void test_fib_machine() {
         int n = test_data[i][0];
         int val = test_data[i][1];
 
-        machine_write_to_register(m, "n", pool_new_number(m->pool, n));
+        machine_copy_to_register(m, "n", pool_new_number(m->pool, n));
         machine_run(m);
 
-        value* result = machine_get_output(m);
+        value* result = machine_export_output(m);
 
         char buffer[1024];
         value_to_str(result, buffer);

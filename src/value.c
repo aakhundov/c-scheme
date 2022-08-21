@@ -465,7 +465,11 @@ value* value_clone(value* source) {
         value* dest = value_new();
         value_copy(dest, source);
 
-        if (is_compound_type(dest->type)) {
+        if (dest->type == VALUE_LAMBDA) {
+            // set env to NULL to avoid cycles
+            dest->car = value_clone(dest->car);
+            dest->cdr = NULL;
+        } else if (is_compound_type(dest->type)) {
             // may run into cycles
             dest->car = value_clone(dest->car);
             dest->cdr = value_clone(dest->cdr);

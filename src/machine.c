@@ -606,12 +606,12 @@ void machine_bind_op(machine* m, char* name, builtin fn) {
     op->car = pool_new_builtin(m->pool, fn);
 }
 
-void machine_write_to_register(machine* m, char* name, value* v) {
+void machine_copy_to_register(machine* m, char* name, value* v) {
     value* dst_reg = get_register(m, name);
     dst_reg->car = pool_import(m->pool, v);
 }
 
-value* machine_read_from_register(machine* m, char* name) {
+value* machine_copy_from_register(machine* m, char* name) {
     value* src_reg = get_register(m, name);
 
     return pool_export(m->pool, src_reg->car);
@@ -621,7 +621,7 @@ value* machine_get_register(machine* m, char* name) {
     return get_register(m, name);
 }
 
-value* machine_get_output(machine* m) {
+value* machine_export_output(machine* m) {
     return pool_export(m->pool, m->val->car);
 }
 
