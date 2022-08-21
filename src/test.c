@@ -20,7 +20,7 @@
 
 #define PRINT_VALUE(name, v)               \
     {                                      \
-        char buffer[1024];                 \
+        char buffer[16384];                \
         value_to_str(v, buffer);           \
         printf("%s = %s\n", name, buffer); \
     }
@@ -28,7 +28,7 @@
 static int test_counter = 0;
 
 static void report_test(char* output, ...) {
-    char buffer[1024];
+    static char buffer[16384];
 
     va_list args;
     va_start(args, output);
@@ -41,11 +41,11 @@ static void report_test(char* output, ...) {
 }
 
 static value* get_parsed(char* input) {
-    char output[1024];
+    static char output[16384];
     value* v = parse_from_str(input);
     value_to_str(v, output);
 
-    char formatted[1024];
+    static char formatted[16384];
     sprintf(
         formatted,
         "\x1B[34m[\x1B[0m%s\x1B[34m]\x1B[0m "
@@ -60,7 +60,7 @@ static value* get_parsed(char* input) {
 static void test_parse_output(char* input, char* expected) {
     value* p = get_parsed(input);
 
-    char buffer[1024];
+    static char buffer[16384];
     value_to_str(p, buffer);
     assert(strcmp(buffer, expected) == 0);
     value_dispose(p);

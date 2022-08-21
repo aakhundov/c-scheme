@@ -79,7 +79,7 @@ static void process_repl_command(eval* e, char* input, char* output) {
     value* parsed = parse_from_str(input);
 
     if (parsed == NULL || parsed->type != VALUE_ERROR) {
-        char tidy_input[16384];
+        static char tidy_input[16384];
         size_t tidy_len = value_to_str(parsed, tidy_input);
         if (tidy_len > 2) {
             // skip the outermost braces

@@ -50,7 +50,7 @@ void value_init_builtin(value* v, void* ptr, char* name) {
 static void value_init_symbol_from_args(value* v, char* format, va_list args) {
     assert(v != NULL);
 
-    char buffer[1024];
+    static char buffer[16384];
     vsnprintf(buffer, sizeof(buffer), format, args);
     value_init_symbol(v, buffer);
 }
