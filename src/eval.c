@@ -284,7 +284,12 @@ static value* op_apply_primitive_procedure(machine* m, value* args) {
     value* proc = args->car->car;
     value* arg_list = args->cdr->car->car;
 
-    return ((builtin)proc->ptr)(m, arg_list);
+    value* result = ((builtin)proc->ptr)(m, arg_list);
+    if (result != NULL && result->type == VALUE_ERROR) {
+        result = pool_new_error(m->pool, "%s: %s", proc->symbol, result->symbol);
+    }
+
+    return result;
 }
 
 static value* op_make_compound_procedure(machine* m, value* args) {
