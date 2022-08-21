@@ -5,26 +5,40 @@
 #include <string.h>
 
 #include "edit.h"
+#include "eval.h"
+#include "machine.h"
 #include "parse.h"
 #include "value.h"
 
 typedef enum {
     COMMAND_EXIT = 0,
     COMMAND_CLEAR = 1,
+    COMMAND_TRACE_ON = 2,
+    COMMAND_TRACE_OFF = 3,
+    COMMAND_RESET = 4,
     COMMAND_OTHER = -1
 } command_type;
 
 static const char* exit_commands[] = {"exit", "quit", "q"};
 static const char* clear_commands[] = {"clear", "clr", "clrscr"};
+static const char* trace_on_commands[] = {"trace", "trace on"};
+static const char* trace_off_commands[] = {"untrace", "trace off"};
+static const char* reset_commands[] = {"reset", "reset env"};
 
 static const char** commands[] = {
     exit_commands,
     clear_commands,
+    trace_on_commands,
+    trace_off_commands,
+    reset_commands,
 };
 
 static const size_t command_counts[] = {
     sizeof(exit_commands) / sizeof(char*),
     sizeof(clear_commands) / sizeof(char*),
+    sizeof(trace_on_commands) / sizeof(char*),
+    sizeof(trace_off_commands) / sizeof(char*),
+    sizeof(reset_commands) / sizeof(char*),
 };
 
 static void get_input(char* input) {
@@ -61,7 +75,7 @@ static command_type get_command_type(char* line) {
     return COMMAND_OTHER;
 }
 
-static void process_repl_command(char* input, char* output) {
+static void process_repl_command(eval* e, char* input, char* output) {
     value* parsed = parse_from_str(input);
 
     if (parsed == NULL || parsed->type != VALUE_ERROR) {
@@ -76,7 +90,10 @@ static void process_repl_command(char* input, char* output) {
         output[0] = '\0';
         value* token = parsed;
         while (token != NULL) {
-            output += value_to_str(token->car, output);
+            value* result = eval_evaluate(e, token->car);
+            output += value_to_str(result, output);
+            value_dispose(result);
+
             output[0] = '\n';
             output[1] = '\0';
             output++;
@@ -100,6 +117,9 @@ void run_repl() {
     char input[65536];
     char output[65536];
 
+    eval* e = malloc(sizeof(eval));
+    eval_init(e, "./lib/machines/evaluator.scm");
+
     while (!stop) {
         get_input(input);
         switch (get_command_type(input)) {
@@ -109,11 +129,26 @@ void run_repl() {
             case COMMAND_CLEAR:
                 printf("\e[1;1H\e[2J");
                 break;
+            case COMMAND_TRACE_ON:
+                machine_set_trace(e->machine, 1);
+                printf("\x1B[32mtrace enabled\x1B[0m\n");
+                break;
+            case COMMAND_TRACE_OFF:
+                machine_set_trace(e->machine, 0);
+                printf("\x1B[32mtrace disabled\x1B[0m\n");
+                break;
+            case COMMAND_RESET:
+                eval_reset_env(e);
+                printf("\x1B[32menv was reset\x1B[0m\n");
+                break;
             default:
-                process_repl_command(input, output);
+                process_repl_command(e, input, output);
                 printf("%s", output);
         }
     }
+
+    eval_cleanup(e);
+    free(e);
 
     printf("\nbye!\n");
 }
