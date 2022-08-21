@@ -398,6 +398,16 @@ static int pair_to_str(value* v, char* buffer) {
     return running - buffer;
 }
 
+int lambda_to_str(value* v, char* buffer) {
+    static char params[16384];
+    static char body[16384];
+
+    value_to_str(v->car->car, params);
+    value_to_str(v->car->cdr, body);
+
+    return sprintf(buffer, "<lambda %s %s>", params, body);
+}
+
 int value_to_str(value* v, char* buffer) {
     if (v == NULL) {
         return sprintf(buffer, "()");
@@ -419,6 +429,8 @@ int value_to_str(value* v, char* buffer) {
                 return sprintf(buffer, "\x1B[32m%s\x1B[0m", v->symbol);
             case VALUE_PAIR:
                 return pair_to_str(v, buffer);
+            case VALUE_LAMBDA:
+                return lambda_to_str(v, buffer);
             default:
                 return sprintf(buffer, "<%s>", get_type_name(v->type));
         }
