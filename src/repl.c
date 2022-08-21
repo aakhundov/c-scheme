@@ -117,8 +117,8 @@ void run_repl() {
     char input[65536];
     char output[65536];
 
-    eval* e = malloc(sizeof(eval));
-    eval_init(e, "./lib/machines/evaluator.scm");
+    eval* e;
+    eval_new(&e, "./lib/machines/evaluator.scm");
 
     while (!stop) {
         get_input(input);
@@ -147,8 +147,7 @@ void run_repl() {
         }
     }
 
-    eval_cleanup(e);
-    free(e);
+    eval_dispose(&e);
 
     printf("\nbye!\n");
 }

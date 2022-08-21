@@ -14,8 +14,8 @@ struct pool {
     size_t gen;
 };
 
-void pool_init(pool* p);
-void pool_cleanup(pool* p);
+void pool_new(pool** p);
+void pool_dispose(pool** p);
 
 void pool_register_root(pool* p, value* root);
 void pool_unregister_root(pool* p, value* root);

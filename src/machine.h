@@ -37,8 +37,8 @@ struct machine {
     machine_stats stats;
 };
 
-void machine_init(machine* m, value* code, char* output_register_name);
-void machine_cleanup(machine* m);
+void machine_new(machine** m, value* code, char* output_register_name);
+void machine_dispose(machine** m);
 
 void machine_set_trace(machine* m, int on);
 void machine_bind_op(machine* m, char* name, builtin fn);

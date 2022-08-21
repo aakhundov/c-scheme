@@ -46,30 +46,35 @@ static void sweep_chain(pool* p) {
     }
 }
 
-void pool_init(pool* p) {
-    p->size = 0;
-    p->gen = 1;
-    p->roots = NULL;
-    p->chain = value_new_number(0);  // dummy head value
-    p->chain->next = NULL;           // initially empty chain
+void pool_new(pool** p) {
+    *p = malloc(sizeof(pool));
+
+    (*p)->size = 0;
+    (*p)->gen = 1;
+    (*p)->roots = NULL;
+    (*p)->chain = value_new_number(0);  // dummy head value
+    (*p)->chain->next = NULL;           // initially empty chain
 }
 
-void pool_cleanup(pool* p) {
+void pool_dispose(pool** p) {
     // collect the entire chain
     // because no values are marked
-    p->gen++;
-    sweep_chain(p);
+    (*p)->gen++;
+    sweep_chain(*p);
 
     // unlink externally set roots
     // not to dispose them recursively
-    value* pair = p->roots;
+    value* pair = (*p)->roots;
     while (pair != NULL) {
         pair->car = NULL;
         pair = pair->cdr;
     }
 
-    value_dispose(p->roots);
-    value_dispose(p->chain);
+    value_dispose((*p)->roots);
+    value_dispose((*p)->chain);
+
+    free(*p);
+    *p = NULL;
 }
 
 void pool_register_root(pool* p, value* root) {

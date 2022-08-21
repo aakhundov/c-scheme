@@ -46,7 +46,7 @@ static void report_test(char* output, ...) {
     va_end(args);
 
     printf(
-        "\x1B[34m%-5d\x1B[0m %s\n",
+        "\x1B[34m%04d\x1B[0m %s\n",
         ++test_counter, buffer);
 }
 
@@ -206,8 +206,8 @@ static void test_pool() {
     value* r2 = value_new_pair(NULL, NULL);
 
     report_test("init");
-    pool* p = malloc(sizeof(pool));
-    pool_init(p);
+    pool* p;
+    pool_new(&p);
     assert(p->size == 0);
 
     report_test("singleton values");
@@ -309,9 +309,7 @@ static void test_pool() {
     pool_new_symbol(p, "hello");
     pool_new_string(p, "world");
     assert(p->size == 3);
-    pool_cleanup(p);
-    assert(p->size == 0);
-    free(p);
+    pool_dispose(&p);
 
     // teardown
     r1->car = NULL;
@@ -368,8 +366,8 @@ static void test_gcd_machine() {
         {5, 125, 5},
     };
 
-    machine* m = malloc(sizeof(machine));
-    machine_init(m, code, "a");
+    machine* m;
+    machine_new(&m, code, "a");
     machine_bind_op(m, "rem", op_rem);
     machine_bind_op(m, "=", op_eq);
 
@@ -392,8 +390,7 @@ static void test_gcd_machine() {
     }
 
     value_dispose(code);
-    machine_cleanup(m);
-    free(m);
+    machine_dispose(&m);
 }
 
 static void test_fact_machine() {
@@ -409,8 +406,8 @@ static void test_fact_machine() {
         {10, 3628800},
     };
 
-    machine* m = malloc(sizeof(machine));
-    machine_init(m, code, "val");
+    machine* m;
+    machine_new(&m, code, "val");
     machine_bind_op(m, "-", op_minus);
     machine_bind_op(m, "*", op_mult);
     machine_bind_op(m, "=", op_eq);
@@ -432,8 +429,7 @@ static void test_fact_machine() {
     }
 
     value_dispose(code);
-    machine_cleanup(m);
-    free(m);
+    machine_dispose(&m);
 }
 
 static void test_fib_machine() {
@@ -449,8 +445,8 @@ static void test_fib_machine() {
         {10, 55},
     };
 
-    machine* m = malloc(sizeof(machine));
-    machine_init(m, code, "val");
+    machine* m;
+    machine_new(&m, code, "val");
     machine_bind_op(m, "<", op_lt);
     machine_bind_op(m, "+", op_plus);
     machine_bind_op(m, "-", op_minus);
@@ -472,8 +468,7 @@ static void test_fib_machine() {
     }
 
     value_dispose(code);
-    machine_cleanup(m);
-    free(m);
+    machine_dispose(&m);
 }
 
 static void test_machine() {
@@ -498,6 +493,7 @@ static void test_structural(eval* e) {
     test_eval_output(e, "(cons 1 '(2))", "(1 2)");
     test_eval_output(e, "(cons '(1) 2)", "((1) . 2)");
     test_eval_output(e, "(cons '(1) '(2))", "((1) 2)");
+    test_eval_output(e, "(cons '() '())", "(())");
     test_eval_output(e, "(car (cons 1 2))", "1");
     test_eval_output(e, "(cdr (cons 1 2))", "2");
 
@@ -521,8 +517,8 @@ static void test_structural(eval* e) {
 }
 
 void run_test() {
-    eval* e = malloc(sizeof(eval));
-    eval_init(e, "./lib/machines/evaluator.scm");
+    eval* e;
+    eval_new(&e, "./lib/machines/evaluator.scm");
 
     RUN_TEST_FN(test_parse);
     RUN_TEST_FN(test_pool);
@@ -532,6 +528,5 @@ void run_test() {
 
     printf("all tests have passed!\n");
 
-    eval_cleanup(e);
-    free(e);
+    eval_dispose(&e);
 }
