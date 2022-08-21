@@ -13,14 +13,14 @@ static void add_to_chain(pool* p, value* v) {
     p->size++;
 }
 
-static void mark_value(pool* p, value* v) {
-    if (v != NULL && v->gen != p->gen) {
+static void mark_value(value* v, size_t gen) {
+    if (v != NULL && v->gen != gen) {
         // not marked yet
-        v->gen = p->gen;
+        v->gen = gen;
         if (is_compound_type(v->type)) {
             // mark recursively
-            mark_value(p, v->car);
-            mark_value(p, v->cdr);
+            mark_value(v->car, gen);
+            mark_value(v->cdr, gen);
         }
     }
 }
@@ -113,7 +113,7 @@ void pool_collect_garbage(pool* p) {
     value* pair = p->roots;
     while (pair != NULL) {
         value* root = pair->car;
-        mark_value(p, root);
+        mark_value(root, p->gen);
         pair = pair->cdr;
     }
 
@@ -245,25 +245,46 @@ value* pool_new_env(pool* p) {
     return v;
 }
 
-value* pool_import(pool* p, value* source) {
+static value* pool_copy(pool* p, value* source, int add) {
     if (source == NULL) {
         return NULL;
-    } else if (source->gen == p->gen) {
-        return source;
+    } else if (source->gen != 0) {
+        return (value*)source->gen;
     } else {
         value* dest = malloc(sizeof(value));
         value_copy(dest, source);
-        add_to_chain(p, dest);
+
+        if (add) {
+            add_to_chain(p, dest);
+        }
+
+        // temporarily setup a "broken heart"
+        // to avoid cycles in the recursion
+        source->gen = (size_t)dest;
 
         if (is_compound_type(dest->type)) {
-            dest->car = pool_import(p, dest->car);
-            dest->cdr = pool_import(p, dest->cdr);
+            dest->car = pool_copy(p, dest->car, add);
+            dest->cdr = pool_copy(p, dest->cdr, add);
         }
 
         return dest;
     }
 }
 
+value* pool_import(pool* p, value* source) {
+    size_t old_gen = source->gen;
+
+    mark_value(source, 0);
+    value* dest = pool_copy(p, source, 1);
+    mark_value(source, old_gen);
+
+    return dest;
+}
+
 value* pool_export(pool* p, value* source) {
-    return value_clone(source);
+    mark_value(source, 0);
+    value* dest = pool_copy(p, source, 0);
+    mark_value(source, p->gen);
+
+    return dest;
 }

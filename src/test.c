@@ -204,6 +204,8 @@ static void test_pool() {
     // setup
     value* r1 = value_new_pair(NULL, NULL);
     value* r2 = value_new_pair(NULL, NULL);
+    value* source = NULL;
+    value* dest = NULL;
 
     report_test("init");
     pool* p;
@@ -264,7 +266,7 @@ static void test_pool() {
     assert(p->size == 0);
 
     report_test("value cycle");
-    value* v1 = pool_new_pair(
+    source = pool_new_pair(
         p,
         pool_new_number(p, 1),
         pool_new_pair(
@@ -274,9 +276,9 @@ static void test_pool() {
                 p,
                 pool_new_number(p, 3),
                 NULL)));
-    v1->cdr->cdr->cdr = v1;
+    source->cdr->cdr->cdr = source;
     pool_register_root(p, r1);
-    r1->car = v1->cdr;
+    r1->car = source->cdr;
     assert(p->size == 6);
     pool_collect_garbage(p);
     assert(p->size == 6);
@@ -285,12 +287,12 @@ static void test_pool() {
     assert(p->size == 0);
 
     report_test("import");
-    value* source = value_new_pair(
+    source = value_new_pair(
         value_new_number(123),
         value_new_pair(
             value_new_symbol("abc"),
             NULL));
-    value* dest = pool_import(p, source);
+    dest = pool_import(p, source);
     assert(p->size == 4);
     assert(source != dest);
     assert(source->car != dest->car);
@@ -303,6 +305,72 @@ static void test_pool() {
     assert(source->car->number == 123);
     assert(strcmp(source->cdr->car->symbol, "abc") == 0);
     value_dispose(source);
+
+    report_test("import cycle");
+    source = value_new_pair(
+        value_new_number(123),
+        value_new_pair(
+            value_new_symbol("abc"),
+            NULL));
+    source->cdr->cdr = source;
+    dest = pool_import(p, source);
+    assert(p->size == 4);
+    assert(source != dest);
+    assert(source->car != dest->car);
+    assert(source->cdr != dest->cdr);
+    assert(source->cdr->car != dest->cdr->car);
+    assert(dest->car->number == 123);
+    assert(strcmp(dest->cdr->car->symbol, "abc") == 0);
+    pool_collect_garbage(p);
+    assert(p->size == 0);
+    assert(source->car->number == 123);
+    assert(strcmp(source->cdr->car->symbol, "abc") == 0);
+    value_dispose(source);
+
+    report_test("export");
+    source = pool_new_pair(
+        p,
+        pool_new_number(p, 123),
+        pool_new_pair(
+            p,
+            pool_new_symbol(p, "abc"),
+            NULL));
+    dest = pool_export(p, source);
+    assert(p->size == 4);
+    assert(source != dest);
+    assert(source->car != dest->car);
+    assert(source->cdr != dest->cdr);
+    assert(source->cdr->car != dest->cdr->car);
+    assert(source->car->number == 123);
+    assert(strcmp(source->cdr->car->symbol, "abc") == 0);
+    pool_collect_garbage(p);
+    assert(p->size == 0);
+    assert(dest->car->number == 123);
+    assert(strcmp(dest->cdr->car->symbol, "abc") == 0);
+    value_dispose(dest);
+
+    report_test("export cycle");
+    source = pool_new_pair(
+        p,
+        pool_new_number(p, 123),
+        pool_new_pair(
+            p,
+            pool_new_symbol(p, "abc"),
+            NULL));
+    source->cdr->cdr = source;
+    dest = pool_export(p, source);
+    assert(p->size == 4);
+    assert(source != dest);
+    assert(source->car != dest->car);
+    assert(source->cdr != dest->cdr);
+    assert(source->cdr->car != dest->cdr->car);
+    assert(source->car->number == 123);
+    assert(strcmp(source->cdr->car->symbol, "abc") == 0);
+    pool_collect_garbage(p);
+    assert(p->size == 0);
+    assert(dest->car->number == 123);
+    assert(strcmp(dest->cdr->car->symbol, "abc") == 0);
+    value_dispose(dest);
 
     report_test("cleanup");
     pool_new_number(p, 123);
