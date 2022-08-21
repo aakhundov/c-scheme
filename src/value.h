@@ -14,7 +14,8 @@ typedef enum {
     VALUE_PAIR = 6,
     VALUE_BUILTIN = 7,
     VALUE_LAMBDA = 8,
-    VALUE_CODE = 9
+    VALUE_CODE = 9,
+    VALUE_ENV = 10
 } value_type;
 
 typedef struct value value;
@@ -46,6 +47,7 @@ void value_init_info_from_args(value* v, char* info, va_list args);
 void value_init_pair(value* v, value* car, value* cdr);
 void value_init_lambda(value* v, value* car, value* cdr);
 void value_init_code(value* v, value* car, value* cdr);
+void value_init_env(value* v, value* car, value* cdr);
 
 // with malloc
 value* value_new_number(double number);
@@ -60,6 +62,7 @@ value* value_new_info_from_args(char* info, va_list args);
 value* value_new_pair(value* car, value* cdr);
 value* value_new_lambda(value* car, value* cdr);
 value* value_new_code(value* car, value* cdr);
+value* value_new_env();
 
 void value_cleanup(value* v);  // without free
 void value_dispose(value* v);  // with free

@@ -232,6 +232,14 @@ value* pool_new_code(pool* p, value* car, value* cdr) {
     return v;
 }
 
+value* pool_new_env(pool* p) {
+    value* v = value_new_env();
+
+    add_to_chain(p, v);
+
+    return v;
+}
+
 value* pool_import(pool* p, value* source) {
     if (source == NULL) {
         return NULL;

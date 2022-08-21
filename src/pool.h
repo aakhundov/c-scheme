@@ -33,6 +33,7 @@ value* pool_new_info_from_args(pool* p, char* info, va_list args);
 value* pool_new_pair(pool* p, value* car, value* cdr);
 value* pool_new_lambda(pool* p, value* car, value* cdr);
 value* pool_new_code(pool* p, value* car, value* cdr);
+value* pool_new_env(pool* p);
 
 value* pool_import(pool* p, value* source);
 value* pool_export(pool* p, value* source);

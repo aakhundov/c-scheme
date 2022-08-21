@@ -112,7 +112,7 @@ static value* call_op(machine* m, value* op, value* args) {
     value* result = NULL;
     if (op->car == NULL) {
         // the op record is not bound to a builtin function
-        result = pool_new_error(m->pool, "unbound op '%s'", op->cdr->symbol);
+        result = pool_new_error(m->pool, "'%s' unbound", op->cdr->symbol);
     } else {
         // call the builtin
         result = ((builtin)op->car->ptr)(m, args);
@@ -537,6 +537,8 @@ static void trace_after(machine* m, value* line, value* instruction) {
             if (instruction->cdr->car != NULL) {
                 // print the destination register
                 value_to_str(instruction->cdr->car, message);
+            } else {
+                message[0] = '\0';
             }
             break;
         case INST_TEST:
@@ -613,6 +615,10 @@ value* machine_read_from_register(machine* m, char* name) {
     value* src_reg = get_register(m, name);
 
     return pool_export(m->pool, src_reg->car);
+}
+
+value* machine_get_register(machine* m, char* name) {
+    return get_register(m, name);
 }
 
 value* machine_get_output(machine* m) {

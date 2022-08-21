@@ -109,6 +109,14 @@ void value_init_code(value* v, value* car, value* cdr) {
     v->cdr = cdr;
 }
 
+void value_init_env(value* v, value* car, value* cdr) {
+    assert(v != NULL);
+
+    v->type = VALUE_ENV;
+    v->car = car;
+    v->cdr = cdr;
+}
+
 static value* value_new() {
     value* v = malloc(sizeof(value));
 
@@ -210,11 +218,19 @@ value* value_new_code(value* car, value* cdr) {
     return v;
 }
 
+value* value_new_env() {
+    value* v = value_new();
+    value_init_env(v, NULL, NULL);
+
+    return v;
+}
+
 int is_compound_type(value_type t) {
     return (
         t == VALUE_PAIR ||
         t == VALUE_LAMBDA ||
-        t == VALUE_CODE);
+        t == VALUE_CODE ||
+        t == VALUE_ENV);
 }
 
 char* get_type_name(value_type t) {
@@ -239,6 +255,8 @@ char* get_type_name(value_type t) {
             return "lambda";
         case VALUE_CODE:
             return "code";
+        case VALUE_ENV:
+            return "env";
         default:
             return "unknown";
     }
@@ -253,6 +271,7 @@ void value_cleanup(value* v) {
             case VALUE_PAIR:
             case VALUE_LAMBDA:
             case VALUE_CODE:
+            case VALUE_ENV:
                 break;
             case VALUE_SYMBOL:
             case VALUE_STRING:
@@ -432,6 +451,9 @@ void value_copy(value* dest, value* source) {
             break;
         case VALUE_CODE:
             value_init_code(dest, source->car, source->cdr);
+            break;
+        case VALUE_ENV:
+            value_init_env(dest, source->car, source->cdr);
             break;
     }
 }
