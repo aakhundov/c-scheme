@@ -80,6 +80,12 @@ static void create_backbone(machine* m, char* output_register_name) {
 static void push_to_stack(machine* m, value* v) {
     // add a new record to the stack with the value as car
     m->stack->cdr = pool_new_pair(m->pool, v, m->stack->cdr);
+
+    m->stats.num_inst_stack += 1;
+    m->stats.stack_depth += 1;
+    if (m->stats.stack_depth > m->stats.stack_depth_max) {
+        m->stats.stack_depth_max = m->stats.stack_depth;
+    }
 }
 
 static value* pop_from_stack(machine* m) {
@@ -87,6 +93,9 @@ static value* pop_from_stack(machine* m) {
 
     value* v = m->stack->cdr->car;       // pop the value
     m->stack->cdr = m->stack->cdr->cdr;  // evict the record
+
+    m->stats.num_inst_stack += 1;
+    m->stats.stack_depth -= 1;
 
     return v;
 }
@@ -118,7 +127,19 @@ static value* call_op(machine* m, value* op, value* args) {
         result = ((builtin)op->car->ptr)(m, args);
     }
 
+    m->stats.num_inst_op_call += 1;
+
     return result;
+}
+
+static void reset_stats(machine* m) {
+    m->stats.num_inst = 0;
+    m->stats.num_inst_stack = 0;
+    m->stats.num_inst_op_call = 0;
+    m->stats.stack_depth = 0;
+    m->stats.stack_depth_max = 0;
+    m->stats.garbage_before = 0;
+    m->stats.garbage_after = 0;
 }
 
 static value* make_args(machine* m, value* arg_list) {
@@ -524,7 +545,7 @@ static void trace_before(machine* m, value* line, value* instruction) {
     static char message[16348];
     // print the instrumented line
     value_to_str(line, message);
-    printf("%s", message);
+    printf("\x1B[34m%05zu\x1B[0m %s", m->stats.num_inst, message);
 }
 
 static void trace_after(machine* m, value* line, value* instruction) {
@@ -565,9 +586,26 @@ static void trace_after(machine* m, value* line, value* instruction) {
     }
 }
 
+static void report_stats(machine_stats s) {
+    printf("\n");
+    printf("instructions:\n");
+    printf("  - total: %zu\n", s.num_inst);
+    printf("  - op calls: %zu\n", s.num_inst_op_call);
+    printf("  - stack: %zu\n", s.num_inst_stack);
+    printf("stack:\n");
+    printf("  - final depth: %zu\n", s.stack_depth);
+    printf("  - maximum depth: %zu\n", s.stack_depth_max);
+    printf("garbage collection:\n");
+    printf("  - values before: %zu\n", s.garbage_before);
+    printf("  - values after: %zu\n", s.garbage_after);
+    printf("\n");
+}
+
 static void execute_next_instruction(machine* m) {
     value* instruction = m->pc->car->car;  // current instruction
     value* line = m->pc->car->cdr;         // current line of code
+
+    m->stats.num_inst += 1;
 
     if (in_trace_mode(m)) {
         trace_before(m, line, instruction);
@@ -626,6 +664,7 @@ value* machine_export_output(machine* m) {
 }
 
 void machine_run(machine* m) {
+    reset_stats(m);
     clear_stack(m);
 
     m->pc = m->code->cdr;
@@ -633,6 +672,13 @@ void machine_run(machine* m) {
         execute_next_instruction(m);
     }
 
+    // collect garbage after every run
     // inefficient, yet simple
+    m->stats.garbage_before = m->pool->size;
     pool_collect_garbage(m->pool);
+    m->stats.garbage_after = m->pool->size;
+
+    if (in_trace_mode(m)) {
+        report_stats(m->stats);
+    }
 }

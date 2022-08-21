@@ -5,7 +5,18 @@
 #include "value.h"
 
 typedef struct machine machine;
+typedef struct machine_stats machine_stats;
 typedef value* (*builtin)(machine* m, value* args);
+
+struct machine_stats {
+    size_t num_inst;
+    size_t num_inst_stack;
+    size_t num_inst_op_call;
+    size_t stack_depth;
+    size_t stack_depth_max;
+    size_t garbage_before;
+    size_t garbage_after;
+};
 
 struct machine {
     pool* pool;
@@ -22,6 +33,8 @@ struct machine {
     value* pc;
     value* val;
     value* trace;
+
+    machine_stats stats;
 };
 
 void machine_init(machine* m, value* code, char* output_register_name);
