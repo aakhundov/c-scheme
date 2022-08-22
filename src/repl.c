@@ -6,6 +6,7 @@
 
 #include "edit.h"
 #include "eval.h"
+#include "hist.h"
 #include "machine.h"
 #include "parse.h"
 #include "value.h"
@@ -41,6 +42,9 @@ static const size_t command_counts[] = {
     sizeof(reset_commands) / sizeof(char*),
 };
 
+static char* history_path = "./.history";
+static char* evaluator_path = "./lib/machines/evaluator.scm";
+
 static void get_input(char* input) {
     char* line = readline(">>> ");
     if (strlen(line) > 0) {
@@ -75,7 +79,7 @@ static command_type get_command_type(char* line) {
     return COMMAND_OTHER;
 }
 
-static void process_repl_command(eval* e, char* input, char* output) {
+static void process_repl_command(eval* e, hist* h, char* input, char* output) {
     value* parsed = parse_from_str(input);
 
     if (parsed == NULL || parsed->type != VALUE_ERROR) {
@@ -84,7 +88,7 @@ static void process_repl_command(eval* e, char* input, char* output) {
         if (tidy_len > 2) {
             // skip the outermost braces
             tidy[tidy_len - 1] = '\0';
-            add_history(tidy + 1);
+            hist_add(h, tidy + 1);
         }
 
         output[0] = '\0';
@@ -100,7 +104,7 @@ static void process_repl_command(eval* e, char* input, char* output) {
             token = token->cdr;
         }
     } else {
-        add_history(input);
+        hist_add(h, input);
         output += value_to_str(parsed, output);
         output[0] = '\n';
         output[1] = '\0';
@@ -118,7 +122,9 @@ void run_repl() {
     char output[65536];
 
     eval* e;
-    eval_new(&e, "./lib/machines/evaluator.scm");
+    hist* h;
+    eval_new(&e, evaluator_path);
+    hist_new(&h, history_path);
 
     while (!stop) {
         get_input(input);
@@ -142,11 +148,12 @@ void run_repl() {
                 printf("\x1B[32menv was reset\x1B[0m\n");
                 break;
             default:
-                process_repl_command(e, input, output);
+                process_repl_command(e, h, input, output);
                 printf("%s", output);
         }
     }
 
+    hist_dispose(&h);
     eval_dispose(&e);
 
     printf("\nbye!\n");
