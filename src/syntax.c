@@ -5,6 +5,8 @@
 #include "pool.h"
 #include "value.h"
 
+#define MAX_ERROR_ARGS 5
+
 int is_tagged_list(value* v, char* tag) {
     // (tag ...)
     return (
@@ -268,22 +270,21 @@ value* make_compound_procedure(pool* p, value* params, value* body, value* env) 
 }
 
 value* make_error(pool* p, value* message, value* args) {
-    static const size_t max_args = 5;
-    static char bufs[max_args][16384];
+    static char bufs[MAX_ERROR_ARGS][16384];
     char* fmt = message->symbol;
 
     // convert available args to string buffers,
-    // up to the max_args args / buffers
+    // up to the MAX_ERROR_ARGS args / buffers
     size_t i = 0;
     while (args != NULL) {
-        if (i == max_args) {
+        if (i == MAX_ERROR_ARGS) {
             break;
         }
         value_to_str(args->car, bufs[i]);
         args = args->cdr;
         i += 1;
     }
-    if (i < max_args) {
+    if (i < MAX_ERROR_ARGS) {
         // indicate the end
         bufs[i][0] = '\0';
     }
