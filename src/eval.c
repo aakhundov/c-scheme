@@ -314,18 +314,47 @@ static value* op_extend_environment(machine* m, value* args) {
     value* values = args->cdr->car->car;
     value* parent_env = args->cdr->cdr->car->car;
 
-    value* env = pool_new_env(m->pool);
-
-    while (names != NULL) {
-        char* name = names->car->symbol;
-        value* val = values->car;
-        add_to_env(env, name, val, m->pool);
-
-        names = names->cdr;
-        values = values->cdr;
+    value* n = names;
+    value* v = values;
+    while (n != NULL) {
+        if (n->type == VALUE_SYMBOL) {
+            n = NULL;
+            v = NULL;
+            break;
+        } else if (v == NULL) {
+            break;
+        }
+        n = n->cdr;
+        v = v->cdr;
     }
 
-    return extend_env(env, parent_env);
+    if (n != NULL || v != NULL) {
+        static char names_buffer[16384];
+        static char values_buffer[16384];
+
+        value_to_str(names, names_buffer);
+        value_to_str(values, values_buffer);
+
+        return pool_new_error(
+            m->pool, "the arguments %s don't match the parameters %s",
+            values_buffer, names_buffer);
+    } else {
+        value* env = pool_new_env(m->pool);
+
+        while (names != NULL) {
+            if (names->type == VALUE_SYMBOL) {
+                // rest of the values are bound to y in (x . y)
+                add_to_env(env, names->symbol, values, m->pool);
+                break;
+            } else {
+                add_to_env(env, names->car->symbol, values->car, m->pool);
+            }
+            names = names->cdr;
+            values = values->cdr;
+        }
+
+        return extend_env(env, parent_env);
+    }
 }
 
 static value* prim_car(machine* m, value* args) {
