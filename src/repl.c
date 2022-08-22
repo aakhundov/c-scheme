@@ -79,12 +79,12 @@ static void process_repl_command(eval* e, char* input, char* output) {
     value* parsed = parse_from_str(input);
 
     if (parsed == NULL || parsed->type != VALUE_ERROR) {
-        static char tidy_input[16384];
-        size_t tidy_len = value_to_str(parsed, tidy_input);
+        static char tidy[16384];
+        size_t tidy_len = recover_str(parsed, tidy);
         if (tidy_len > 2) {
             // skip the outermost braces
-            tidy_input[tidy_len - 1] = '\0';
-            add_history(tidy_input + 1);
+            tidy[tidy_len - 1] = '\0';
+            add_history(tidy + 1);
         }
 
         output[0] = '\0';

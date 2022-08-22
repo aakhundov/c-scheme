@@ -341,3 +341,43 @@ value* parse_from_file(char* path) {
         return value_new_error("failed to open file: %s", path);
     }
 }
+
+static value* recover_str_rec(value* v) {
+    static char buffer[16384];
+
+    if (v != NULL) {
+        if (is_compound_type(v->type)) {
+            v->car = recover_str_rec(v->car);
+            v->cdr = recover_str_rec(v->cdr);
+        }
+        if (v != NULL &&
+            v->type == VALUE_PAIR &&
+            v->car != NULL &&
+            v->car->type == VALUE_SYMBOL &&
+            strcmp(v->car->symbol, QUOTE_SYMBOL) == 0) {
+            // replace the (quote x) expression by
+            // its string representation with 'x
+            buffer[0] = QUOTE_CHAR;
+            value_to_str(v->cdr->car, buffer + 1);
+
+            // v is no longer needed,
+            // as it gets substituted
+            value_dispose(v);
+
+            // replace v with str(v) = 'x
+            v = value_new_symbol(buffer);
+        }
+    }
+
+    return v;
+}
+
+int recover_str(value* v, char* buffer) {
+    // temporary new value
+    value* new_v = value_clone(v);
+    new_v = recover_str_rec(new_v);
+    int result = value_to_str(new_v, buffer);
+    value_dispose(new_v);
+
+    return result;
+}
