@@ -530,3 +530,44 @@ void value_copy(value* dest, value* source) {
             break;
     }
 }
+
+static value* value_clone_rec(value* source) {
+    if (source == NULL) {
+        return NULL;
+    } else if (source->type == VALUE_ENV || source->type == VALUE_CODE) {
+        // envs and code are not allowed to be cloned
+        // (maybe should be allowed in future)
+        return NULL;
+    } else if (source->gen != 0) {
+        // "broken heart": already cloned
+        return (value*)source->gen;
+    } else {
+        // empty new value
+        value* dest = value_new();
+
+        // shallow copy from source
+        value_copy(dest, source);
+
+        // temporarily setup a "broken heart"
+        // to avoid cycles in the recursion
+        source->gen = (size_t)dest;
+
+        if (is_compound_type(dest->type)) {
+            // deep copy through the recursive calls
+            dest->car = value_clone_rec(dest->car);
+            dest->cdr = value_clone_rec(dest->cdr);
+        }
+
+        return dest;
+    }
+}
+
+value* value_clone(value* source) {
+    size_t old_gen = (source != NULL ? source->gen : 0);
+
+    value_update_gen(source, 0);
+    value* dest = value_clone_rec(source);
+    value_update_gen(source, old_gen);
+
+    return dest;
+}

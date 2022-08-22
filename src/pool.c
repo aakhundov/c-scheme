@@ -13,6 +13,17 @@ static void add_to_chain(pool* p, value* v) {
     p->size++;
 }
 
+static void add_to_chain_rec(pool* p, value* v) {
+    if (v != NULL && v->gen != p->gen) {
+        add_to_chain(p, v);
+
+        if (is_compound_type(v->type)) {
+            add_to_chain_rec(p, v->car);
+            add_to_chain_rec(p, v->cdr);
+        }
+    }
+}
+
 static void sweep_chain(pool* p) {
     value* prev = p->chain;
     value* curr = p->chain->next;
@@ -233,52 +244,14 @@ value* pool_new_env(pool* p) {
     return v;
 }
 
-static value* pool_copy(pool* p, value* source, int add) {
-    if (source == NULL) {
-        return NULL;
-    } else if (source->type == VALUE_ENV || source->type == VALUE_CODE) {
-        // envs and code are not allowed to be copied
-        return NULL;
-    } else if (source->gen != 0) {
-        // "broken heart": already copied
-        return (value*)source->gen;
-    } else {
-        value* dest = malloc(sizeof(value));
-        value_copy(dest, source);
-
-        if (add) {
-            add_to_chain(p, dest);
-        } else {
-            dest->gen = 0;
-        }
-
-        // temporarily setup a "broken heart"
-        // to avoid cycles in the recursion
-        source->gen = (size_t)dest;
-
-        if (is_compound_type(dest->type)) {
-            dest->car = pool_copy(p, dest->car, add);
-            dest->cdr = pool_copy(p, dest->cdr, add);
-        }
-
-        return dest;
-    }
-}
-
 value* pool_import(pool* p, value* source) {
-    size_t old_gen = source->gen;
+    value* dest = value_clone(source);
 
-    value_update_gen(source, 0);
-    value* dest = pool_copy(p, source, 1);
-    value_update_gen(source, old_gen);
+    add_to_chain_rec(p, dest);
 
     return dest;
 }
 
 value* pool_export(pool* p, value* source) {
-    value_update_gen(source, 0);
-    value* dest = pool_copy(p, source, 0);
-    value_update_gen(source, p->gen);
-
-    return dest;
+    return value_clone(source);
 }

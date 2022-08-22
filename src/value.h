@@ -75,6 +75,7 @@ char* get_type_name(value_type t);
 int value_is_true(value* v);
 int value_equal(value* v1, value* v2);
 int value_to_str(value* v, char* buffer);
-void value_copy(value* dest, value* source);
+void value_copy(value* dest, value* source);  // shallow copy (without malloc)
+value* value_clone(value* source);            // deep copy (with malloc)
 
 #endif  // VALUE_H_
