@@ -236,7 +236,11 @@ value* pool_new_env(pool* p) {
 static value* pool_copy(pool* p, value* source, int add) {
     if (source == NULL) {
         return NULL;
+    } else if (source->type == VALUE_ENV || source->type == VALUE_CODE) {
+        // envs and code are not allowed to be copied
+        return NULL;
     } else if (source->gen != 0) {
+        // "broken heart": already copied
         return (value*)source->gen;
     } else {
         value* dest = malloc(sizeof(value));
