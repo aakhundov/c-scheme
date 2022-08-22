@@ -8,19 +8,18 @@
 
 static void recover_history(char* path_to_file) {
     FILE* fp = fopen(path_to_file, "r");
+
     if (fp != NULL) {
-        static char* line = NULL;
-        size_t len = 0;
-        ssize_t read = 0;
-
-        while ((read = getline(&line, &len, fp)) != -1) {
-            line[read - 1] = '\0';  // remove trailing \n
-            add_history(line);
+        static char buffer[16384];
+        while (fgets(buffer, sizeof(buffer), fp) != NULL) {
+            int len = strlen(buffer);
+            if (len > 1) {
+                // drop the trailing '\n'
+                buffer[strlen(buffer) - 1] = '\0';
+                add_history(buffer);
+            }
         }
 
-        if (line) {
-            free(line);
-        }
         fclose(fp);
     }
 }
