@@ -8,276 +8,249 @@
 #include "machine.h"
 #include "parse.h"
 #include "pool.h"
+#include "syntax.h"
 #include "value.h"
-
-static int is_tagged_list(value* v, char* tag) {
-    return (
-        v != NULL &&
-        v->type == VALUE_PAIR &&
-        v->car != NULL &&
-        v->car->type == VALUE_SYMBOL &&
-        strcmp(v->car->symbol, tag) == 0);
-}
-
-static value* make_lambda(pool* p, value* params, value* body) {
-    return pool_new_pair(
-        p,
-        pool_new_symbol(p, "lambda"),
-        pool_new_pair(p, params, body));
-}
 
 static value* op_is_self_evaluating(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return pool_new_bool(
-        m->pool,
-        (exp == NULL ||
-         exp->type == VALUE_NUMBER ||
-         exp->type == VALUE_STRING ||
-         exp->type == VALUE_BOOL));
+    return is_self_evaluating(m->pool, exp);
 }
 
 static value* op_is_variable(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return pool_new_bool(
-        m->pool,
-        (exp != NULL && exp->type == VALUE_SYMBOL));
+    return is_variable(m->pool, exp);
 }
 
 static value* op_is_quoted(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return pool_new_bool(
-        m->pool,
-        is_tagged_list(exp, "quote"));
-}
-
-static value* op_is_assignment(machine* m, value* args) {
-    value* exp = args->car->car;
-
-    return pool_new_bool(
-        m->pool,
-        is_tagged_list(exp, "set!"));
-}
-
-static value* op_is_definition(machine* m, value* args) {
-    value* exp = args->car->car;
-
-    return pool_new_bool(
-        m->pool,
-        is_tagged_list(exp, "define"));
-}
-
-static value* op_is_if(machine* m, value* args) {
-    value* exp = args->car->car;
-
-    return pool_new_bool(
-        m->pool,
-        is_tagged_list(exp, "if"));
-}
-
-static value* op_is_lambda(machine* m, value* args) {
-    value* exp = args->car->car;
-
-    return pool_new_bool(
-        m->pool,
-        is_tagged_list(exp, "lambda"));
-}
-
-static value* op_is_begin(machine* m, value* args) {
-    value* exp = args->car->car;
-
-    return pool_new_bool(
-        m->pool,
-        is_tagged_list(exp, "begin"));
-}
-
-static value* op_is_application(machine* m, value* args) {
-    value* exp = args->car->car;
-
-    return pool_new_bool(
-        m->pool,
-        (exp != NULL && exp->type == VALUE_PAIR));
-}
-
-static value* op_is_true(machine* m, value* args) {
-    value* exp = args->car->car;
-
-    return pool_new_bool(m->pool, value_is_true(exp));
+    return is_quoted(m->pool, exp);
 }
 
 static value* op_get_text_of_quotation(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return exp->cdr->car;
+    return get_text_of_quotation(m->pool, exp);
+}
+
+static value* op_is_assignment(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return is_assignment(m->pool, exp);
 }
 
 static value* op_get_assignment_variable(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return exp->cdr->car;
+    return get_assignment_variable(m->pool, exp);
 }
 
 static value* op_get_assignment_value(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return exp->cdr->cdr->car;
+    return get_assignment_value(m->pool, exp);
+}
+
+static value* op_is_definition(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return is_definition(m->pool, exp);
 }
 
 static value* op_get_definition_variable(machine* m, value* args) {
     value* exp = args->car->car;
 
-    if (exp->cdr->car->type == VALUE_SYMBOL) {
-        return exp->cdr->car;
-    } else {
-        return exp->cdr->car->car;
-    }
+    return get_definition_variable(m->pool, exp);
 }
 
 static value* op_get_definition_value(machine* m, value* args) {
     value* exp = args->car->car;
 
-    if (exp->cdr->car->type == VALUE_SYMBOL) {
-        return exp->cdr->cdr->car;
-    } else {
-        return make_lambda(m->pool, exp->cdr->car->cdr, exp->cdr->cdr);
-    }
+    return get_definition_value(m->pool, exp);
+}
+
+static value* op_is_if(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return is_if(m->pool, exp);
 }
 
 static value* op_get_if_predicate(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return exp->cdr->car;
+    return get_if_predicate(m->pool, exp);
 }
 
 static value* op_get_if_consequent(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return exp->cdr->cdr->car;
+    return get_if_consequent(m->pool, exp);
 }
 
 static value* op_get_if_alternative(machine* m, value* args) {
     value* exp = args->car->car;
 
-    if (exp->cdr->cdr->cdr != NULL) {
-        return exp->cdr->cdr->cdr->car;
-    } else {
-        return pool_new_bool(m->pool, 0);
-    }
+    return get_if_alternative(m->pool, exp);
+}
+
+static value* op_is_lambda(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return is_lambda(m->pool, exp);
 }
 
 static value* op_get_lambda_parameters(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return exp->cdr->car;
+    return get_lambda_parameters(m->pool, exp);
 }
 
 static value* op_get_lambda_body(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return exp->cdr->cdr;
+    return get_lambda_body(m->pool, exp);
+}
+
+static value* op_is_begin(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return is_begin(m->pool, exp);
 }
 
 static value* op_get_begin_actions(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return exp->cdr;
+    return get_begin_actions(m->pool, exp);
+}
+
+static value* op_is_application(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return is_application(m->pool, exp);
+}
+
+static value* op_is_true(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return is_true(m->pool, exp);
 }
 
 static value* op_is_last_exp(machine* m, value* args) {
     value* seq = args->car->car;
 
-    return pool_new_bool(m->pool, seq->cdr == NULL);
+    return is_last_exp(m->pool, seq);
 }
 
 static value* op_get_first_exp(machine* m, value* args) {
     value* seq = args->car->car;
 
-    return seq->car;
+    return get_first_exp(m->pool, seq);
 }
 
 static value* op_get_rest_exps(machine* m, value* args) {
     value* seq = args->car->car;
 
-    return seq->cdr;
+    return get_rest_exps(m->pool, seq);
 }
 
 static value* op_get_operator(machine* m, value* args) {
     value* compound = args->car->car;
 
-    return compound->car;
+    return get_operator(m->pool, compound);
 }
 
 static value* op_get_operands(machine* m, value* args) {
     value* compound = args->car->car;
 
-    return compound->cdr;
+    return get_operands(m->pool, compound);
 }
 
 static value* op_is_no_operands(machine* m, value* args) {
     value* operands = args->car->car;
 
-    return pool_new_bool(m->pool, operands == NULL);
+    return is_no_operands(m->pool, operands);
 }
 
 static value* op_is_last_operand(machine* m, value* args) {
     value* operands = args->car->car;
 
-    return pool_new_bool(m->pool, operands->cdr == NULL);
+    return is_last_operand(m->pool, operands);
 }
 
 static value* op_get_first_operand(machine* m, value* args) {
     value* operands = args->car->car;
 
-    return operands->car;
+    return get_first_operand(m->pool, operands);
 }
 
 static value* op_get_rest_operands(machine* m, value* args) {
     value* operands = args->car->car;
 
-    return operands->cdr;
+    return get_rest_operands(m->pool, operands);
 }
 
 static value* op_make_empty_arglist(machine* m, value* args) {
-    return NULL;
+    return make_empty_arglist(m->pool);
 }
 
 static value* op_adjoin_arg(machine* m, value* args) {
-    value* new_value = args->car->car;
+    value* new_arg = args->car->car;
     value* arg_list = args->cdr->car->car;
 
-    value* new_arg = pool_new_pair(m->pool, new_value, NULL);
-
-    if (arg_list == NULL) {
-        // initialize the list
-        arg_list = new_arg;
-    } else {
-        // append to the list
-        value* last_arg = arg_list;
-        while (last_arg->cdr != NULL) {
-            last_arg = last_arg->cdr;
-        }
-        last_arg->cdr = new_arg;
-    }
-
-    return arg_list;
+    return adjoin_arg(m->pool, new_arg, arg_list);
 }
 
 static value* op_is_primitive_procedure(machine* m, value* args) {
     value* proc = args->car->car;
 
-    return pool_new_bool(
-        m->pool,
-        (proc != NULL && proc->type == VALUE_BUILTIN));
+    return is_primitive_procedure(m->pool, proc);
 }
 
 static value* op_is_compound_procedure(machine* m, value* args) {
     value* proc = args->car->car;
 
-    return pool_new_bool(
-        m->pool,
-        (proc != NULL && proc->type == VALUE_LAMBDA));
+    return is_compound_procedure(m->pool, proc);
+}
+
+static value* op_get_procedure_parameters(machine* m, value* args) {
+    value* proc = args->car->car;
+
+    return get_procedure_parameters(m->pool, proc);
+}
+
+static value* op_get_procedure_body(machine* m, value* args) {
+    value* proc = args->car->car;
+
+    return get_procedure_body(m->pool, proc);
+}
+
+static value* op_get_procedure_environment(machine* m, value* args) {
+    value* proc = args->car->car;
+
+    return get_procedure_environment(m->pool, proc);
+}
+
+static value* op_make_compound_procedure(machine* m, value* args) {
+    value* params = args->car->car;
+    value* body = args->cdr->car->car;
+    value* env = args->cdr->cdr->car->car;
+
+    return make_compound_procedure(m->pool, params, body, env);
+}
+
+static value* op_signal_error(machine* m, value* args) {
+    value* error_message = args->car->car;
+    value* error_args = NULL;
+
+    value* rest = args->cdr;
+    while (rest != NULL) {
+        error_args = pool_new_pair(m->pool, rest->car->car, error_args);
+        rest = rest->cdr;
+    }
+
+    return make_error(m->pool, error_message, error_args);
 }
 
 static value* op_apply_primitive_procedure(machine* m, value* args) {
@@ -290,38 +263,6 @@ static value* op_apply_primitive_procedure(machine* m, value* args) {
     }
 
     return result;
-}
-
-static value* op_make_compound_procedure(machine* m, value* args) {
-    value* params = args->car->car;
-    value* body = args->cdr->car->car;
-    value* env = args->cdr->cdr->car->car;
-
-    return pool_new_lambda(
-        m->pool,
-        pool_new_pair(
-            m->pool,
-            params,
-            body),
-        env);
-}
-
-static value* op_get_procedure_parameters(machine* m, value* args) {
-    value* proc = args->car->car;
-
-    return proc->car->car;
-}
-
-static value* op_get_procedure_body(machine* m, value* args) {
-    value* proc = args->car->car;
-
-    return proc->car->cdr;
-}
-
-static value* op_get_procedure_environment(machine* m, value* args) {
-    value* proc = args->car->car;
-
-    return proc->cdr;
 }
 
 static value* op_lookup_variable_value(machine* m, value* args) {
@@ -387,27 +328,6 @@ static value* op_extend_environment(machine* m, value* args) {
     return extend_env(env, parent_env);
 }
 
-static value* op_signal_error(machine* m, value* args) {
-    value* text = args->car->car;
-
-    static char buffer[16384];
-    static char message[16384];
-
-    char* running = message;
-    running += sprintf(running, "%s", text->symbol);
-
-    // append all further
-    // params to the message
-    value* param = args->cdr;
-    while (param != NULL) {
-        value_to_str(param->car->car, buffer);
-        running += sprintf(running, " '%s'", buffer);
-        param = param->cdr;
-    }
-
-    return pool_new_error(m->pool, message);
-}
-
 static value* prim_car(machine* m, value* args) {
     if (args == NULL || args->cdr != NULL) {
         return pool_new_error(m->pool, "exactly 1 arg expected");
@@ -447,54 +367,63 @@ static void bind_machine_ops(eval* e) {
     machine* m = e->machine;
 
     machine_bind_op(m, "self-evaluating?", op_is_self_evaluating);
-    machine_bind_op(m, "variable?", op_is_variable);
-    machine_bind_op(m, "quoted?", op_is_quoted);
-    machine_bind_op(m, "assignment?", op_is_assignment);
-    machine_bind_op(m, "definition?", op_is_definition);
-    machine_bind_op(m, "if?", op_is_if);
-    machine_bind_op(m, "lambda?", op_is_lambda);
-    machine_bind_op(m, "begin?", op_is_begin);
-    machine_bind_op(m, "application?", op_is_application);
-    machine_bind_op(m, "true?", op_is_true);
 
+    machine_bind_op(m, "variable?", op_is_variable);
+
+    machine_bind_op(m, "quoted?", op_is_quoted);
     machine_bind_op(m, "text-of-quotation", op_get_text_of_quotation);
+
+    machine_bind_op(m, "assignment?", op_is_assignment);
     machine_bind_op(m, "assignment-variable", op_get_assignment_variable);
     machine_bind_op(m, "assignment-value", op_get_assignment_value);
+
+    machine_bind_op(m, "definition?", op_is_definition);
     machine_bind_op(m, "definition-variable", op_get_definition_variable);
     machine_bind_op(m, "definition-value", op_get_definition_value);
+
+    machine_bind_op(m, "if?", op_is_if);
     machine_bind_op(m, "if-predicate", op_get_if_predicate);
     machine_bind_op(m, "if-consequent", op_get_if_consequent);
     machine_bind_op(m, "if-alternative", op_get_if_alternative);
+
+    machine_bind_op(m, "lambda?", op_is_lambda);
     machine_bind_op(m, "lambda-parameters", op_get_lambda_parameters);
     machine_bind_op(m, "lambda-body", op_get_lambda_body);
+
+    machine_bind_op(m, "begin?", op_is_begin);
     machine_bind_op(m, "begin-actions", op_get_begin_actions);
+
+    machine_bind_op(m, "application?", op_is_application);
+    machine_bind_op(m, "true?", op_is_true);
 
     machine_bind_op(m, "last-exp?", op_is_last_exp);
     machine_bind_op(m, "first-exp", op_get_first_exp);
     machine_bind_op(m, "rest-exps", op_get_rest_exps);
+
     machine_bind_op(m, "operator", op_get_operator);
     machine_bind_op(m, "operands", op_get_operands);
     machine_bind_op(m, "no-operands?", op_is_no_operands);
     machine_bind_op(m, "last-operand?", op_is_last_operand);
     machine_bind_op(m, "first-operand", op_get_first_operand);
     machine_bind_op(m, "rest-operands", op_get_rest_operands);
+
     machine_bind_op(m, "make-empty-arglist", op_make_empty_arglist);
     machine_bind_op(m, "adjoin-arg", op_adjoin_arg);
 
     machine_bind_op(m, "primitive-procedure?", op_is_primitive_procedure);
     machine_bind_op(m, "compound-procedure?", op_is_compound_procedure);
-    machine_bind_op(m, "apply-primitive-procedure", op_apply_primitive_procedure);
     machine_bind_op(m, "make-compound-procedure", op_make_compound_procedure);
     machine_bind_op(m, "procedure-parameters", op_get_procedure_parameters);
     machine_bind_op(m, "procedure-body", op_get_procedure_body);
     machine_bind_op(m, "procedure-environment", op_get_procedure_environment);
 
+    machine_bind_op(m, "signal-error", op_signal_error);
+
+    machine_bind_op(m, "apply-primitive-procedure", op_apply_primitive_procedure);
     machine_bind_op(m, "lookup-variable-value", op_lookup_variable_value);
     machine_bind_op(m, "set-variable-value!", op_set_variable_value);
     machine_bind_op(m, "define-variable!", op_define_variable);
     machine_bind_op(m, "extend-environment", op_extend_environment);
-
-    machine_bind_op(m, "signal-error", op_signal_error);
 }
 
 static void add_primitive(eval* e, value* env, char* name, builtin fn) {
