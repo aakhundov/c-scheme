@@ -17,6 +17,9 @@ typedef enum {
     INST_RESTORE = 6,
 } instruction_type;
 
+static const size_t MAX_STACK_VALUES = 100000;
+static const size_t MAX_GARBAGE_VALUES = 10000000;
+
 static value* get_or_create_record(machine* m, value* table, char* name) {
     value* pair = table->cdr;
     value* record = NULL;
@@ -102,6 +105,7 @@ static value* pop_from_stack(machine* m) {
 
 static void clear_stack(machine* m) {
     m->stack->cdr = NULL;
+    m->stats.stack_depth = 0;
 }
 
 static void set_flag(machine* m, value* v) {
@@ -515,10 +519,18 @@ static void execute_goto(machine* m, value* inst) {
 static void execute_save(machine* m, value* inst) {
     value* src = inst;
 
-    // push the src register to the stack
-    push_to_stack(m, src->car);
-    // advance the pc
-    m->pc = m->pc->cdr;
+    if (m->stats.stack_depth >= MAX_STACK_VALUES) {
+        // clear the stack, return and error
+        m->val->car = pool_new_error(m->pool, "stack limit exceeded");
+        clear_stack(m);
+        // halt the program
+        m->pc = NULL;
+    } else {
+        // push the src register to the stack
+        push_to_stack(m, src->car);
+        // advance the pc
+        m->pc = m->pc->cdr;
+    }
 }
 
 static void execute_restore(machine* m, value* inst) {
@@ -616,6 +628,13 @@ static void execute_next_instruction(machine* m) {
 
     if (in_trace_mode(m)) {
         trace_after(m, line, instruction);
+    }
+
+    if (m->pool->size >= MAX_GARBAGE_VALUES) {
+        // interim garbage collection
+        // can get stuck here if much
+        // of the garbage is needed
+        pool_collect_garbage(m->pool);
     }
 }
 
