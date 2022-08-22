@@ -296,21 +296,22 @@ void value_cleanup(value* v) {
 }
 
 static void break_cycles(value* v) {
-    if (v != NULL && is_compound_type(v->type)) {
+    if (v != NULL) {
         v->gen = -1;
+        if (is_compound_type(v->type)) {
+            if (v->car != NULL && v->car->gen == -1) {
+                // break the cycle
+                v->car = NULL;
+            } else {
+                break_cycles(v->car);
+            }
 
-        if (v->car != NULL && v->car->gen == -1) {
-            // break the cycle
-            v->car = NULL;
-        } else {
-            break_cycles(v->car);
-        }
-
-        if (v->cdr != NULL && v->cdr->gen == -1) {
-            // break the cycle
-            v->cdr = NULL;
-        } else {
-            break_cycles(v->cdr);
+            if (v->cdr != NULL && v->cdr->gen == -1) {
+                // break the cycle
+                v->cdr = NULL;
+            } else {
+                break_cycles(v->cdr);
+            }
         }
     }
 }
