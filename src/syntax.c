@@ -7,7 +7,14 @@
 
 #define MAX_ERROR_ARGS 5
 
-int is_tagged_list(value* v, char* tag) {
+#define MAKE_ERROR(p, text, tag, exp)                \
+    {                                                \
+        static char buffer[16384];                   \
+        value_to_str(exp, buffer);                   \
+        return pool_new_error(p, text, tag, buffer); \
+    }
+
+int is_tagged_list(value* v, const char* tag) {
     // (tag ...)
     return (
         v != NULL &&
@@ -35,9 +42,18 @@ value* is_variable(pool* p, value* exp) {
 
 value* is_quoted(pool* p, value* exp) {
     // (quote ...)
-    return pool_new_bool(
-        p,
-        is_tagged_list(exp, "quote"));
+    static const char* tag = "quote";
+    if (is_tagged_list(exp, tag)) {
+        if (exp->cdr == NULL) {
+            MAKE_ERROR(p, "%s: no item in '%s'", tag, exp);
+        } else if (exp->cdr->cdr != NULL) {
+            MAKE_ERROR(p, "%s: more than one item in '%s'", tag, exp);
+        }
+
+        return pool_new_bool(p, 1);
+    } else {
+        return pool_new_bool(p, 0);
+    }
 }
 
 value* get_text_of_quotation(pool* p, value* exp) {
@@ -47,9 +63,22 @@ value* get_text_of_quotation(pool* p, value* exp) {
 
 value* is_assignment(pool* p, value* exp) {
     // (!set ...)
-    return pool_new_bool(
-        p,
-        is_tagged_list(exp, "set!"));
+    static const char* tag = "set!";
+    if (is_tagged_list(exp, tag)) {
+        if (exp->cdr == NULL) {
+            MAKE_ERROR(p, "%s: no variable in '%s'", tag, exp);
+        } else if (exp->cdr->car == NULL || exp->cdr->car->type != VALUE_SYMBOL) {
+            MAKE_ERROR(p, "%s: variable is not a symbol in '%s'", tag, exp->cdr->car);
+        } else if (exp->cdr->cdr == NULL) {
+            MAKE_ERROR(p, "%s: no value in '%s'", tag, exp);
+        } else if (exp->cdr->cdr->cdr != NULL) {
+            MAKE_ERROR(p, "%s: more than two items in '%s'", tag, exp);
+        }
+
+        return pool_new_bool(p, 1);
+    } else {
+        return pool_new_bool(p, 0);
+    }
 }
 
 value* get_assignment_variable(pool* p, value* exp) {
@@ -64,9 +93,38 @@ value* get_assignment_value(pool* p, value* exp) {
 
 value* is_definition(pool* p, value* exp) {
     // (define ...)
-    return pool_new_bool(
-        p,
-        is_tagged_list(exp, "define"));
+    static const char* tag = "define";
+    if (is_tagged_list(exp, tag)) {
+        if (exp->cdr == NULL) {
+            MAKE_ERROR(p, "%s: no variable in '%s'", tag, exp);
+        } else if (exp->cdr->car == NULL) {
+            MAKE_ERROR(p, "%s: can't define () in '%s'", tag, exp);
+        } else if (exp->cdr->car->type == VALUE_PAIR) {
+            if (exp->cdr->cdr == NULL) {
+                MAKE_ERROR(p, "%s: no body in '%s'", tag, exp);
+            } else if (exp->cdr->car->car == NULL || exp->cdr->car->car->type != VALUE_SYMBOL) {
+                MAKE_ERROR(
+                    p, "%s: the function name is not a symbol in '%s'",
+                    tag, exp->cdr->car);
+            }
+        } else if (exp->cdr->car->type == VALUE_SYMBOL) {
+            if (exp->cdr->cdr == NULL) {
+                MAKE_ERROR(p, "%s: no value in '%s'", tag, exp);
+            } else if (exp->cdr->cdr->cdr != NULL) {
+                MAKE_ERROR(
+                    p, "%s: the value of a variable can't be more than one item in '%s'",
+                    tag, exp);
+            }
+        } else {
+            MAKE_ERROR(
+                p, "%s: either variable or function must be defined, not '%s'",
+                tag, exp->cdr->car);
+        }
+
+        return pool_new_bool(p, 1);
+    } else {
+        return pool_new_bool(p, 0);
+    }
 }
 
 value* get_definition_variable(pool* p, value* exp) {
@@ -91,9 +149,20 @@ value* get_definition_value(pool* p, value* exp) {
 
 value* is_if(pool* p, value* exp) {
     // (if ...)
-    return pool_new_bool(
-        p,
-        is_tagged_list(exp, "if"));
+    static const char* tag = "if";
+    if (is_tagged_list(exp, tag)) {
+        if (exp->cdr == NULL) {
+            MAKE_ERROR(p, "%s: no predicate in '%s'", tag, exp);
+        } else if (exp->cdr->cdr == NULL) {
+            MAKE_ERROR(p, "%s: no consequent in '%s'", tag, exp);
+        } else if (exp->cdr->cdr->cdr != NULL && exp->cdr->cdr->cdr->cdr != NULL) {
+            MAKE_ERROR(p, "%s: too many items in '%s'", tag, exp);
+        }
+
+        return pool_new_bool(p, 1);
+    } else {
+        return pool_new_bool(p, 0);
+    }
 }
 
 value* get_if_predicate(pool* p, value* exp) {
@@ -118,9 +187,59 @@ value* get_if_alternative(pool* p, value* exp) {
 
 value* is_lambda(pool* p, value* exp) {
     // (lambda ...)
-    return pool_new_bool(
-        p,
-        is_tagged_list(exp, "lambda"));
+    static const char* tag = "lambda";
+    if (is_tagged_list(exp, tag)) {
+        if (exp->cdr == NULL) {
+            MAKE_ERROR(p, "%s: no parameters in '%s'", tag, exp);
+        } else if (exp->cdr->cdr == NULL) {
+            MAKE_ERROR(p, "%s: no body in '%s'", tag, exp->cdr->car);
+        } else {
+            value* p1;
+            value* p2;
+
+            p1 = exp->cdr->car;
+            while (p1 != NULL) {
+                if (p1->type == VALUE_SYMBOL) {
+                    break;
+                }
+                if (p1->car == NULL || p1->car->type != VALUE_SYMBOL) {
+                    MAKE_ERROR(
+                        p, "%s: some parameters are not symbols in '%s'",
+                        tag, exp->cdr->car);
+                }
+                p1 = p1->cdr;
+            }
+
+            p1 = exp->cdr->car;
+            while (p1 != NULL) {
+                if (p1->type == VALUE_SYMBOL) {
+                    break;
+                }
+                p2 = p1->cdr;
+                while (p2 != NULL) {
+                    if (p2->type == VALUE_SYMBOL) {
+                        if (strcmp(p1->car->symbol, p2->symbol) == 0) {
+                            MAKE_ERROR(
+                                p, "%s: duplicate parameter names in '%s'",
+                                tag, exp->cdr->car);
+                        }
+                        break;
+                    }
+                    if (strcmp(p1->car->symbol, p2->car->symbol) == 0) {
+                        MAKE_ERROR(
+                            p, "%s: duplicate parameter names in '%s'",
+                            tag, exp->cdr->car);
+                    }
+                    p2 = p2->cdr;
+                }
+                p1 = p1->cdr;
+            }
+        }
+
+        return pool_new_bool(p, 1);
+    } else {
+        return pool_new_bool(p, 0);
+    }
 }
 
 value* get_lambda_parameters(pool* p, value* exp) {
@@ -144,9 +263,16 @@ value* make_lambda(pool* p, value* params, value* body) {
 
 value* is_begin(pool* p, value* exp) {
     // (begin ...)
-    return pool_new_bool(
-        p,
-        is_tagged_list(exp, "begin"));
+    static const char* tag = "begin";
+    if (is_tagged_list(exp, tag)) {
+        if (exp->cdr == NULL) {
+            MAKE_ERROR(p, "%s: no items in '%s'", tag, exp);
+        }
+
+        return pool_new_bool(p, 1);
+    } else {
+        return pool_new_bool(p, 0);
+    }
 }
 
 value* get_begin_actions(pool* p, value* exp) {

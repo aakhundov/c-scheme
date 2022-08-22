@@ -4,7 +4,7 @@
 #include "pool.h"
 #include "value.h"
 
-int is_tagged_list(value* v, char* tag);
+int is_tagged_list(value* v, const char* tag);
 
 value* is_self_evaluating(pool* p, value* exp);
 

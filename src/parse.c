@@ -177,7 +177,9 @@ static void replace_dot_in_list(value* v) {
                 error = value_new_error("unfollowed %s", DOT_SYMBOL);
             } else if (v->cdr->cdr != NULL) {
                 error = value_new_error("%s followed by 2+ items", DOT_SYMBOL);
-            } else if (v->cdr->car->type == VALUE_SYMBOL && strstr(v->cdr->car->symbol, DOT_SYMBOL)) {
+            } else if (v->cdr->car != NULL &&
+                       v->cdr->car->type == VALUE_SYMBOL &&
+                       strstr(v->cdr->car->symbol, DOT_SYMBOL)) {
                 error = value_new_error("%s followed by %s", DOT_SYMBOL, DOT_SYMBOL);
             }
 

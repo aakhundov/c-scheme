@@ -445,7 +445,10 @@ static int lambda_to_str(value* v, char* buffer) {
     value_to_str_rec(v->car->car, params);
     value_to_str_rec(v->car->cdr, body);
 
-    return sprintf(buffer, "<lambda %s %s>", params, body);
+    // drop outmost braces
+    body[strlen(body) - 1] = '\0';
+
+    return sprintf(buffer, "(lambda %s %s)", params, body + 1);
 }
 
 static int value_to_str_rec(value* v, char* buffer) {
