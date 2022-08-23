@@ -1408,10 +1408,12 @@ void test_predicates(eval* e) {
     test_eval_error(e, "(equal? 1 2 3)", "expects 2 args, but got 3");
 
     // eq?
-    test_eval_bool(e, "(eq? PI PI)", 1);
     test_eval_bool(e, "(eq? PI E)", 0);
+    test_eval_bool(e, "(eq? PI PI)", 1);
     test_eval_bool(e, "(eq? car car)", 1);
     test_eval_bool(e, "(eq? car cdr)", 0);
+    test_eval_bool(e, "(eq? cons cons)", 1);
+    test_eval_bool(e, "(eq? (cons car cdr) (cons car cdr))", 0);
     test_eval_bool(e, "(eq? 'a 'a)", 0);
     test_eval_bool(e, "(eq? \"a\" \"a\")", 0);
     test_eval_bool(e, "(eq? '(1) '(1))", 0);
@@ -1423,6 +1425,28 @@ void test_predicates(eval* e) {
     test_eval_error(e, "(eq?)", "expects 2 args, but got 0");
     test_eval_error(e, "(eq? 1)", "expects 2 args, but got 1");
     test_eval_error(e, "(eq? 1 2 3)", "expects 2 args, but got 3");
+}
+
+void test_other(eval* e) {
+    // error
+    test_eval_error(e, "(error \"\")", "");
+    test_eval_error(e, "(error \"hello world\")", "hello world");
+    test_eval_error(e, "(error \"hello '%s'\" 1)", "hello '1'");
+    test_eval_error(e, "(error \"(%s, %s, %s, %s, %s)\" 'x \"a\" true '(1) '())", "(x, \"a\", true, (1), ())");
+
+    // error errors
+    test_eval_error(e, "(error)", "expects at least 1 arg, but got 0");
+    test_eval_error(e, "(error 1)", "must be string, but is number");
+
+    // info
+    test_eval_info(e, "(info \"\")", "");
+    test_eval_info(e, "(info \"hello world\")", "hello world");
+    test_eval_info(e, "(info \"hello '%s'\" 1)", "hello '1'");
+    test_eval_info(e, "(info \"(%s, %s, %s, %s, %s)\" 'x \"a\" true '(1) '())", "(x, \"a\", true, (1), ())");
+
+    // info infos
+    test_eval_error(e, "(info)", "expects at least 1 arg, but got 0");
+    test_eval_error(e, "(info 1)", "must be string, but is number");
 }
 
 void run_test() {
@@ -1440,6 +1464,7 @@ void run_test() {
     RUN_EVAL_TEST_FN(e, test_math);
     RUN_EVAL_TEST_FN(e, test_relational);
     RUN_EVAL_TEST_FN(e, test_predicates);
+    RUN_EVAL_TEST_FN(e, test_other);
 
     printf("all tests have passed!\n");
 

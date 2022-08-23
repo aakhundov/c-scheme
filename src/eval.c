@@ -339,7 +339,10 @@ static value* op_signal_error(machine* m, value* args) {
         rest = rest->cdr;
     }
 
-    return make_error(m->pool, error_message, error_args);
+    static char buffer[16384];
+    format_args(error_message, error_args, buffer);
+
+    return pool_new_error(m->pool, buffer);
 }
 
 static value* op_apply_primitive_procedure(machine* m, value* args) {
@@ -926,6 +929,54 @@ static value* prim_eq_q(machine* m, value* args) {
     return pool_new_bool(m->pool, v1 == v2);
 }
 
+static value* prim_error(machine* m, value* args) {
+    ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_STRING);
+
+    value* error_message = args->car;
+    value* error_args = args->cdr;
+
+    static char buffer[16384];
+    format_args(error_message, error_args, buffer);
+
+    return pool_new_error(m->pool, buffer);
+}
+
+static value* prim_info(machine* m, value* args) {
+    ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_STRING);
+
+    value* info_message = args->car;
+    value* info_args = args->cdr;
+
+    static char buffer[16384];
+    format_args(info_message, info_args, buffer);
+
+    return pool_new_info(m->pool, buffer);
+}
+
+static value* prim_display(machine* m, value* args) {
+    ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_STRING);
+
+    value* display_message = args->car;
+    value* display_args = args->cdr;
+
+    static char buffer[16384];
+    format_args(display_message, display_args, buffer);
+    printf("%s", buffer);
+
+    return NULL;
+}
+
+static value* prim_newline(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 0);
+
+    printf("\n");
+
+    return NULL;
+}
+
 static void add_primitive(eval* e, value* env, char* name, builtin fn) {
     pool* p = e->machine->pool;
     add_to_env(env, name, pool_new_builtin(p, fn, name), p);
@@ -982,6 +1033,12 @@ static value* make_global_environment(eval* e) {
     add_primitive(e, env, "null?", prim_null_q);
     add_primitive(e, env, "equal?", prim_equal_q);
     add_primitive(e, env, "eq?", prim_eq_q);
+
+    // other
+    add_primitive(e, env, "error", prim_error);
+    add_primitive(e, env, "info", prim_info);
+    add_primitive(e, env, "display", prim_display);
+    add_primitive(e, env, "newline", prim_newline);
 
     return env;
 }

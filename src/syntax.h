@@ -58,6 +58,6 @@ value* get_procedure_body(pool* p, value* proc);
 value* get_procedure_environment(pool* p, value* proc);
 value* make_compound_procedure(pool* p, value* params, value* body, value* env);
 
-value* make_error(pool* p, value* message, value* args);
+int format_args(value* message, value* args, char* buffer);
 
 #endif  // SYNTAX_H_

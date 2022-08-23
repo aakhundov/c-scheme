@@ -1,5 +1,6 @@
 #include "syntax.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include "pool.h"
@@ -397,7 +398,7 @@ value* make_compound_procedure(pool* p, value* params, value* body, value* env) 
         env);
 }
 
-value* make_error(pool* p, value* message, value* args) {
+int format_args(value* message, value* args, char* buffer) {
     static char bufs[MAX_ERROR_ARGS][16384];
     char* fmt = message->symbol;
 
@@ -425,20 +426,20 @@ value* make_error(pool* p, value* message, value* args) {
             if (bufs[2][0] != '\0') {
                 if (bufs[3][0] != '\0') {
                     if (bufs[4][0] != '\0') {
-                        return pool_new_error(p, fmt, bufs[0], bufs[1], bufs[2], bufs[3], bufs[4]);
+                        return sprintf(buffer, fmt, bufs[0], bufs[1], bufs[2], bufs[3], bufs[4]);
                     } else {
-                        return pool_new_error(p, fmt, bufs[0], bufs[1], bufs[2], bufs[3]);
+                        return sprintf(buffer, fmt, bufs[0], bufs[1], bufs[2], bufs[3]);
                     }
                 } else {
-                    return pool_new_error(p, fmt, bufs[0], bufs[1], bufs[2]);
+                    return sprintf(buffer, fmt, bufs[0], bufs[1], bufs[2]);
                 }
             } else {
-                return pool_new_error(p, fmt, bufs[0], bufs[1]);
+                return sprintf(buffer, fmt, bufs[0], bufs[1]);
             }
         } else {
-            return pool_new_error(p, fmt, bufs[0]);
+            return sprintf(buffer, fmt, bufs[0]);
         }
     } else {
-        return pool_new_error(p, fmt);
+        return sprintf(buffer, "%s", fmt);
     }
 }
