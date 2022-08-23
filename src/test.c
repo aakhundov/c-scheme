@@ -618,23 +618,23 @@ static void test_structural(eval* e) {
     test_eval_output(e, "(car (cons 1 2))", "1");
     test_eval_output(e, "(cdr (cons 1 2))", "2");
 
-    test_eval_error(e, "(car 1)", "the arg is not a pair");
-    test_eval_error(e, "(car \"abc\")", "the arg is not a pair");
-    test_eval_error(e, "(car '())", "the arg is not a pair");
-    test_eval_error(e, "(car)", "exactly 1 arg expected");
-    test_eval_error(e, "(car 1 2)", "exactly 1 arg expected");
-    test_eval_error(e, "(car '(1 2) '(3 4))", "exactly 1 arg expected");
+    test_eval_error(e, "(car 1)", "must be pair, but is number");
+    test_eval_error(e, "(car \"abc\")", "must be pair, but is string");
+    test_eval_error(e, "(car '())", "must be pair, but got ()");
+    test_eval_error(e, "(car)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(car 1 2)", "expects 1 arg, but got 2");
+    test_eval_error(e, "(car '(1 2) '(3 4))", "expects 1 arg, but got 2");
 
-    test_eval_error(e, "(cdr 1)", "the arg is not a pair");
-    test_eval_error(e, "(cdr \"abc\")", "the arg is not a pair");
-    test_eval_error(e, "(cdr '())", "the arg is not a pair");
-    test_eval_error(e, "(cdr)", "exactly 1 arg expected");
-    test_eval_error(e, "(cdr 1 2)", "exactly 1 arg expected");
-    test_eval_error(e, "(cdr '(1 2) '(3 4))", "exactly 1 arg expected");
+    test_eval_error(e, "(cdr 1)", "must be pair, but is number");
+    test_eval_error(e, "(cdr \"abc\")", "must be pair, but is string");
+    test_eval_error(e, "(cdr '())", "must be pair, but got ()");
+    test_eval_error(e, "(cdr)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(cdr 1 2)", "expects 1 arg, but got 2");
+    test_eval_error(e, "(cdr '(1 2) '(3 4))", "expects 1 arg, but got 2");
 
-    test_eval_error(e, "(cons)", "exactly 2 args expected");
-    test_eval_error(e, "(cons 1)", "exactly 2 args expected");
-    test_eval_error(e, "(cons 1 2 3)", "exactly 2 args expected");
+    test_eval_error(e, "(cons)", "expects 2 args, but got 0");
+    test_eval_error(e, "(cons 1)", "expects 2 args, but got 1");
+    test_eval_error(e, "(cons 1 2 3)", "expects 2 args, but got 3");
 }
 
 void run_test() {

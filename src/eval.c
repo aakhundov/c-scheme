@@ -11,6 +11,92 @@
 #include "syntax.h"
 #include "value.h"
 
+#define ASSERT_NUM_ARGS(p, args, expected_num_args)  \
+    {                                                \
+        size_t num_args = 0;                         \
+        value* arg = args;                           \
+        while (arg != NULL) {                        \
+            num_args++;                              \
+            arg = arg->cdr;                          \
+        }                                            \
+        if (num_args != expected_num_args) {         \
+            return pool_new_error(                   \
+                p, "expects %d arg%s, but got %d",   \
+                expected_num_args,                   \
+                (expected_num_args == 1 ? "" : "s"), \
+                num_args);                           \
+        }                                            \
+    }
+
+#define ASSERT_MIN_NUM_ARGS(p, args, min_expected_num_args)  \
+    {                                                        \
+        size_t num_args = 0;                                 \
+        value* arg = args;                                   \
+        while (arg != NULL) {                                \
+            num_args++;                                      \
+            arg = arg->cdr;                                  \
+        }                                                    \
+        if (num_args < min_expected_num_args) {              \
+            return pool_new_error(                           \
+                p, "expects at least %d arg%s , but got %d", \
+                min_expected_num_args,                       \
+                (min_expected_num_args == 1 ? "" : "s"),     \
+                num_args);                                   \
+        }                                                    \
+    }
+
+#define ASSERT_ARG_TYPE(p, args, ordinal, expected_type) \
+    {                                                    \
+        size_t i = 0;                                    \
+        value* arg = args;                               \
+        while (arg != NULL && i < ordinal) {             \
+            arg = arg->cdr;                              \
+            i++;                                         \
+        }                                                \
+        if (i < ordinal || arg == NULL) {                \
+            return pool_new_error(                       \
+                p, "arg #%d of type %s is missing",      \
+                ordinal, get_type_name(expected_type));  \
+        } else if (arg->car == NULL) {                   \
+            return pool_new_error(                       \
+                p, "arg #%d must be %s, but got ()",     \
+                ordinal, get_type_name(expected_type));  \
+        } else if (arg->car->type != expected_type) {    \
+            static char buffer[16384];                   \
+            value_to_str(arg->car, buffer);              \
+            return pool_new_error(                       \
+                p, "arg #%d '%s' must be %s, but is %s", \
+                ordinal, buffer,                         \
+                get_type_name(expected_type),            \
+                get_type_name(arg->car->type));          \
+        }                                                \
+    }
+
+#define ASSERT_ALL_ARGS_TYPE(p, args, offset, expected_type)     \
+    {                                                            \
+        size_t i = 0;                                            \
+        value* arg = args;                                       \
+        while (arg != NULL) {                                    \
+            if (i >= offset) {                                   \
+                if (arg->car == NULL) {                          \
+                    return pool_new_error(                       \
+                        p, "arg #%d must be %s, but got ()",     \
+                        i, get_type_name(expected_type));        \
+                } else if (arg->car->type != expected_type) {    \
+                    static char buffer[16384];                   \
+                    value_to_str(arg->car, buffer);              \
+                    return pool_new_error(                       \
+                        p, "arg #%d '%s' must be %s, but is %s", \
+                        i, buffer,                               \
+                        get_type_name(expected_type),            \
+                        get_type_name(arg->car->type));          \
+                }                                                \
+            }                                                    \
+            arg = arg->cdr;                                      \
+            i++;                                                 \
+        }                                                        \
+    }
+
 static value* op_is_self_evaluating(machine* m, value* args) {
     value* exp = args->car->car;
 
@@ -358,11 +444,8 @@ static value* op_extend_environment(machine* m, value* args) {
 }
 
 static value* prim_car(machine* m, value* args) {
-    if (args == NULL || args->cdr != NULL) {
-        return pool_new_error(m->pool, "exactly 1 arg expected");
-    } else if (args->car == NULL || args->car->type != VALUE_PAIR) {
-        return pool_new_error(m->pool, "the arg is not a pair");
-    }
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_PAIR);
 
     value* pair = args->car;
 
@@ -370,11 +453,8 @@ static value* prim_car(machine* m, value* args) {
 }
 
 static value* prim_cdr(machine* m, value* args) {
-    if (args == NULL || args->cdr != NULL) {
-        return pool_new_error(m->pool, "exactly 1 arg expected");
-    } else if (args->car == NULL || args->car->type != VALUE_PAIR) {
-        return pool_new_error(m->pool, "the arg is not a pair");
-    }
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_PAIR);
 
     value* pair = args->car;
 
@@ -382,9 +462,7 @@ static value* prim_cdr(machine* m, value* args) {
 }
 
 static value* prim_cons(machine* m, value* args) {
-    if (args == NULL || args->cdr == NULL || args->cdr->cdr != NULL) {
-        return pool_new_error(m->pool, "exactly 2 args expected");
-    }
+    ASSERT_NUM_ARGS(m->pool, args, 2);
 
     value* first = args->car;
     value* second = args->cdr->car;
