@@ -291,11 +291,13 @@ static void test_pool() {
     value* source = NULL;
     value* dest = NULL;
 
+    // init
     report_test("init");
     pool* p;
     pool_new(&p);
     assert(p->size == 0);
 
+    // singleton values
     report_test("singleton values");
     value* num = pool_new_number(p, 3.14);
     value* sym = pool_new_symbol(p, "hello");
@@ -311,6 +313,7 @@ static void test_pool() {
     pool_collect_garbage(p);
     assert(p->size == 0);
 
+    // compound values
     report_test("compound values");
     pool_new_pair(
         p,
@@ -323,6 +326,7 @@ static void test_pool() {
     pool_collect_garbage(p);
     assert(p->size == 0);
 
+    // memory roots
     report_test("memory roots");
     pool_register_root(p, r1);
     r1->car = pool_new_pair(
@@ -349,6 +353,7 @@ static void test_pool() {
     pool_collect_garbage(p);
     assert(p->size == 0);
 
+    // value cycle
     report_test("value cycle");
     source = pool_new_pair(
         p,
@@ -370,6 +375,7 @@ static void test_pool() {
     pool_collect_garbage(p);
     assert(p->size == 0);
 
+    // import
     report_test("import");
     source = value_new_pair(
         value_new_number(123),
@@ -390,6 +396,7 @@ static void test_pool() {
     assert(strcmp(source->cdr->car->symbol, "abc") == 0);
     value_dispose(source);
 
+    // import cycle
     report_test("import cycle");
     source = value_new_pair(
         value_new_number(123),
@@ -411,6 +418,7 @@ static void test_pool() {
     assert(strcmp(source->cdr->car->symbol, "abc") == 0);
     value_dispose(source);
 
+    // export
     report_test("export");
     source = pool_new_pair(
         p,
@@ -433,6 +441,7 @@ static void test_pool() {
     assert(strcmp(dest->cdr->car->symbol, "abc") == 0);
     value_dispose(dest);
 
+    // export cycle
     report_test("export cycle");
     source = pool_new_pair(
         p,
@@ -456,6 +465,7 @@ static void test_pool() {
     assert(strcmp(dest->cdr->car->symbol, "abc") == 0);
     value_dispose(dest);
 
+    // cleanup
     report_test("cleanup");
     pool_new_number(p, 123);
     pool_new_symbol(p, "hello");
@@ -1118,6 +1128,37 @@ void test_math(eval* e) {
     test_eval_error(e, "(tan 1 2)", "expects 1 arg, but got 2");
     test_eval_error(e, "(tan \"a\")", "must be number, but is string");
     test_eval_error(e, "(tan '())", "must be number, but got ()");
+
+    // atan
+    test_eval_number(e, "(atan 0)", 0);
+    test_eval_number(e, "(atan PI)", 1.26263);
+    test_eval_number(e, "(atan (* PI 2))", 1.41297);
+    test_eval_number(e, "(atan (- PI))", -1.26263);
+    test_eval_number(e, "(atan (- (* PI 2)))", -1.41297);
+    test_eval_number(e, "(atan 1)", 0.785398);
+    test_eval_number(e, "(atan -1)", -0.785398);
+
+    // atan errors
+    test_eval_error(e, "(atan)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(atan 1 2)", "expects 1 arg, but got 2");
+    test_eval_error(e, "(atan \"a\")", "must be number, but is string");
+    test_eval_error(e, "(atan '())", "must be number, but got ()");
+
+    // atan2
+    test_eval_number(e, "(atan2 0 0)", 0);
+    test_eval_number(e, "(atan2 0 1)", 0);
+    test_eval_number(e, "(atan2 1 0)", 1.5708);
+    test_eval_number(e, "(atan2 1 1)", 0.785398);
+    test_eval_number(e, "(atan2 0 PI)", 0);
+    test_eval_number(e, "(atan2 1 0)", 1.5708);
+    test_eval_number(e, "(atan2 PI 1)", 1.26263);
+
+    // atan2 errors
+    test_eval_error(e, "(atan2)", "expects 2 args, but got 0");
+    test_eval_error(e, "(atan2 1)", "expects 2 args, but got 1");
+    test_eval_error(e, "(atan2 1 2 3)", "expects 2 args, but got 3");
+    test_eval_error(e, "(atan2 1 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(atan2 1 '())", "must be number, but got ()");
 }
 
 void run_test() {

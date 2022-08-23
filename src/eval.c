@@ -728,6 +728,27 @@ static value* prim_tan(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
+static value* prim_atan(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    double result = atan(args->car->number);
+
+    return pool_new_number(m->pool, result);
+}
+
+static value* prim_atan2(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 2);
+    ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    double y = args->car->number;
+    double x = args->cdr->car->number;
+
+    double result = atan2(y, x);
+
+    return pool_new_number(m->pool, result);
+}
+
 static void add_primitive(eval* e, value* env, char* name, builtin fn) {
     pool* p = e->machine->pool;
     add_to_env(env, name, pool_new_builtin(p, fn, name), p);
@@ -763,6 +784,8 @@ static value* make_global_environment(eval* e) {
     add_primitive(e, env, "sin", prim_sin);
     add_primitive(e, env, "cos", prim_cos);
     add_primitive(e, env, "tan", prim_tan);
+    add_primitive(e, env, "atan", prim_atan);
+    add_primitive(e, env, "atan2", prim_atan2);
 
     return env;
 }
