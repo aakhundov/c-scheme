@@ -1161,6 +1161,121 @@ void test_math(eval* e) {
     test_eval_error(e, "(atan2 1 '())", "must be number, but got ()");
 }
 
+void test_relational(eval* e) {
+    // =
+    test_eval_bool(e, "(= 1 1)", 1);
+    test_eval_bool(e, "(= 1 2)", 0);
+    test_eval_bool(e, "(= 2 1)", 0);
+    test_eval_bool(e, "(= 1 1 1)", 1);
+    test_eval_bool(e, "(= 1 2 1)", 0);
+    test_eval_bool(e, "(= 1 1 2)", 0);
+    test_eval_bool(e, "(= 1 2 2)", 0);
+    test_eval_bool(e, "(= 2 2 2)", 1);
+    test_eval_bool(e, "(= 1 1 1 1 1)", 1);
+    test_eval_bool(e, "(= 1 1 1 1 2)", 0);
+
+    // = errors
+    test_eval_error(e, "(=)", "expects at least 2 args, but got 0");
+    test_eval_error(e, "(= 1)", "expects at least 2 args, but got 1");
+    test_eval_error(e, "(= 1 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(= 1 '())", "must be number, but got ()");
+
+    // <
+    test_eval_bool(e, "(< 1 2)", 1);
+    test_eval_bool(e, "(< 1 1)", 0);
+    test_eval_bool(e, "(< 2 1)", 0);
+    test_eval_bool(e, "(< 1 1 1)", 0);
+    test_eval_bool(e, "(< 1 2 1)", 0);
+    test_eval_bool(e, "(< 1 1 2)", 0);
+    test_eval_bool(e, "(< 1 2 2)", 0);
+    test_eval_bool(e, "(< 2 2 2)", 0);
+    test_eval_bool(e, "(< 1 2 3)", 1);
+    test_eval_bool(e, "(< 1 2 2)", 0);
+    test_eval_bool(e, "(< 3 2 1)", 0);
+    test_eval_bool(e, "(< 3 2 2)", 0);
+
+    // < errors
+    test_eval_error(e, "(<)", "expects at least 2 args, but got 0");
+    test_eval_error(e, "(< 1)", "expects at least 2 args, but got 1");
+    test_eval_error(e, "(< 1 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(< 1 '())", "must be number, but got ()");
+
+    // <=
+    test_eval_bool(e, "(<= 1 2)", 1);
+    test_eval_bool(e, "(<= 1 1)", 1);
+    test_eval_bool(e, "(<= 2 1)", 0);
+    test_eval_bool(e, "(<= 1 1 1)", 1);
+    test_eval_bool(e, "(<= 1 2 1)", 0);
+    test_eval_bool(e, "(<= 1 1 2)", 1);
+    test_eval_bool(e, "(<= 1 2 2)", 1);
+    test_eval_bool(e, "(<= 2 2 2)", 1);
+    test_eval_bool(e, "(<= 1 2 3)", 1);
+    test_eval_bool(e, "(<= 1 2 2)", 1);
+    test_eval_bool(e, "(<= 3 2 1)", 0);
+    test_eval_bool(e, "(<= 3 2 2)", 0);
+
+    // <= errors
+    test_eval_error(e, "(<=)", "expects at least 2 args, but got 0");
+    test_eval_error(e, "(<= 1)", "expects at least 2 args, but got 1");
+    test_eval_error(e, "(<= 1 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(<= 1 '())", "must be number, but got ()");
+
+    // >
+    test_eval_bool(e, "(> 1 2)", 0);
+    test_eval_bool(e, "(> 1 1)", 0);
+    test_eval_bool(e, "(> 2 1)", 1);
+    test_eval_bool(e, "(> 1 1 1)", 0);
+    test_eval_bool(e, "(> 1 2 1)", 0);
+    test_eval_bool(e, "(> 1 1 2)", 0);
+    test_eval_bool(e, "(> 1 2 2)", 0);
+    test_eval_bool(e, "(> 2 2 2)", 0);
+    test_eval_bool(e, "(> 1 2 3)", 0);
+    test_eval_bool(e, "(> 1 2 2)", 0);
+    test_eval_bool(e, "(> 3 2 1)", 1);
+    test_eval_bool(e, "(> 3 2 2)", 0);
+
+    // > errors
+    test_eval_error(e, "(>)", "expects at least 2 args, but got 0");
+    test_eval_error(e, "(> 1)", "expects at least 2 args, but got 1");
+    test_eval_error(e, "(> 1 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(> 1 '())", "must be number, but got ()");
+
+    // >=
+    test_eval_bool(e, "(>= 1 2)", 0);
+    test_eval_bool(e, "(>= 1 1)", 1);
+    test_eval_bool(e, "(>= 2 1)", 1);
+    test_eval_bool(e, "(>= 1 1 1)", 1);
+    test_eval_bool(e, "(>= 1 2 1)", 0);
+    test_eval_bool(e, "(>= 1 1 2)", 0);
+    test_eval_bool(e, "(>= 1 2 2)", 0);
+    test_eval_bool(e, "(>= 2 2 2)", 1);
+    test_eval_bool(e, "(>= 1 2 3)", 0);
+    test_eval_bool(e, "(>= 1 2 2)", 0);
+    test_eval_bool(e, "(>= 3 2 1)", 1);
+    test_eval_bool(e, "(>= 3 2 2)", 1);
+
+    // >= errors
+    test_eval_error(e, "(>=)", "expects at least 2 args, but got 0");
+    test_eval_error(e, "(>= 1)", "expects at least 2 args, but got 1");
+    test_eval_error(e, "(>= 1 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(>= 1 '())", "must be number, but got ()");
+
+    // not
+    test_eval_bool(e, "(not 1)", 0);
+    test_eval_bool(e, "(not 0)", 1);
+    test_eval_bool(e, "(not true)", 0);
+    test_eval_bool(e, "(not false)", 1);
+    test_eval_bool(e, "(not \"a\")", 0);
+    test_eval_bool(e, "(not \"\")", 1);
+    test_eval_bool(e, "(not '(1 2 3))", 0);
+    test_eval_bool(e, "(not '())", 1);
+    test_eval_bool(e, "(not (< 1 2))", 0);
+    test_eval_bool(e, "(not (< 2 1))", 1);
+
+    // not errors
+    test_eval_error(e, "(not)", "expects 1 arg, but got 0");
+}
+
 void run_test() {
     eval* e;
     eval_new(&e, "./lib/machines/evaluator.scm");
@@ -1174,6 +1289,7 @@ void run_test() {
     RUN_EVAL_TEST_FN(e, test_structural);
     RUN_EVAL_TEST_FN(e, test_arithmetic);
     RUN_EVAL_TEST_FN(e, test_math);
+    RUN_EVAL_TEST_FN(e, test_relational);
 
     printf("all tests have passed!\n");
 
