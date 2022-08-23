@@ -607,14 +607,14 @@ static value* prim_modulo(machine* m, value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 2);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
-    int result = (int)args->car->number;
+    double result = args->car->number;
     args = args->cdr;
 
     while (args != NULL) {
         if (args->car->number == 0) {
             return pool_new_error(m->pool, "division by zero");
         }
-        result %= (int)args->car->number;
+        result = fmod(result, args->car->number);
         args = args->cdr;
     }
 
@@ -670,13 +670,76 @@ static value* prim_max(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
+static value* prim_abs(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    double result = fabs(args->car->number);
+
+    return pool_new_number(m->pool, result);
+}
+
+static value* prim_exp(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    double result = exp(args->car->number);
+
+    return pool_new_number(m->pool, result);
+}
+
+static value* prim_log(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    if (args->car->number <= 0) {
+        return pool_new_error(m->pool, "can't tage log of a non-positive number");
+    }
+
+    double result = log(args->car->number);
+
+    return pool_new_number(m->pool, result);
+}
+
+static value* prim_sin(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    double result = sin(args->car->number);
+
+    return pool_new_number(m->pool, result);
+}
+
+static value* prim_cos(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    double result = cos(args->car->number);
+
+    return pool_new_number(m->pool, result);
+}
+
+static value* prim_tan(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    double result = tan(args->car->number);
+
+    return pool_new_number(m->pool, result);
+}
+
 static void add_primitive(eval* e, value* env, char* name, builtin fn) {
     pool* p = e->machine->pool;
     add_to_env(env, name, pool_new_builtin(p, fn, name), p);
 }
 
 static value* make_global_environment(eval* e) {
+    pool* p = e->machine->pool;
     value* env = pool_new_env(e->machine->pool);
+
+    // constants
+    add_to_env(env, "PI", pool_new_number(p, 3.1415926535), p);
+    add_to_env(env, "E", pool_new_number(p, 2.7182818284), p);
 
     // structural
     add_primitive(e, env, "car", prim_car);
@@ -692,6 +755,14 @@ static value* make_global_environment(eval* e) {
     add_primitive(e, env, "^", prim_power);
     add_primitive(e, env, "min", prim_min);
     add_primitive(e, env, "max", prim_max);
+
+    // math
+    add_primitive(e, env, "abs", prim_abs);
+    add_primitive(e, env, "exp", prim_exp);
+    add_primitive(e, env, "log", prim_log);
+    add_primitive(e, env, "sin", prim_sin);
+    add_primitive(e, env, "cos", prim_cos);
+    add_primitive(e, env, "tan", prim_tan);
 
     return env;
 }

@@ -106,10 +106,10 @@ static void test_eval_number(eval* ev, char* input, double expected) {
 
     assert(e != NULL);
     assert(e->type == VALUE_NUMBER);
-    if (expected == expected) {
+    if (!isnan(expected)) {
         assert(fabs(e->number - expected) < 1e-4);
     } else {
-        assert(e->number != e->number);
+        assert(isnan(e->number));
     }
     value_dispose(e);
 }
@@ -707,7 +707,7 @@ static void test_arithmetic(eval* e) {
     test_eval_number(e, "(% 1 -1)", 0);
     test_eval_number(e, "(% -1 2)", -1);
     test_eval_number(e, "(% 3 2)", 1);
-    test_eval_number(e, "(% 3.14 2.71)", 1);
+    test_eval_number(e, "(% 3.14 2.71)", 0.43);
     test_eval_number(e, "(% 2 3 4 5)", 2);
     test_eval_number(e, "(% 5 4 3 2)", 1);
 
@@ -779,6 +779,90 @@ static void test_arithmetic(eval* e) {
     test_eval_number(e, "(+ 1 (* (^ 2 3) 4) (/ 5 6) (- 7 (% 8 9)) 10)", 42.8333);
 }
 
+void test_math(eval* e) {
+    test_eval_number(e, "PI", 3.141592);
+    test_eval_number(e, "E", 2.718281);
+
+    test_eval_number(e, "(abs 1)", 1);
+    test_eval_number(e, "(abs -1)", 1);
+    test_eval_number(e, "(abs 0)", 0);
+    test_eval_number(e, "(abs 3.14)", 3.14);
+    test_eval_number(e, "(abs -3.14)", 3.14);
+
+    test_eval_error(e, "(abs)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(abs 1 2)", "expects 1 arg, but got 2");
+    test_eval_error(e, "(abs \"a\")", "must be number, but is string");
+    test_eval_error(e, "(abs '())", "must be number, but got ()");
+
+    test_eval_number(e, "(exp 0)", 1);
+    test_eval_number(e, "(exp 1)", 2.71828);
+    test_eval_number(e, "(exp -1)", 0.367879);
+    test_eval_number(e, "(exp 2)", 7.38906);
+    test_eval_number(e, "(exp -2)", 0.135335);
+    test_eval_number(e, "(exp 0.5)", 1.64872);
+    test_eval_number(e, "(exp -0.5)", 0.606531);
+
+    test_eval_error(e, "(exp)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(exp 1 2)", "expects 1 arg, but got 2");
+    test_eval_error(e, "(exp \"a\")", "must be number, but is string");
+    test_eval_error(e, "(exp '())", "must be number, but got ()");
+
+    test_eval_number(e, "(log 1)", 0);
+    test_eval_number(e, "(log 2)", 0.693147);
+    test_eval_number(e, "(log 10)", 2.30259);
+    test_eval_number(e, "(log 0.5)", -0.693147);
+
+    test_eval_error(e, "(log)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(log 1 2)", "expects 1 arg, but got 2");
+    test_eval_error(e, "(log \"a\")", "must be number, but is string");
+    test_eval_error(e, "(log '())", "must be number, but got ()");
+    test_eval_error(e, "(log 0)", "can't tage log of a non-positive");
+    test_eval_error(e, "(log -1)", "can't tage log of a non-positive");
+
+    test_eval_number(e, "(sin 0)", 0);
+    test_eval_number(e, "(sin (/ PI 2))", 1);
+    test_eval_number(e, "(sin PI)", 0);
+    test_eval_number(e, "(sin (* PI 2))", 0);
+    test_eval_number(e, "(sin (- (/ PI 2)))", -1);
+    test_eval_number(e, "(sin (- PI))", 0);
+    test_eval_number(e, "(sin (- (* PI 2)))", 0);
+    test_eval_number(e, "(sin 1)", 0.841471);
+    test_eval_number(e, "(sin -1)", -0.841471);
+
+    test_eval_error(e, "(sin)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(sin 1 2)", "expects 1 arg, but got 2");
+    test_eval_error(e, "(sin \"a\")", "must be number, but is string");
+    test_eval_error(e, "(sin '())", "must be number, but got ()");
+
+    test_eval_number(e, "(cos 0)", 1);
+    test_eval_number(e, "(cos (/ PI 2))", 0);
+    test_eval_number(e, "(cos PI)", -1);
+    test_eval_number(e, "(cos (* PI 2))", 1);
+    test_eval_number(e, "(cos (- (/ PI 2)))", 0);
+    test_eval_number(e, "(cos (- PI))", -1);
+    test_eval_number(e, "(cos (- (* PI 2)))", 1);
+    test_eval_number(e, "(cos 1)", 0.540302);
+    test_eval_number(e, "(cos -1)", 0.540302);
+
+    test_eval_error(e, "(cos)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(cos 1 2)", "expects 1 arg, but got 2");
+    test_eval_error(e, "(cos \"a\")", "must be number, but is string");
+    test_eval_error(e, "(cos '())", "must be number, but got ()");
+
+    test_eval_number(e, "(tan 0)", 0);
+    test_eval_number(e, "(tan PI)", 0);
+    test_eval_number(e, "(tan (* PI 2))", 0);
+    test_eval_number(e, "(tan (- PI))", 0);
+    test_eval_number(e, "(tan (- (* PI 2)))", 0);
+    test_eval_number(e, "(tan 1)", 1.55741);
+    test_eval_number(e, "(tan -1)", -1.55741);
+
+    test_eval_error(e, "(tan)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(tan 1 2)", "expects 1 arg, but got 2");
+    test_eval_error(e, "(tan \"a\")", "must be number, but is string");
+    test_eval_error(e, "(tan '())", "must be number, but got ()");
+}
+
 void run_test() {
     eval* e;
     eval_new(&e, "./lib/machines/evaluator.scm");
@@ -790,6 +874,7 @@ void run_test() {
 
     RUN_EVAL_TEST_FN(e, test_structural);
     RUN_EVAL_TEST_FN(e, test_arithmetic);
+    RUN_EVAL_TEST_FN(e, test_math);
 
     printf("all tests have passed!\n");
 
