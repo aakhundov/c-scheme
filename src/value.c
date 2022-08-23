@@ -425,9 +425,8 @@ static int pair_to_str(value* v, char* buffer) {
 
     running += sprintf(running, "(");
     running += value_to_str_rec(v->car, running);
-    while ((v = v->cdr) != NULL && (v->gen != -1)) {
+    while ((v = v->cdr) != NULL) {
         if (v->type == VALUE_PAIR) {
-            v->gen = -1;
             running += sprintf(running, " ");
             running += value_to_str_rec(v->car, running);
         } else {
@@ -458,8 +457,6 @@ static int lambda_to_str(value* v, char* buffer) {
 static int value_to_str_rec(value* v, char* buffer) {
     if (v == NULL) {
         return sprintf(buffer, "()");
-    } else if (v->gen == -1) {
-        return sprintf(buffer, "<...>");
     } else {
         v->gen = -1;
         switch (v->type) {

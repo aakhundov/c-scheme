@@ -114,6 +114,24 @@ static void test_eval_number(eval* ev, char* input, double expected) {
     value_dispose(e);
 }
 
+static void test_eval_string(eval* ev, char* input, char* expected) {
+    value* e = get_evaluated(ev, input);
+
+    assert(e != NULL);
+    assert(e->type == VALUE_STRING);
+    assert(strcmp(e->symbol, expected) == 0);
+    value_dispose(e);
+}
+
+static void test_eval_bool(eval* ev, char* input, int expected) {
+    value* e = get_evaluated(ev, input);
+
+    assert(e != NULL);
+    assert(e->type == VALUE_BOOL);
+    assert(e->number == expected);
+    value_dispose(e);
+}
+
 static void test_eval_error(eval* ev, char* input, char* expected) {
     value* e = get_evaluated(ev, input);
 
@@ -123,7 +141,6 @@ static void test_eval_error(eval* ev, char* input, char* expected) {
     value_dispose(e);
 }
 
-/*
 static void test_eval_info(eval* ev, char* input, char* expected) {
     value* e = get_evaluated(ev, input);
 
@@ -132,7 +149,6 @@ static void test_eval_info(eval* ev, char* input, char* expected) {
     assert(strstr(e->symbol, expected));
     value_dispose(e);
 }
-*/
 
 static void test_parse() {
     test_parse_output("", "()");
@@ -203,6 +219,7 @@ static void test_parse() {
     test_parse_error("\"xyz\" \"a", "unterminated string");
 }
 
+/*
 void test_cycle_to_str() {
     value* v = NULL;
     static char buffer[16384];
@@ -255,6 +272,7 @@ void test_cycle_to_str() {
     assert(strcmp(buffer, "(<...>)") == 0);
     value_dispose(v);
 }
+*/
 
 static void test_pool() {
     // setup
@@ -601,6 +619,107 @@ static void test_machine() {
     test_fib_machine();
 }
 
+static void test_syntax(eval* e) {
+    test_eval_number(e, "1", 1);
+    test_eval_number(e, "-1", -1);
+    test_eval_number(e, "3.14", 3.14);
+    test_eval_string(e, "\"\"", "");
+    test_eval_string(e, "\"abc\"", "abc");
+    test_eval_bool(e, "true", 1);
+    test_eval_bool(e, "false", 0);
+    test_eval_output(e, "nil", "()");
+    test_eval_output(e, "()", "()");
+
+    test_eval_error(e, "a", "'a' is unbound");
+    test_eval_info(e, "(define a 10)", "'a' is defined");
+    test_eval_number(e, "a", 10);
+
+    test_eval_number(e, "(quote 1)", 1);
+    test_eval_output(e, "(quote x)", "x");
+    test_eval_output(e, "(quote (1 2 3))", "(1 2 3)");
+    test_eval_output(e, "(quote (quote 1 2 3))", "(quote 1 2 3)");
+    test_eval_output(e, "(quote ())", "()");
+
+    test_eval_error(e, "(quote)", "quote: no item");
+    test_eval_error(e, "(quote 1 2)", "quote: more than one item");
+
+    test_eval_error(e, "b", "'b' is unbound");
+    test_eval_error(e, "(set! b 30)", "'b' is unbound");
+    test_eval_info(e, "(define b 20)", "'b' is defined");
+    test_eval_number(e, "b", 20);
+    test_eval_info(e, "(set! b 30)", "'b' is updated");
+    test_eval_number(e, "b", 30);
+
+    test_eval_error(e, "(set!)", "set!: no variable");
+    test_eval_error(e, "(set! y)", "set!: no value");
+    test_eval_error(e, "(set! 1 30)", "set!: variable is not a symbol");
+    test_eval_error(e, "(set! y 30 40)", "set!: more than two items");
+
+    test_eval_error(e, "c", "'c' is unbound");
+    test_eval_info(e, "(define c 30)", "'c' is defined");
+    test_eval_number(e, "c", 30);
+    test_eval_error(e, "f", "'f' is unbound");
+    test_eval_info(e, "(define (f x y) x y)", "'f' is defined");
+    test_eval_output(e, "f", "(lambda (x y) x y)");
+    test_eval_info(e, "(define (g) 1)", "'g' is defined");
+    test_eval_output(e, "g", "(lambda () 1)");
+
+    test_eval_error(e, "(define)", "no variable");
+    test_eval_error(e, "(define ())", "can't define ()");
+    test_eval_error(e, "(define (f))", "no body");
+    test_eval_error(e, "(define (1) 1)", "function name is not a symbol");
+    test_eval_error(e, "(define (1 x y) 1)", "function name is not a symbol");
+    test_eval_error(e, "(define x 1 2)", "can't be more than one item");
+    test_eval_error(e, "(define 1 2)", "either variable or function");
+    test_eval_error(e, "(define true 2)", "either variable or function");
+    test_eval_error(e, "(define \"x\" 2)", "either variable or function");
+
+    test_eval_number(e, "(if 1 2 3)", 2);
+    test_eval_number(e, "(if true 2 3)", 2);
+    test_eval_number(e, "(if 0 2 3)", 3);
+    test_eval_number(e, "(if false 2 3)", 3);
+    test_eval_number(e, "(if 1 2)", 2);
+    test_eval_number(e, "(if true 2)", 2);
+    test_eval_bool(e, "(if 0 2)", 0);
+    test_eval_bool(e, "(if false 2)", 0);
+
+    test_eval_error(e, "(if)", "no predicate");
+    test_eval_error(e, "(if 1)", "no consequent");
+    test_eval_error(e, "(if 1 2 3 4)", "too many items");
+
+    test_eval_output(e, "(lambda x x)", "(lambda x x)");
+    test_eval_output(e, "(lambda () 1)", "(lambda () 1)");
+    test_eval_output(e, "(lambda (x) x)", "(lambda (x) x)");
+    test_eval_output(e, "(lambda (x) x x)", "(lambda (x) x x)");
+    test_eval_output(e, "(lambda (x y) x)", "(lambda (x y) x)");
+    test_eval_output(e, "(lambda (x y) x y)", "(lambda (x y) x y)");
+
+    test_eval_error(e, "(lambda)", "no parameters");
+    test_eval_error(e, "(lambda x)", "no body");
+    test_eval_error(e, "(lambda (x))", "no body");
+    test_eval_error(e, "(lambda ())", "no body");
+    test_eval_error(e, "(lambda 1 1)", "some parameters are not symbols");
+    test_eval_error(e, "(lambda (1) 1)", "some parameters are not symbols");
+    test_eval_error(e, "(lambda (x 1) 1)", "some parameters are not symbols");
+    test_eval_error(e, "(lambda (x x) 1)", "duplicate parameter names");
+    test_eval_error(e, "(lambda (x y z x) 1)", "duplicate parameter names");
+    test_eval_error(e, "(lambda (x . x) 1)", "duplicate parameter names");
+    test_eval_error(e, "(lambda (x y z . x) 1)", "duplicate parameter names");
+
+    test_eval_number(e, "(begin 1)", 1);
+    test_eval_number(e, "(begin 1 2 3)", 3);
+    test_eval_bool(e, "(begin true false)", 0);
+    test_eval_output(e, "(begin '(1 2 3) '(4 5) '())", "()");
+
+    test_eval_error(e, "(begin)", "no items");
+
+    test_eval_error(e, "(1)", "can't apply 1");
+    test_eval_error(e, "(1 2 3)", "can't apply 1");
+    test_eval_error(e, "(\"x\" 2 3)", "can't apply \"x\"");
+    test_eval_error(e, "(true 2 3)", "can't apply true");
+    test_eval_error(e, "('() 2 3)", "can't apply ()");
+}
+
 static void test_structural(eval* e) {
     test_eval_output(e, "(car '(1))", "1");
     test_eval_output(e, "(car '(1 2 3))", "1");
@@ -780,8 +899,8 @@ static void test_arithmetic(eval* e) {
 }
 
 void test_math(eval* e) {
-    test_eval_number(e, "PI", 3.141592);
-    test_eval_number(e, "E", 2.718281);
+    test_eval_number(e, "PI", M_PI);
+    test_eval_number(e, "E", M_E);
 
     test_eval_number(e, "(abs 1)", 1);
     test_eval_number(e, "(abs -1)", 1);
@@ -868,10 +987,11 @@ void run_test() {
     eval_new(&e, "./lib/machines/evaluator.scm");
 
     RUN_TEST_FN(test_parse);
-    RUN_TEST_FN(test_cycle_to_str);
+    // RUN_TEST_FN(test_cycle_to_str);
     RUN_TEST_FN(test_pool);
     RUN_TEST_FN(test_machine);
 
+    RUN_EVAL_TEST_FN(e, test_syntax);
     RUN_EVAL_TEST_FN(e, test_structural);
     RUN_EVAL_TEST_FN(e, test_arithmetic);
     RUN_EVAL_TEST_FN(e, test_math);

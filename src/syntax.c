@@ -112,7 +112,7 @@ value* is_definition(pool* p, value* exp) {
                 MAKE_ERROR(p, "%s: no value in %s", tag, exp);
             } else if (exp->cdr->cdr->cdr != NULL) {
                 MAKE_ERROR(
-                    p, "%s: the value of a variable can't be more than one item in %s",
+                    p, "%s: the value can't be more than one item in %s",
                     tag, exp);
             }
         } else {
@@ -202,7 +202,9 @@ value* is_lambda(pool* p, value* exp) {
                 if (p1->type == VALUE_SYMBOL) {
                     break;
                 }
-                if (p1->car == NULL || p1->car->type != VALUE_SYMBOL) {
+                if (p1->type != VALUE_PAIR ||
+                    p1->car == NULL ||
+                    p1->car->type != VALUE_SYMBOL) {
                     MAKE_ERROR(
                         p, "%s: some parameters are not symbols in %s",
                         tag, exp);
