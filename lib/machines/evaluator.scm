@@ -20,7 +20,7 @@ eval-dispatch
     (branch (label ev-begin))
     (test (op application?) (reg exp))
     (branch (label ev-application))
-    (perform (op signal-error) (const "can't evaluate '%s'") (reg exp))
+    (perform (op signal-error) (const "can't evaluate %s") (reg exp))
 
 ev-self-eval
     (assign val (reg exp))
@@ -141,7 +141,7 @@ apply-dispatch
     (branch (label primitive-apply))
     (test (op compound-procedure?) (reg proc))
     (branch (label compound-apply))
-    (perform (op signal-error) (const "can't apply '%s'") (reg proc))
+    (perform (op signal-error) (const "can't apply %s") (reg proc))
 primitive-apply
     (assign val (op apply-primitive-procedure) (reg proc) (reg argl))
     (restore continue)
