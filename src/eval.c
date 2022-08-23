@@ -361,7 +361,7 @@ static value* op_lookup_variable_value(machine* m, value* args) {
     value* record = lookup_in_env(env, name->symbol, 1);
 
     if (record == NULL) {
-        return pool_new_error(m->pool, "'%s' is unbound", name->symbol);
+        return pool_new_error(m->pool, "%s is unbound", name->symbol);
     } else {
         return record->cdr;
     }
@@ -375,10 +375,10 @@ static value* op_set_variable_value(machine* m, value* args) {
     value* record = lookup_in_env(env, name->symbol, 1);
 
     if (record == NULL) {
-        return pool_new_error(m->pool, "'%s' is unbound", name->symbol);
+        return pool_new_error(m->pool, "%s is unbound", name->symbol);
     } else {
         record->cdr = val;
-        return pool_new_info(m->pool, "'%s' is updated", name->symbol);
+        return pool_new_info(m->pool, "%s is updated", name->symbol);
     }
 }
 
@@ -391,10 +391,10 @@ static value* op_define_variable(machine* m, value* args) {
 
     if (record == NULL) {
         add_to_env(env, name->symbol, val, m->pool);
-        return pool_new_info(m->pool, "'%s' is defined", name->symbol);
+        return pool_new_info(m->pool, "%s is defined", name->symbol);
     } else {
         record->cdr = val;
-        return pool_new_info(m->pool, "'%s' is updated", name->symbol);
+        return pool_new_info(m->pool, "%s is updated", name->symbol);
     }
 }
 

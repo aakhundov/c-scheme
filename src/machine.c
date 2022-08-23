@@ -125,7 +125,7 @@ static value* call_op(machine* m, value* op, value* args) {
     value* result = NULL;
     if (op->car == NULL) {
         // the op record is not bound to a builtin function
-        result = pool_new_error(m->pool, "'%s' unbound", op->cdr->symbol);
+        result = pool_new_error(m->pool, "machine op %s is unbound", op->cdr->symbol);
     } else {
         // call the builtin
         result = ((builtin)op->car->ptr)(m, args);
