@@ -1276,6 +1276,155 @@ void test_relational(eval* e) {
     test_eval_error(e, "(not)", "expects 1 arg, but got 0");
 }
 
+void test_predicates(eval* e) {
+    // number?
+    test_eval_bool(e, "(number? 1)", 1);
+    test_eval_bool(e, "(number? 0)", 1);
+    test_eval_bool(e, "(number? 0.1)", 1);
+    test_eval_bool(e, "(number? -0.1)", 1);
+    test_eval_bool(e, "(number? 'x)", 0);
+    test_eval_bool(e, "(number? \"a\")", 0);
+    test_eval_bool(e, "(number? true)", 0);
+    test_eval_bool(e, "(number? '(1 2 3))", 0);
+    test_eval_bool(e, "(number? '())", 0);
+
+    // number? errors
+    test_eval_error(e, "(number?)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(number? 1 2)", "expects 1 arg, but got 2");
+
+    // symbol?
+    test_eval_bool(e, "(symbol? 1)", 0);
+    test_eval_bool(e, "(symbol? 'x)", 1);
+    test_eval_bool(e, "(symbol? 'car)", 1);
+    test_eval_bool(e, "(symbol? \"a\")", 0);
+    test_eval_bool(e, "(symbol? true)", 0);
+    test_eval_bool(e, "(symbol? '(1 2 3))", 0);
+    test_eval_bool(e, "(symbol? '())", 0);
+
+    // symbol? errors
+    test_eval_error(e, "(symbol?)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(symbol? 1 2)", "expects 1 arg, but got 2");
+
+    // string?
+    test_eval_bool(e, "(string? 1)", 0);
+    test_eval_bool(e, "(string? 'x)", 0);
+    test_eval_bool(e, "(string? \"\")", 1);
+    test_eval_bool(e, "(string? \"abc\")", 1);
+    test_eval_bool(e, "(string? true)", 0);
+    test_eval_bool(e, "(string? '(1 2 3))", 0);
+    test_eval_bool(e, "(string? '())", 0);
+
+    // string? errors
+    test_eval_error(e, "(string?)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(string? 1 2)", "expects 1 arg, but got 2");
+
+    // bool?
+    test_eval_bool(e, "(bool? 1)", 0);
+    test_eval_bool(e, "(bool? 'x)", 0);
+    test_eval_bool(e, "(bool? \"a\")", 0);
+    test_eval_bool(e, "(bool? true)", 1);
+    test_eval_bool(e, "(bool? false)", 1);
+    test_eval_bool(e, "(bool? '(1 2 3))", 0);
+    test_eval_bool(e, "(bool? '())", 0);
+
+    // bool? errors
+    test_eval_error(e, "(bool?)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(bool? 1 2)", "expects 1 arg, but got 2");
+
+    // pair?
+    test_eval_bool(e, "(pair? 1)", 0);
+    test_eval_bool(e, "(pair? 'x)", 0);
+    test_eval_bool(e, "(pair? \"a\")", 0);
+    test_eval_bool(e, "(pair? true)", 0);
+    test_eval_bool(e, "(pair? '(1))", 1);
+    test_eval_bool(e, "(pair? '(1 2))", 1);
+    test_eval_bool(e, "(pair? '(1 2 3))", 1);
+    test_eval_bool(e, "(pair? '(1 . 2))", 1);
+    test_eval_bool(e, "(pair? '(1 2 . 3))", 1);
+    test_eval_bool(e, "(pair? '())", 0);
+
+    // pair? errors
+    test_eval_error(e, "(pair?)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(pair? 1 2)", "expects 1 arg, but got 2");
+
+    // list?
+    test_eval_bool(e, "(list? 1)", 0);
+    test_eval_bool(e, "(list? 'x)", 0);
+    test_eval_bool(e, "(list? \"a\")", 0);
+    test_eval_bool(e, "(list? true)", 0);
+    test_eval_bool(e, "(list? '(1))", 1);
+    test_eval_bool(e, "(list? '(1 2))", 1);
+    test_eval_bool(e, "(list? '(1 2 3))", 1);
+    test_eval_bool(e, "(list? '(1 . 2))", 0);
+    test_eval_bool(e, "(list? '(1 2 . 3))", 0);
+    test_eval_bool(e, "(list? '())", 1);
+
+    // list? errors
+    test_eval_error(e, "(list?)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(list? 1 2)", "expects 1 arg, but got 2");
+
+    // null?
+    test_eval_bool(e, "(null? 1)", 0);
+    test_eval_bool(e, "(null? 'x)", 0);
+    test_eval_bool(e, "(null? \"a\")", 0);
+    test_eval_bool(e, "(null? true)", 0);
+    test_eval_bool(e, "(null? '(1))", 0);
+    test_eval_bool(e, "(null? '(1 2))", 0);
+    test_eval_bool(e, "(null? '(1 2 3))", 0);
+    test_eval_bool(e, "(null? '(1 . 2))", 0);
+    test_eval_bool(e, "(null? '(1 2 . 3))", 0);
+    test_eval_bool(e, "(null? '())", 1);
+
+    // null? errors
+    test_eval_error(e, "(null?)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(null? 1 2)", "expects 1 arg, but got 2");
+
+    // equal?
+    test_eval_bool(e, "(equal? 0 0)", 1);
+    test_eval_bool(e, "(equal? 1 1)", 1);
+    test_eval_bool(e, "(equal? 1 1.0)", 1);
+    test_eval_bool(e, "(equal? 0 1)", 0);
+    test_eval_bool(e, "(equal? 'a 'a)", 1);
+    test_eval_bool(e, "(equal? 'a 'b)", 0);
+    test_eval_bool(e, "(equal? \"a\" \"a\")", 1);
+    test_eval_bool(e, "(equal? \"a\" \"b\")", 0);
+    test_eval_bool(e, "(equal? \"a\" \"\")", 0);
+    test_eval_bool(e, "(equal? true true)", 1);
+    test_eval_bool(e, "(equal? false false)", 1);
+    test_eval_bool(e, "(equal? true false)", 0);
+    test_eval_bool(e, "(equal? '(1) '(1))", 1);
+    test_eval_bool(e, "(equal? '(1) '(2))", 0);
+    test_eval_bool(e, "(equal? '(1 2 3) '(1 2 3))", 1);
+    test_eval_bool(e, "(equal? '(1 2 3) '(1 2 4))", 0);
+    test_eval_bool(e, "(equal? '(1 2 . 3) '(1 2 . 3))", 1);
+    test_eval_bool(e, "(equal? '(1 2 . 3) '(4 2 . 3))", 0);
+    test_eval_bool(e, "(equal? '(1 2 . 3) '(1 2 . 4))", 0);
+    test_eval_bool(e, "(equal? '() '())", 1);
+    test_eval_bool(e, "(equal? '() '(1))", 0);
+
+    // equal? errors
+    test_eval_error(e, "(equal?)", "expects 2 args, but got 0");
+    test_eval_error(e, "(equal? 1)", "expects 2 args, but got 1");
+    test_eval_error(e, "(equal? 1 2 3)", "expects 2 args, but got 3");
+
+    // eq?
+    test_eval_bool(e, "(eq? PI PI)", 1);
+    test_eval_bool(e, "(eq? PI E)", 0);
+    test_eval_bool(e, "(eq? car car)", 1);
+    test_eval_bool(e, "(eq? car cdr)", 0);
+    test_eval_bool(e, "(eq? 'a 'a)", 0);
+    test_eval_bool(e, "(eq? \"a\" \"a\")", 0);
+    test_eval_bool(e, "(eq? '(1) '(1))", 0);
+    test_eval_bool(e, "(eq? '(1 . 2) '(1 . 2))", 0);
+    test_eval_bool(e, "(eq? '(1 2 3) '(1 2 3))", 0);
+    test_eval_bool(e, "(eq? '() '())", 1);
+
+    // eq? errors
+    test_eval_error(e, "(eq?)", "expects 2 args, but got 0");
+    test_eval_error(e, "(eq? 1)", "expects 2 args, but got 1");
+    test_eval_error(e, "(eq? 1 2 3)", "expects 2 args, but got 3");
+}
+
 void run_test() {
     eval* e;
     eval_new(&e, "./lib/machines/evaluator.scm");
@@ -1290,6 +1439,7 @@ void run_test() {
     RUN_EVAL_TEST_FN(e, test_arithmetic);
     RUN_EVAL_TEST_FN(e, test_math);
     RUN_EVAL_TEST_FN(e, test_relational);
+    RUN_EVAL_TEST_FN(e, test_predicates);
 
     printf("all tests have passed!\n");
 

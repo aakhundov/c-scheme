@@ -846,6 +846,86 @@ static value* prim_not(machine* m, value* args) {
         (value_is_true(args->car) ? 0 : 1));
 }
 
+static value* prim_null_q(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+
+    value* arg = args->car;
+
+    return pool_new_bool(m->pool, arg == NULL);
+}
+
+static value* prim_number_q(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+
+    value* arg = args->car;
+
+    return pool_new_bool(m->pool, arg != NULL && arg->type == VALUE_NUMBER);
+}
+
+static value* prim_symbol_q(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+
+    value* arg = args->car;
+
+    return pool_new_bool(m->pool, arg != NULL && arg->type == VALUE_SYMBOL);
+}
+
+static value* prim_string_q(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+
+    value* arg = args->car;
+
+    return pool_new_bool(m->pool, arg != NULL && arg->type == VALUE_STRING);
+}
+
+static value* prim_bool_q(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+
+    value* arg = args->car;
+
+    return pool_new_bool(m->pool, arg != NULL && arg->type == VALUE_BOOL);
+}
+
+static value* prim_pair_q(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+
+    value* arg = args->car;
+
+    return pool_new_bool(m->pool, arg != NULL && arg->type == VALUE_PAIR);
+}
+
+static value* prim_list_q(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+
+    value* arg = args->car;
+    while (arg != NULL) {
+        if (arg->type != VALUE_PAIR) {
+            return pool_new_bool(m->pool, 0);
+        }
+        arg = arg->cdr;
+    }
+
+    return pool_new_bool(m->pool, 1);
+}
+
+static value* prim_equal_q(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 2);
+
+    value* v1 = args->car;
+    value* v2 = args->cdr->car;
+
+    return pool_new_bool(m->pool, value_equal(v1, v2));
+}
+
+static value* prim_eq_q(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 2);
+
+    value* v1 = args->car;
+    value* v2 = args->cdr->car;
+
+    return pool_new_bool(m->pool, v1 == v2);
+}
+
 static void add_primitive(eval* e, value* env, char* name, builtin fn) {
     pool* p = e->machine->pool;
     add_to_env(env, name, pool_new_builtin(p, fn, name), p);
@@ -891,6 +971,17 @@ static value* make_global_environment(eval* e) {
     add_primitive(e, env, ">", prim_gt);
     add_primitive(e, env, ">=", prim_gte);
     add_primitive(e, env, "not", prim_not);
+
+    // predicates
+    add_primitive(e, env, "number?", prim_number_q);
+    add_primitive(e, env, "symbol?", prim_symbol_q);
+    add_primitive(e, env, "string?", prim_string_q);
+    add_primitive(e, env, "bool?", prim_bool_q);
+    add_primitive(e, env, "pair?", prim_pair_q);
+    add_primitive(e, env, "list?", prim_list_q);
+    add_primitive(e, env, "null?", prim_null_q);
+    add_primitive(e, env, "equal?", prim_equal_q);
+    add_primitive(e, env, "eq?", prim_eq_q);
 
     return env;
 }
