@@ -1,6 +1,7 @@
 #include "test.h"
 
 #include <assert.h>
+#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -46,7 +47,7 @@ static void report_test(char* output, ...) {
     va_end(args);
 
     printf(
-        "\x1B[34m%04d\x1B[0m %s\n",
+        "\x1B[34m%05d\x1B[0m %s\n",
         ++test_counter, buffer);
 }
 
@@ -66,11 +67,9 @@ static value* get_evaluated(eval* ev, char* input) {
     static char formatted[16384];
     sprintf(
         formatted,
-        "\x1B[34m[\x1B[0m%s\x1B[34m]\x1B[0m "
-        "\x1B[34m-->\x1B[0m "
-        "\x1B[34m[\x1B[0m%s\x1B[34m]\x1B[0m",
+        "\x1B[34m[\x1B[0m%s\x1B[34m] --> [\x1B[0m%s\x1B[34m]\x1B[0m",
         input, output);
-    report_test(formatted);
+    report_test("%s", formatted);
 
     return v;
 }
@@ -102,6 +101,19 @@ static void test_eval_output(eval* ev, char* input, char* expected) {
     value_dispose(e);
 }
 
+static void test_eval_number(eval* ev, char* input, double expected) {
+    value* e = get_evaluated(ev, input);
+
+    assert(e != NULL);
+    assert(e->type == VALUE_NUMBER);
+    if (expected == expected) {
+        assert(fabs(e->number - expected) < 1e-4);
+    } else {
+        assert(e->number != e->number);
+    }
+    value_dispose(e);
+}
+
 static void test_eval_error(eval* ev, char* input, char* expected) {
     value* e = get_evaluated(ev, input);
 
@@ -112,15 +124,6 @@ static void test_eval_error(eval* ev, char* input, char* expected) {
 }
 
 /*
-static void test_eval_number(eval* ev, char* input, double expected) {
-    value* e = get_evaluated(ev, input);
-
-    assert(e != NULL);
-    assert(e->type == VALUE_NUMBER);
-    assert(e->number == expected);
-    value_dispose(e);
-}
-
 static void test_eval_info(eval* ev, char* input, char* expected) {
     value* e = get_evaluated(ev, input);
 
@@ -604,11 +607,25 @@ static void test_structural(eval* e) {
     test_eval_output(e, "(car '((1 2) 3))", "(1 2)");
     test_eval_output(e, "(car '(() 3))", "()");
 
+    test_eval_error(e, "(car 1)", "must be pair, but is number");
+    test_eval_error(e, "(car \"abc\")", "must be pair, but is string");
+    test_eval_error(e, "(car '())", "must be pair, but got ()");
+    test_eval_error(e, "(car)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(car 1 2)", "expects 1 arg, but got 2");
+    test_eval_error(e, "(car '(1 2) '(3 4))", "expects 1 arg, but got 2");
+
     test_eval_output(e, "(cdr '(1))", "()");
     test_eval_output(e, "(cdr '(1 2 3))", "(2 3)");
     test_eval_output(e, "(cdr '((1 2) 3))", "(3)");
     test_eval_output(e, "(cdr '((1 2)))", "()");
     test_eval_output(e, "(cdr '((1 2) ()))", "(())");
+
+    test_eval_error(e, "(cdr 1)", "must be pair, but is number");
+    test_eval_error(e, "(cdr \"abc\")", "must be pair, but is string");
+    test_eval_error(e, "(cdr '())", "must be pair, but got ()");
+    test_eval_error(e, "(cdr)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(cdr 1 2)", "expects 1 arg, but got 2");
+    test_eval_error(e, "(cdr '(1 2) '(3 4))", "expects 1 arg, but got 2");
 
     test_eval_output(e, "(cons 1 2)", "(1 . 2)");
     test_eval_output(e, "(cons 1 '(2))", "(1 2)");
@@ -618,23 +635,148 @@ static void test_structural(eval* e) {
     test_eval_output(e, "(car (cons 1 2))", "1");
     test_eval_output(e, "(cdr (cons 1 2))", "2");
 
-    test_eval_error(e, "(car 1)", "must be pair, but is number");
-    test_eval_error(e, "(car \"abc\")", "must be pair, but is string");
-    test_eval_error(e, "(car '())", "must be pair, but got ()");
-    test_eval_error(e, "(car)", "expects 1 arg, but got 0");
-    test_eval_error(e, "(car 1 2)", "expects 1 arg, but got 2");
-    test_eval_error(e, "(car '(1 2) '(3 4))", "expects 1 arg, but got 2");
-
-    test_eval_error(e, "(cdr 1)", "must be pair, but is number");
-    test_eval_error(e, "(cdr \"abc\")", "must be pair, but is string");
-    test_eval_error(e, "(cdr '())", "must be pair, but got ()");
-    test_eval_error(e, "(cdr)", "expects 1 arg, but got 0");
-    test_eval_error(e, "(cdr 1 2)", "expects 1 arg, but got 2");
-    test_eval_error(e, "(cdr '(1 2) '(3 4))", "expects 1 arg, but got 2");
-
     test_eval_error(e, "(cons)", "expects 2 args, but got 0");
     test_eval_error(e, "(cons 1)", "expects 2 args, but got 1");
     test_eval_error(e, "(cons 1 2 3)", "expects 2 args, but got 3");
+}
+
+static void test_arithmetic(eval* e) {
+    test_eval_number(e, "(+ 1)", 1);
+    test_eval_number(e, "(+ -1)", -1);
+    test_eval_number(e, "(+ 0)", 0);
+    test_eval_number(e, "(+ 3.14)", 3.14);
+    test_eval_number(e, "(+ 1 2)", 3);
+    test_eval_number(e, "(+ 1 2 3 4 5)", 15);
+    test_eval_number(e, "(+ 1 -1)", 0);
+    test_eval_number(e, "(+ 3.14 2.71)", 5.85);
+
+    test_eval_error(e, "(+)", "expects at least 1 arg, but got 0");
+    test_eval_error(e, "(+ \"a\")", "must be number, but is string");
+    test_eval_error(e, "(+ 1 2 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(+ '())", "must be number, but got ()");
+
+    test_eval_number(e, "(- 1)", -1);
+    test_eval_number(e, "(- -1)", 1);
+    test_eval_number(e, "(- 0)", 0);
+    test_eval_number(e, "(- 3.14)", -3.14);
+    test_eval_number(e, "(- 1 2)", -1);
+    test_eval_number(e, "(- 1 2 3 4 5)", -13);
+    test_eval_number(e, "(- 1 -1)", 2);
+    test_eval_number(e, "(- 3.14 2.71)", 0.43);
+
+    test_eval_error(e, "(-)", "expects at least 1 arg, but got 0");
+    test_eval_error(e, "(- \"a\")", "must be number, but is string");
+    test_eval_error(e, "(- 1 2 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(- '())", "must be number, but got ()");
+
+    test_eval_number(e, "(* 1 1)", 1);
+    test_eval_number(e, "(* 1 -1)", -1);
+    test_eval_number(e, "(* -1 2)", -2);
+    test_eval_number(e, "(* 1 2 3 4 5)", 120);
+    test_eval_number(e, "(* 3.14 2.71)", 8.5094);
+    test_eval_number(e, "(* 3.14 -2.71)", -8.5094);
+
+    test_eval_error(e, "(*)", "expects at least 2 args, but got 0");
+    test_eval_error(e, "(* 1)", "expects at least 2 args, but got 1");
+    test_eval_error(e, "(* 1 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(* 1 -2 3 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(* 1 '())", "must be number, but got ()");
+
+    test_eval_number(e, "(/ 1 1)", 1);
+    test_eval_number(e, "(/ 1 2)", 0.5);
+    test_eval_number(e, "(/ 2 1)", 2);
+    test_eval_number(e, "(/ 1 -1)", -1);
+    test_eval_number(e, "(/ -1 2)", -0.5);
+    test_eval_number(e, "(/ 1 2 3 4 5)", 0.00833);
+    test_eval_number(e, "(/ 3.14 2.71)", 1.15867);
+    test_eval_number(e, "(/ 3.14 -2.71)", -1.15867);
+
+    test_eval_error(e, "(/)", "expects at least 2 args, but got 0");
+    test_eval_error(e, "(/ 1)", "expects at least 2 args, but got 1");
+    test_eval_error(e, "(/ 1 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(/ 1 -2 3 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(/ 1 '())", "must be number, but got ()");
+    test_eval_error(e, "(/ 1 0)", "division by zero");
+    test_eval_error(e, "(/ 1 2 3 0)", "division by zero");
+
+    test_eval_number(e, "(% 1 1)", 0);
+    test_eval_number(e, "(% 1 3)", 1);
+    test_eval_number(e, "(% 3 1)", 0);
+    test_eval_number(e, "(% 2 3)", 2);
+    test_eval_number(e, "(% 3 2)", 1);
+    test_eval_number(e, "(% 1 -1)", 0);
+    test_eval_number(e, "(% -1 2)", -1);
+    test_eval_number(e, "(% 3 2)", 1);
+    test_eval_number(e, "(% 3.14 2.71)", 1);
+    test_eval_number(e, "(% 2 3 4 5)", 2);
+    test_eval_number(e, "(% 5 4 3 2)", 1);
+
+    test_eval_error(e, "(%)", "expects at least 2 args, but got 0");
+    test_eval_error(e, "(% 1)", "expects at least 2 args, but got 1");
+    test_eval_error(e, "(% 1 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(% 1 -2 3 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(% 1 '())", "must be number, but got ()");
+    test_eval_error(e, "(% 1 0)", "division by zero");
+    test_eval_error(e, "(% 1 2 3 0)", "division by zero");
+
+    test_eval_number(e, "(^ 1 2)", 1);
+    test_eval_number(e, "(^ 2 1)", 2);
+    test_eval_number(e, "(^ 2 2)", 4);
+    test_eval_number(e, "(^ 2 0)", 1);
+    test_eval_number(e, "(^ 0 2)", 0);
+    test_eval_number(e, "(^ 1 -2)", 1);
+    test_eval_number(e, "(^ 2 -1)", 0.5);
+    test_eval_number(e, "(^ 2 -2)", 0.25);
+    test_eval_number(e, "(^ -2 -2)", 0.25);
+    test_eval_number(e, "(^ -2 -3)", -0.125);
+    test_eval_number(e, "(^ 2 0.5)", 1.41421);
+    test_eval_number(e, "(^ 2 1.5)", 2.82843);
+    test_eval_number(e, "(^ 3.14 2)", 9.8596);
+    test_eval_number(e, "(^ -3.14 3)", -30.9591);
+    test_eval_number(e, "(^ 3.14 2.71)", 22.2167);
+    test_eval_number(e, "(^ 2.71 3.14)", 22.8836);
+    test_eval_number(e, "(^ -1 0.5)", NAN);
+    test_eval_number(e, "(^ -1 1.5)", NAN);
+    test_eval_number(e, "(^ 2 2 2 2 2)", 65536);
+    test_eval_number(e, "(^ 1 2 3 4 5)", 1);
+    test_eval_number(e, "(^ 3 4 5)", 3486784401);
+    test_eval_number(e, "(^ -3 4 -5)", 2.86797e-10);
+
+    test_eval_error(e, "(^)", "expects at least 2 args, but got 0");
+    test_eval_error(e, "(^ 1)", "expects at least 2 args, but got 1");
+    test_eval_error(e, "(^ 1 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(^ 1 -2 3 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(^ 1 '())", "must be number, but got ()");
+
+    test_eval_number(e, "(min 1)", 1);
+    test_eval_number(e, "(min -1)", -1);
+    test_eval_number(e, "(min 1 2)", 1);
+    test_eval_number(e, "(min 1 2 3)", 1);
+    test_eval_number(e, "(min 1 -1 0)", -1);
+    test_eval_number(e, "(min 1 1 1)", 1);
+    test_eval_number(e, "(min 3.14 2.71)", 2.71);
+
+    test_eval_error(e, "(min)", "expects at least 1 arg, but got 0");
+    test_eval_error(e, "(min 1 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(min 1 -2 3 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(min 1 '())", "must be number, but got ()");
+
+    test_eval_number(e, "(max 1)", 1);
+    test_eval_number(e, "(max -1)", -1);
+    test_eval_number(e, "(max 1 2)", 2);
+    test_eval_number(e, "(max 1 2 3)", 3);
+    test_eval_number(e, "(max 1 -1 0)", 1);
+    test_eval_number(e, "(max 1 1 1)", 1);
+    test_eval_number(e, "(max 3.14 2.71)", 3.14);
+
+    test_eval_error(e, "(max)", "expects at least 1 arg, but got 0");
+    test_eval_error(e, "(max 1 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(max 1 -2 3 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(max 1 '())", "must be number, but got ()");
+
+    test_eval_number(e, "(+ 1 2 3 (- 4 5) 6)", 11);
+    test_eval_number(e, "(min (max 1 3 5) (max 2 4 6))", 5);
+    test_eval_number(e, "(+ 1 (* (^ 2 3) 4) (/ 5 6) (- 7 (% 8 9)) 10)", 42.8333);
 }
 
 void run_test() {
@@ -647,6 +789,7 @@ void run_test() {
     RUN_TEST_FN(test_machine);
 
     RUN_EVAL_TEST_FN(e, test_structural);
+    RUN_EVAL_TEST_FN(e, test_arithmetic);
 
     printf("all tests have passed!\n");
 
