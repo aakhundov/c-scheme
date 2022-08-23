@@ -389,8 +389,6 @@ int value_equal(value* v1, value* v2) {
     }
 }
 
-static int value_to_str_rec(value* v, char* buffer);
-
 static int number_to_str(value* v, char* buffer) {
     long num = (long)v->number;
     if (num == v->number) {
@@ -424,14 +422,14 @@ static int pair_to_str(value* v, char* buffer) {
     char* running = buffer;
 
     running += sprintf(running, "(");
-    running += value_to_str_rec(v->car, running);
+    running += value_to_str(v->car, running);
     while ((v = v->cdr) != NULL) {
         if (v->type == VALUE_PAIR) {
             running += sprintf(running, " ");
-            running += value_to_str_rec(v->car, running);
+            running += value_to_str(v->car, running);
         } else {
             running += sprintf(running, " . ");
-            running += value_to_str_rec(v, running);
+            running += value_to_str(v, running);
             break;
         }
     }
@@ -445,8 +443,8 @@ static int lambda_to_str(value* v, char* buffer) {
     static char params[16384];
     static char body[16384];
 
-    value_to_str_rec(v->car->car, params);
-    value_to_str_rec(v->car->cdr, body);
+    value_to_str(v->car->car, params);
+    value_to_str(v->car->cdr, body);
 
     // drop outmost braces
     body[strlen(body) - 1] = '\0';
@@ -454,11 +452,10 @@ static int lambda_to_str(value* v, char* buffer) {
     return sprintf(buffer, "(lambda %s %s)", params, body + 1);
 }
 
-static int value_to_str_rec(value* v, char* buffer) {
+int value_to_str(value* v, char* buffer) {
     if (v == NULL) {
         return sprintf(buffer, "()");
     } else {
-        v->gen = -1;
         switch (v->type) {
             case VALUE_NUMBER:
                 return number_to_str(v, buffer);
@@ -482,16 +479,6 @@ static int value_to_str_rec(value* v, char* buffer) {
                 return sprintf(buffer, "<%s>", get_type_name(v->type));
         }
     }
-}
-
-int value_to_str(value* v, char* buffer) {
-    size_t old_gen = (v != NULL ? v->gen : 0);
-
-    value_update_gen(v, 0);
-    int result = value_to_str_rec(v, buffer);
-    value_update_gen(v, old_gen);
-
-    return result;
 }
 
 void value_copy(value* dest, value* source) {
