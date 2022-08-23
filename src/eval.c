@@ -1,6 +1,7 @@
 #include "eval.h"
 
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -28,21 +29,21 @@
         }                                            \
     }
 
-#define ASSERT_MIN_NUM_ARGS(p, args, min_expected_num_args)  \
-    {                                                        \
-        size_t num_args = 0;                                 \
-        value* arg = args;                                   \
-        while (arg != NULL) {                                \
-            num_args++;                                      \
-            arg = arg->cdr;                                  \
-        }                                                    \
-        if (num_args < min_expected_num_args) {              \
-            return pool_new_error(                           \
-                p, "expects at least %d arg%s , but got %d", \
-                min_expected_num_args,                       \
-                (min_expected_num_args == 1 ? "" : "s"),     \
-                num_args);                                   \
-        }                                                    \
+#define ASSERT_MIN_NUM_ARGS(p, args, min_expected_num_args) \
+    {                                                       \
+        size_t num_args = 0;                                \
+        value* arg = args;                                  \
+        while (arg != NULL) {                               \
+            num_args++;                                     \
+            arg = arg->cdr;                                 \
+        }                                                   \
+        if (num_args < min_expected_num_args) {             \
+            return pool_new_error(                          \
+                p, "expects at least %d arg%s, but got %d", \
+                min_expected_num_args,                      \
+                (min_expected_num_args == 1 ? "" : "s"),    \
+                num_args);                                  \
+        }                                                   \
     }
 
 #define ASSERT_ARG_TYPE(p, args, ordinal, expected_type) \
@@ -65,36 +66,38 @@
             static char buffer[16384];                   \
             value_to_str(arg->car, buffer);              \
             return pool_new_error(                       \
-                p, "arg #%d '%s' must be %s, but is %s", \
-                ordinal, buffer,                         \
+                p, "arg #%d must be %s, but is %s %s",   \
+                ordinal,                                 \
                 get_type_name(expected_type),            \
-                get_type_name(arg->car->type));          \
+                get_type_name(arg->car->type),           \
+                buffer);                                 \
         }                                                \
     }
 
-#define ASSERT_ALL_ARGS_TYPE(p, args, offset, expected_type)     \
-    {                                                            \
-        size_t i = 0;                                            \
-        value* arg = args;                                       \
-        while (arg != NULL) {                                    \
-            if (i >= offset) {                                   \
-                if (arg->car == NULL) {                          \
-                    return pool_new_error(                       \
-                        p, "arg #%d must be %s, but got ()",     \
-                        i, get_type_name(expected_type));        \
-                } else if (arg->car->type != expected_type) {    \
-                    static char buffer[16384];                   \
-                    value_to_str(arg->car, buffer);              \
-                    return pool_new_error(                       \
-                        p, "arg #%d '%s' must be %s, but is %s", \
-                        i, buffer,                               \
-                        get_type_name(expected_type),            \
-                        get_type_name(arg->car->type));          \
-                }                                                \
-            }                                                    \
-            arg = arg->cdr;                                      \
-            i++;                                                 \
-        }                                                        \
+#define ASSERT_ALL_ARGS_TYPE(p, args, offset, expected_type)   \
+    {                                                          \
+        size_t i = 0;                                          \
+        value* arg = args;                                     \
+        while (arg != NULL) {                                  \
+            if (i >= offset) {                                 \
+                if (arg->car == NULL) {                        \
+                    return pool_new_error(                     \
+                        p, "arg #%d must be %s, but got ()",   \
+                        i, get_type_name(expected_type));      \
+                } else if (arg->car->type != expected_type) {  \
+                    static char buffer[16384];                 \
+                    value_to_str(arg->car, buffer);            \
+                    return pool_new_error(                     \
+                        p, "arg #%d must be %s, but is %s %s", \
+                        i,                                     \
+                        get_type_name(expected_type),          \
+                        get_type_name(arg->car->type),         \
+                        buffer);                               \
+                }                                              \
+            }                                                  \
+            arg = arg->cdr;                                    \
+            i++;                                               \
+        }                                                      \
     }
 
 static value* op_is_self_evaluating(machine* m, value* args) {
@@ -443,33 +446,6 @@ static value* op_extend_environment(machine* m, value* args) {
     }
 }
 
-static value* prim_car(machine* m, value* args) {
-    ASSERT_NUM_ARGS(m->pool, args, 1);
-    ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_PAIR);
-
-    value* pair = args->car;
-
-    return pair->car;
-}
-
-static value* prim_cdr(machine* m, value* args) {
-    ASSERT_NUM_ARGS(m->pool, args, 1);
-    ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_PAIR);
-
-    value* pair = args->car;
-
-    return pair->cdr;
-}
-
-static value* prim_cons(machine* m, value* args) {
-    ASSERT_NUM_ARGS(m->pool, args, 2);
-
-    value* first = args->car;
-    value* second = args->cdr->car;
-
-    return pool_new_pair(m->pool, first, second);
-}
-
 static void bind_machine_ops(eval* e) {
     machine* m = e->machine;
 
@@ -533,18 +509,189 @@ static void bind_machine_ops(eval* e) {
     machine_bind_op(m, "extend-environment", op_extend_environment);
 }
 
+static value* prim_car(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_PAIR);
+
+    value* pair = args->car;
+
+    return pair->car;
+}
+
+static value* prim_cdr(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_PAIR);
+
+    value* pair = args->car;
+
+    return pair->cdr;
+}
+
+static value* prim_cons(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 2);
+
+    value* first = args->car;
+    value* second = args->cdr->car;
+
+    return pool_new_pair(m->pool, first, second);
+}
+
+static value* prim_add(machine* m, value* args) {
+    ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    double result = args->car->number;
+    args = args->cdr;
+
+    while (args != NULL) {
+        result += args->car->number;
+        args = args->cdr;
+    }
+
+    return pool_new_number(m->pool, result);
+}
+
+static value* prim_subtract(machine* m, value* args) {
+    ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    double result = args->car->number;
+    args = args->cdr;
+
+    if (args == NULL) {
+        result = -result;
+    } else {
+        while (args != NULL) {
+            result -= args->car->number;
+            args = args->cdr;
+        }
+    }
+
+    return pool_new_number(m->pool, result);
+}
+
+static value* prim_multiply(machine* m, value* args) {
+    ASSERT_MIN_NUM_ARGS(m->pool, args, 2);
+    ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    double result = args->car->number;
+    args = args->cdr;
+
+    while (args != NULL) {
+        result *= args->car->number;
+        args = args->cdr;
+    }
+
+    return pool_new_number(m->pool, result);
+}
+
+static value* prim_divide(machine* m, value* args) {
+    ASSERT_MIN_NUM_ARGS(m->pool, args, 2);
+    ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    double result = args->car->number;
+    args = args->cdr;
+
+    while (args != NULL) {
+        if (args->car->number == 0) {
+            return pool_new_error(m->pool, "division by zero");
+        }
+        result /= args->car->number;
+        args = args->cdr;
+    }
+
+    return pool_new_number(m->pool, result);
+}
+
+static value* prim_modulo(machine* m, value* args) {
+    ASSERT_MIN_NUM_ARGS(m->pool, args, 2);
+    ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    int result = (int)args->car->number;
+    args = args->cdr;
+
+    while (args != NULL) {
+        if (args->car->number == 0) {
+            return pool_new_error(m->pool, "division by zero");
+        }
+        result %= (int)args->car->number;
+        args = args->cdr;
+    }
+
+    return pool_new_number(m->pool, result);
+}
+
+static value* prim_power(machine* m, value* args) {
+    ASSERT_MIN_NUM_ARGS(m->pool, args, 2);
+    ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    double result = args->car->number;
+    args = args->cdr;
+
+    while (args != NULL) {
+        result = pow(result, args->car->number);
+        args = args->cdr;
+    }
+
+    return pool_new_number(m->pool, result);
+}
+
+static value* prim_min(machine* m, value* args) {
+    ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    double result = args->car->number;
+    args = args->cdr;
+
+    while (args != NULL) {
+        if (args->car->number < result) {
+            result = args->car->number;
+        }
+        args = args->cdr;
+    }
+
+    return pool_new_number(m->pool, result);
+}
+
+static value* prim_max(machine* m, value* args) {
+    ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    double result = args->car->number;
+    args = args->cdr;
+
+    while (args != NULL) {
+        if (args->car->number > result) {
+            result = args->car->number;
+        }
+        args = args->cdr;
+    }
+
+    return pool_new_number(m->pool, result);
+}
+
 static void add_primitive(eval* e, value* env, char* name, builtin fn) {
     pool* p = e->machine->pool;
-
     add_to_env(env, name, pool_new_builtin(p, fn, name), p);
 }
 
 static value* make_global_environment(eval* e) {
     value* env = pool_new_env(e->machine->pool);
 
+    // structural
     add_primitive(e, env, "car", prim_car);
     add_primitive(e, env, "cdr", prim_cdr);
     add_primitive(e, env, "cons", prim_cons);
+
+    // arithmetic
+    add_primitive(e, env, "+", prim_add);
+    add_primitive(e, env, "-", prim_subtract);
+    add_primitive(e, env, "*", prim_multiply);
+    add_primitive(e, env, "/", prim_divide);
+    add_primitive(e, env, "%", prim_modulo);
+    add_primitive(e, env, "^", prim_power);
+    add_primitive(e, env, "min", prim_min);
+    add_primitive(e, env, "max", prim_max);
 
     return env;
 }

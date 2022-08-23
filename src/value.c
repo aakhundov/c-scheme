@@ -50,9 +50,13 @@ void value_init_builtin(value* v, void* ptr, char* name) {
 static void value_init_symbol_from_args(value* v, char* format, va_list args) {
     assert(v != NULL);
 
-    static char buffer[16384];
-    vsnprintf(buffer, sizeof(buffer), format, args);
-    value_init_symbol(v, buffer);
+    if (args != NULL) {
+        static char buffer[16384];
+        vsnprintf(buffer, sizeof(buffer), format, args);
+        value_init_symbol(v, buffer);
+    } else {
+        value_init_symbol(v, format);
+    }
 }
 
 void value_init_error_from_args(value* v, char* error, va_list args) {
@@ -514,10 +518,10 @@ void value_copy(value* dest, value* source) {
             value_init_builtin(dest, source->ptr, source->symbol);
             break;
         case VALUE_ERROR:
-            value_init_error(dest, source->symbol);
+            value_init_error_from_args(dest, source->symbol, NULL);
             break;
         case VALUE_INFO:
-            value_init_info(dest, source->symbol);
+            value_init_info_from_args(dest, source->symbol, NULL);
             break;
         case VALUE_PAIR:
             value_init_pair(dest, source->car, source->cdr);
