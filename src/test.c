@@ -899,8 +899,8 @@ static void test_arithmetic(eval* e) {
 }
 
 void test_math(eval* e) {
-    test_eval_number(e, "PI", M_PI);
-    test_eval_number(e, "E", M_E);
+    test_eval_number(e, "PI", 3.14159265358979323846264338327950288);
+    test_eval_number(e, "E", 2.71828182845904523536028747135266250);
 
     test_eval_number(e, "(abs 1)", 1);
     test_eval_number(e, "(abs -1)", 1);
