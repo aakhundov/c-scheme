@@ -554,6 +554,23 @@ static value* prim_cons(machine* m, value* args) {
     return pool_new_pair(m->pool, first, second);
 }
 
+static value* prim_list(machine* m, value* args) {
+    value* result = NULL;
+    value* running = NULL;
+    while (args != NULL) {
+        value* pair = pool_new_pair(m->pool, args->car, NULL);
+        if (running == NULL) {
+            result = pair;
+        } else {
+            running->cdr = pair;
+        }
+        running = pair;
+        args = args->cdr;
+    }
+
+    return result;
+}
+
 static value* prim_set_car(machine* m, value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 2);
     ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_PAIR);
@@ -1052,6 +1069,7 @@ static value* make_global_environment(eval* e) {
     add_primitive(e, env, "car", prim_car);
     add_primitive(e, env, "cdr", prim_cdr);
     add_primitive(e, env, "cons", prim_cons);
+    add_primitive(e, env, "list", prim_list);
     add_primitive(e, env, "set-car!", prim_set_car);
     add_primitive(e, env, "set-cdr!", prim_set_cdr);
 

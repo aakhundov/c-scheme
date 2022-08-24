@@ -894,6 +894,12 @@ static void test_structural(eval* e) {
     test_eval_error(e, "(cons 1)", "expects 2 args, but got 1");
     test_eval_error(e, "(cons 1 2 3)", "expects 2 args, but got 3");
 
+    // list
+    test_eval_output(e, "(list)", "()");
+    test_eval_output(e, "(list 1)", "(1)");
+    test_eval_output(e, "(list 1 2 3 4)", "(1 2 3 4)");
+    test_eval_output(e, "(list 3.14 \"a\" true '(1 2) '())", "(3.14 \"a\" true (1 2) ())");
+
     // set-car!
     test_eval_error(e, "x", "x is unbound");
     test_eval_info(e, "(define x '(1 . 2))", "x is defined");
