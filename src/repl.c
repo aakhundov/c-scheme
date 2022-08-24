@@ -44,6 +44,7 @@ static const size_t command_counts[] = {
 
 static char* history_path = "./.history";
 static char* evaluator_path = "./lib/machines/evaluator.scm";
+static char* library_path = "./lib/scheme/library.scm";
 
 static void get_input(char* input) {
     char* line = readline(">>> ");
@@ -113,6 +114,39 @@ static void process_repl_command(eval* e, hist* h, char* input, char* output) {
     value_dispose(parsed);
 }
 
+value* load_from_path(eval* e, char* path) {
+    value* content = parse_from_file(path);
+    if (content->type == VALUE_ERROR) {
+        return content;
+    }
+
+    while (content != NULL) {
+        value* result = eval_evaluate(e, content->car);
+        if (result->type == VALUE_ERROR) {
+            value_dispose(content);
+            return result;
+        }
+        content = content->cdr;
+    }
+
+    value_dispose(content);
+
+    return value_new_info("loaded from '%s'", path);
+}
+
+void load_library(eval* e) {
+    value* result = load_from_path(e, library_path);
+
+    static char buffer[16384];
+    value_to_str(result, buffer);
+    if (result->type == VALUE_ERROR) {
+        printf("error occurred while loading the library:\n");
+    }
+    printf("%s\n\n", buffer);
+
+    value_dispose(result);
+}
+
 void run_repl() {
     printf("c-scheme version 0.0.1\n");
     printf("type in \"q\" to quit\n\n");
@@ -125,6 +159,8 @@ void run_repl() {
     hist* h;
     eval_new(&e, evaluator_path);
     hist_new(&h, history_path);
+
+    load_library(e);
 
     while (!stop) {
         get_input(input);
