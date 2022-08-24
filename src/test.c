@@ -209,11 +209,6 @@ static void test_parse() {
     test_parse_output("'\"x\" \"y\" \"z\"", "((quote \"x\") \"y\" \"z\")");
     test_parse_output("'(\"x\" \"y\" \"z\")", "((quote (\"x\" \"y\" \"z\")))");
 
-    // special symbols
-    test_parse_output("nil", "(())");
-    test_parse_output("true", "(true)");
-    test_parse_output("false", "(false)");
-
     // parsing errors
     test_parse_error("(1 2", "missing )");
     test_parse_error("1 2)", "premature )");
@@ -701,7 +696,6 @@ static void test_syntax(eval* e) {
     test_eval_error(e, "(define (1 x y) 1)", "function name is not a symbol");
     test_eval_error(e, "(define x 1 2)", "can't be more than one item");
     test_eval_error(e, "(define 1 2)", "either variable or function");
-    test_eval_error(e, "(define true 2)", "either variable or function");
     test_eval_error(e, "(define \"x\" 2)", "either variable or function");
 
     // if
@@ -1474,6 +1468,9 @@ void test_predicates(eval* e) {
     test_eval_bool(e, "(eq? car cdr)", 0);
     test_eval_bool(e, "(eq? cons cons)", 1);
     test_eval_bool(e, "(eq? (cons car cdr) (cons car cdr))", 0);
+    test_eval_bool(e, "(eq? true true)", 1);
+    test_eval_bool(e, "(eq? false false)", 1);
+    test_eval_bool(e, "(eq? nil nil)", 1);
     test_eval_bool(e, "(eq? 'a 'a)", 0);
     test_eval_bool(e, "(eq? \"a\" \"a\")", 0);
     test_eval_bool(e, "(eq? '(1) '(1))", 0);

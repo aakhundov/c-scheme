@@ -1027,8 +1027,11 @@ static value* make_global_environment(eval* e) {
     value* env = pool_new_env(e->machine->pool);
 
     // constants
-    add_to_env(env, "PI", pool_new_number(p, 3.14159265358979323846264338327950288), p);
-    add_to_env(env, "E", pool_new_number(p, 2.71828182845904523536028747135266250), p);
+    add_to_env(env, "nil", NULL, p);
+    add_to_env(env, "true", pool_new_bool(p, 1), p);
+    add_to_env(env, "false", pool_new_bool(p, 0), p);
+    add_to_env(env, "PI", pool_new_number(p, 3.1415926536), p);
+    add_to_env(env, "E", pool_new_number(p, 2.7182818285), p);
 
     // structural
     add_primitive(e, env, "car", prim_car);
