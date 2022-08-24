@@ -564,12 +564,12 @@ static void trace_after(machine* m, value* line, value* instruction) {
     static char message[16348];
     switch ((int)instruction->car->number) {
         case INST_ASSIGN:
-            // print the destination register
-            value_to_str(instruction->cdr->car, message);
+            // print the destination register's content
+            value_to_str(instruction->cdr->car->car, message);
         case INST_CALL:
             if (instruction->cdr->car != NULL) {
-                // print the destination register
-                value_to_str(instruction->cdr->car, message);
+                // print the destination register's content
+                value_to_str(instruction->cdr->car->car, message);
             } else {
                 message[0] = '\0';
             }
@@ -579,20 +579,20 @@ static void trace_after(machine* m, value* line, value* instruction) {
             sprintf(message, "%s", (get_flag(m) ? "true" : "false"));
             break;
         case INST_BRANCH:
-            // print the outcome of the branch
+            // print the result of the previous test
             sprintf(message, "%s", (get_flag(m) ? "true" : "false"));
             break;
         case INST_SAVE:
         case INST_RESTORE:
-            // print the associated register
-            value_to_str(instruction->cdr, message);
+            // print the associated register's content
+            value_to_str(instruction->cdr->car, message);
             break;
         default:
             message[0] = '\0';
     }
 
     if (message[0]) {
-        printf("\x1B[32m ==> %s\n\x1B[0m", message);
+        printf(" \x1B[34m==>\x1B[0m %s\n", message);
     } else {
         printf("\n");
     }
