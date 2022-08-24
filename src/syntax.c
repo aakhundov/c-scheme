@@ -29,9 +29,10 @@ value* is_self_evaluating(pool* p, value* exp) {
     return pool_new_bool(
         p,
         (exp == NULL ||
-         exp->type == VALUE_NUMBER ||  // 10
-         exp->type == VALUE_STRING ||  // "abc"
-         exp->type == VALUE_BOOL));    // true or false
+         exp->type == VALUE_NUMBER ||   // 10
+         exp->type == VALUE_STRING ||   // "abc"
+         exp->type == VALUE_BOOL ||     // true or false
+         exp->type == VALUE_BUILTIN));  // true or false
 }
 
 value* is_variable(pool* p, value* exp) {
@@ -281,6 +282,26 @@ value* is_begin(pool* p, value* exp) {
 value* get_begin_actions(pool* p, value* exp) {
     // (x y z) from (begin x y z)
     return exp->cdr;
+}
+
+value* is_eval(pool* p, value* exp) {
+    static const char* tag = "eval";
+    if (is_tagged_list(exp, tag)) {
+        if (exp->cdr == NULL) {
+            MAKE_ERROR(p, "%s: no expression in '%s'", tag, exp);
+        } else if (exp->cdr->cdr != NULL) {
+            MAKE_ERROR(p, "%s: too many items in '%s'", tag, exp);
+        }
+
+        return pool_new_bool(p, 1);
+    } else {
+        return pool_new_bool(p, 0);
+    }
+}
+
+value* get_eval_expression(pool* p, value* exp) {
+    // x from (eval x)
+    return exp->cdr->car;
 }
 
 value* is_application(pool* p, value* exp) {

@@ -214,6 +214,18 @@ static value* op_get_begin_actions(machine* m, value* args) {
     return get_begin_actions(m->pool, exp);
 }
 
+static value* op_is_eval(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return is_eval(m->pool, exp);
+}
+
+static value* op_get_eval_expression(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return get_eval_expression(m->pool, exp);
+}
+
 static value* op_is_application(machine* m, value* args) {
     value* exp = args->car->car;
 
@@ -478,6 +490,9 @@ static void bind_machine_ops(eval* e) {
 
     machine_bind_op(m, "begin?", op_is_begin);
     machine_bind_op(m, "begin-actions", op_get_begin_actions);
+
+    machine_bind_op(m, "eval?", op_is_eval);
+    machine_bind_op(m, "eval-expression", op_get_eval_expression);
 
     machine_bind_op(m, "application?", op_is_application);
     machine_bind_op(m, "true?", op_is_true);

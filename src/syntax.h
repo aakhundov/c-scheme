@@ -34,6 +34,9 @@ value* make_lambda(pool* p, value* params, value* body);
 value* is_begin(pool* p, value* exp);
 value* get_begin_actions(pool* p, value* exp);
 
+value* is_eval(pool* p, value* exp);
+value* get_eval_expression(pool* p, value* exp);
+
 value* is_application(pool* p, value* exp);
 value* is_true(pool* p, value* exp);
 

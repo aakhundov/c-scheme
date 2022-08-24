@@ -18,6 +18,8 @@ eval-dispatch
     (branch (label ev-lambda))
     (test (op begin?) (reg exp))
     (branch (label ev-begin))
+    (test (op eval?) (reg exp))
+    (branch (label ev-eval))
     (test (op application?) (reg exp))
     (branch (label ev-application))
     (perform (op signal-error) (const "can't evaluate %s") (reg exp))
@@ -94,6 +96,16 @@ ev-begin
     (assign unev (op begin-actions) (reg exp))
     (save continue)
     (goto (label ev-sequence))
+
+ev-eval
+    (save continue)
+    (assign exp (op eval-expression) (reg exp))
+    (assign continue (label ev-eval-did-once))
+    (goto (label eval-dispatch))
+ev-eval-did-once
+    (restore continue)
+    (assign exp (reg val))
+    (goto (label eval-dispatch))
 
 ev-application
     (save continue)

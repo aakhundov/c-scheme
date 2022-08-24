@@ -744,6 +744,30 @@ static void test_syntax(eval* e) {
     // begin errors
     test_eval_error(e, "(begin)", "no items");
 
+    // eval
+    test_eval_number(e, "(eval 1)", 1);
+    test_eval_number(e, "(eval 3.14)", 3.14);
+    test_eval_bool(e, "(eval true)", 1);
+    test_eval_output(e, "(eval ())", "()");
+    test_eval_info(e, "(define e1 10)", "e1 is defined");
+    test_eval_number(e, "(eval e1)", 10);
+    test_eval_number(e, "(eval 'e1)", 10);
+    test_eval_output(e, "(eval ''e1)", "e1");
+    test_eval_number(e, "(eval '(+ 1 2 3))", 6);
+    test_eval_number(e, "(eval (cons + '(1 2 3)))", 6);
+    test_eval_info(e, "(define e2 '(+ 1 2 3))", "e2 is defined");
+    test_eval_number(e, "(eval e2)", 6);
+    test_eval_output(e, "(eval 'e2)", "(+ 1 2 3)");
+    test_eval_output(e, "(eval ''e2)", "e2");
+    test_eval_info(e, "(define e3 '(cons + '(1 2 3)))", "e3 is defined");
+    test_eval_output(e, "(eval e3)", "(<builtin '+'> 1 2 3)");
+    test_eval_output(e, "(eval 'e3)", "(cons + (quote (1 2 3)))");
+    test_eval_number(e, "(eval (eval e3))", 6);
+
+    // eval errors
+    test_eval_error(e, "(eval)", "no expression");
+    test_eval_error(e, "(eval 1 2)", "too many items");
+
     // function without params
     test_eval_info(e, "(define (f0) 1)", "f0 is defined");
     test_eval_output(e, "(f0)", "1");
