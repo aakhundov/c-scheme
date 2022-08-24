@@ -539,6 +539,30 @@ static value* prim_cons(machine* m, value* args) {
     return pool_new_pair(m->pool, first, second);
 }
 
+static value* prim_set_car(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 2);
+    ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_PAIR);
+
+    value* first = args->car;
+    value* second = args->cdr->car;
+
+    first->car = second;
+
+    return pool_new_info(m->pool, "car is set");
+}
+
+static value* prim_set_cdr(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 2);
+    ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_PAIR);
+
+    value* first = args->car;
+    value* second = args->cdr->car;
+
+    first->cdr = second;
+
+    return pool_new_info(m->pool, "cdr is set");
+}
+
 static value* prim_add(machine* m, value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
@@ -989,7 +1013,7 @@ static value* prim_collect(machine* m, value* args) {
     double percentage = (values_before > 0 ? (double)collected / values_before : 0) * 100;
 
     return pool_new_info(
-        m->pool, "collected %zu (%.2f%%) from %zu values",
+        m->pool, "%zu (%.2f%%) from %zu collected",
         collected, percentage, values_before);
 }
 
@@ -1010,6 +1034,8 @@ static value* make_global_environment(eval* e) {
     add_primitive(e, env, "car", prim_car);
     add_primitive(e, env, "cdr", prim_cdr);
     add_primitive(e, env, "cons", prim_cons);
+    add_primitive(e, env, "set-car!", prim_set_car);
+    add_primitive(e, env, "set-cdr!", prim_set_cdr);
 
     // arithmetic
     add_primitive(e, env, "+", prim_add);

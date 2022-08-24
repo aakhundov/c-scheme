@@ -875,6 +875,66 @@ static void test_structural(eval* e) {
     test_eval_error(e, "(cons)", "expects 2 args, but got 0");
     test_eval_error(e, "(cons 1)", "expects 2 args, but got 1");
     test_eval_error(e, "(cons 1 2 3)", "expects 2 args, but got 3");
+
+    // set-car!
+    test_eval_error(e, "x", "x is unbound");
+    test_eval_info(e, "(define x '(1 . 2))", "x is defined");
+    test_eval_output(e, "x", "(1 . 2)");
+    test_eval_info(e, "(set-car! x 3)", "car is set");
+    test_eval_output(e, "x", "(3 . 2)");
+    test_eval_info(e, "(set-car! x (+ (car x) 1))", "car is set");
+    test_eval_output(e, "x", "(4 . 2)");
+    test_eval_info(e, "(set-car! x (cdr x))", "car is set");
+    test_eval_output(e, "x", "(2 . 2)");
+    test_eval_info(e, "(set-car! x (+ (cdr x) 1))", "car is set");
+    test_eval_output(e, "x", "(3 . 2)");
+    test_eval_info(e, "(define x '(1))", "x is updated");
+    test_eval_output(e, "x", "(1)");
+    test_eval_info(e, "(set-car! x 2)", "car is set");
+    test_eval_output(e, "x", "(2)");
+    test_eval_info(e, "(set-car! x 3)", "car is set");
+    test_eval_output(e, "x", "(3)");
+    test_eval_info(e, "(set-car! x '(2))", "car is set");
+    test_eval_output(e, "x", "((2))");
+    test_eval_info(e, "(set-car! x '(3))", "car is set");
+    test_eval_output(e, "x", "((3))");
+
+    // set-car! errors
+    test_eval_error(e, "(set-car!)", "expects 2 args, but got 0");
+    test_eval_error(e, "(set-car! x)", "expects 2 args, but got 1");
+    test_eval_error(e, "(set-car! x 1 2)", "expects 2 args, but got 3");
+    test_eval_error(e, "(set-car! 1 2)", "must be pair, but is number");
+    test_eval_error(e, "(set-car! () 2)", "must be pair, but got ()");
+
+    // set-cdr!
+    test_eval_error(e, "y", "y is unbound");
+    test_eval_info(e, "(define y '(1 . 2))", "y is defined");
+    test_eval_output(e, "y", "(1 . 2)");
+    test_eval_info(e, "(set-cdr! y 3)", "cdr is set");
+    test_eval_output(e, "y", "(1 . 3)");
+    test_eval_info(e, "(set-cdr! y (+ (cdr y) 1))", "cdr is set");
+    test_eval_output(e, "y", "(1 . 4)");
+    test_eval_info(e, "(set-cdr! y (car y))", "cdr is set");
+    test_eval_output(e, "y", "(1 . 1)");
+    test_eval_info(e, "(set-cdr! y (+ (car y) 1))", "cdr is set");
+    test_eval_output(e, "y", "(1 . 2)");
+    test_eval_info(e, "(define x '(1))", "x is updated");
+    test_eval_output(e, "x", "(1)");
+    test_eval_info(e, "(set-cdr! x 2)", "cdr is set");
+    test_eval_output(e, "x", "(1 . 2)");
+    test_eval_info(e, "(set-cdr! x 3)", "cdr is set");
+    test_eval_output(e, "x", "(1 . 3)");
+    test_eval_info(e, "(set-cdr! x '(2))", "cdr is set");
+    test_eval_output(e, "x", "(1 2)");
+    test_eval_info(e, "(set-cdr! x '(3))", "cdr is set");
+    test_eval_output(e, "x", "(1 3)");
+
+    // set-cdr! errors
+    test_eval_error(e, "(set-cdr!)", "expects 2 args, but got 0");
+    test_eval_error(e, "(set-cdr! y)", "expects 2 args, but got 1");
+    test_eval_error(e, "(set-cdr! y 1 2)", "expects 2 args, but got 3");
+    test_eval_error(e, "(set-cdr! 1 2)", "must be pair, but is number");
+    test_eval_error(e, "(set-cdr! () 2)", "must be pair, but got ()");
 }
 
 static void test_arithmetic(eval* e) {
@@ -1444,7 +1504,7 @@ void test_other(eval* e) {
     test_eval_info(e, "(info \"hello '%s'\" 1)", "hello '1'");
     test_eval_info(e, "(info \"(%s, %s, %s, %s, %s)\" 'x \"a\" true '(1) '())", "(x, \"a\", true, (1), ())");
 
-    // info infos
+    // info errors
     test_eval_error(e, "(info)", "expects at least 1 arg, but got 0");
     test_eval_error(e, "(info 1)", "must be string, but is number");
 }
