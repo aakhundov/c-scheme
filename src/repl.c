@@ -120,13 +120,15 @@ value* load_from_path(eval* e, char* path) {
         return content;
     }
 
-    while (content != NULL) {
-        value* result = eval_evaluate(e, content->car);
+    value* running = content;
+    while (running != NULL) {
+        value* result = eval_evaluate(e, running->car);
         if (result->type == VALUE_ERROR) {
             value_dispose(content);
             return result;
         }
-        content = content->cdr;
+        value_dispose(result);
+        running = running->cdr;
     }
 
     value_dispose(content);
