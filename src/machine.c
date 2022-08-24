@@ -18,7 +18,7 @@ typedef enum {
 } instruction_type;
 
 static const size_t MAX_STACK_VALUES = 100000;
-static const size_t MAX_GARBAGE_VALUES = 10000000;
+static const size_t MAX_GARBAGE_VALUES = 1000000;
 
 static value* get_or_create_record(machine* m, value* table, char* name) {
     value* pair = table->cdr;
@@ -598,7 +598,9 @@ static void trace_after(machine* m, value* line, value* instruction) {
     }
 }
 
-static void report_stats(machine_stats s) {
+static void report_stats(machine* m) {
+    machine_stats s = m->stats;
+
     printf("\n");
     printf("instructions:\n");
     printf("  - total: %zu\n", s.num_inst);
@@ -607,9 +609,8 @@ static void report_stats(machine_stats s) {
     printf("stack:\n");
     printf("  - final depth: %zu\n", s.stack_depth);
     printf("  - maximum depth: %zu\n", s.stack_depth_max);
-    printf("garbage collection:\n");
-    printf("  - values before: %zu\n", s.garbage_before);
-    printf("  - values after: %zu\n", s.garbage_after);
+    printf("garbage:\n");
+    printf("  - # of values: %zu\n", m->pool->size);
     printf("\n");
 }
 
@@ -631,8 +632,8 @@ static void execute_next_instruction(machine* m) {
     }
 
     if (m->pool->size >= MAX_GARBAGE_VALUES) {
-        // interim garbage collection
-        // can get stuck here if much
+        // interim garbage collection:
+        // can be inefficient if much
         // of the garbage is needed
         pool_collect_garbage(m->pool);
     }
@@ -692,13 +693,7 @@ void machine_run(machine* m) {
         execute_next_instruction(m);
     }
 
-    // collect garbage after every run
-    // inefficient, yet simple
-    m->stats.garbage_before = m->pool->size;
-    pool_collect_garbage(m->pool);
-    m->stats.garbage_after = m->pool->size;
-
     if (in_trace_mode(m)) {
-        report_stats(m->stats);
+        report_stats(m);
     }
 }

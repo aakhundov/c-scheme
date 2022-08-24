@@ -977,6 +977,22 @@ static value* prim_newline(machine* m, value* args) {
     return NULL;
 }
 
+static value* prim_collect(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 0);
+
+    size_t values_before = m->pool->size;
+
+    pool_collect_garbage(m->pool);
+
+    size_t values_after = m->pool->size;
+    size_t collected = values_before - values_after;
+    double percentage = (values_before > 0 ? (double)collected / values_before : 0) * 100;
+
+    return pool_new_info(
+        m->pool, "collected %zu (%.2f%%) from %zu values",
+        collected, percentage, values_before);
+}
+
 static void add_primitive(eval* e, value* env, char* name, builtin fn) {
     pool* p = e->machine->pool;
     add_to_env(env, name, pool_new_builtin(p, fn, name), p);
@@ -1039,6 +1055,7 @@ static value* make_global_environment(eval* e) {
     add_primitive(e, env, "info", prim_info);
     add_primitive(e, env, "display", prim_display);
     add_primitive(e, env, "newline", prim_newline);
+    add_primitive(e, env, "collect", prim_collect);
 
     return env;
 }
