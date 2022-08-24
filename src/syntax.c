@@ -270,7 +270,7 @@ value* is_begin(pool* p, value* exp) {
     static const char* tag = "begin";
     if (is_tagged_list(exp, tag)) {
         if (exp->cdr == NULL) {
-            MAKE_ERROR(p, "%s: no items in '%s'", tag, exp);
+            MAKE_ERROR(p, "%s: no items in %s", tag, exp);
         }
 
         return pool_new_bool(p, 1);
@@ -288,9 +288,9 @@ value* is_eval(pool* p, value* exp) {
     static const char* tag = "eval";
     if (is_tagged_list(exp, tag)) {
         if (exp->cdr == NULL) {
-            MAKE_ERROR(p, "%s: no expression in '%s'", tag, exp);
+            MAKE_ERROR(p, "%s: no expression in %s", tag, exp);
         } else if (exp->cdr->cdr != NULL) {
-            MAKE_ERROR(p, "%s: too many items in '%s'", tag, exp);
+            MAKE_ERROR(p, "%s: too many items in %s", tag, exp);
         }
 
         return pool_new_bool(p, 1);
@@ -304,11 +304,60 @@ value* get_eval_expression(pool* p, value* exp) {
     return exp->cdr->car;
 }
 
+value* is_apply(pool* p, value* exp) {
+    static const char* tag = "apply";
+    if (is_tagged_list(exp, tag)) {
+        if (exp->cdr == NULL) {
+            MAKE_ERROR(p, "%s: no operator in %s", tag, exp);
+        } else if (exp->cdr->cdr == NULL) {
+            MAKE_ERROR(p, "%s: no arguments in %s", tag, exp);
+        } else if (exp->cdr->cdr->cdr != NULL) {
+            MAKE_ERROR(p, "%s: too many items in in %s", tag, exp);
+        }
+
+        return pool_new_bool(p, 1);
+    } else {
+        return pool_new_bool(p, 0);
+    }
+}
+
+value* get_apply_operator(pool* p, value* exp) {
+    // x from (apply x y)
+    return exp->cdr->car;
+}
+
+value* get_apply_arguments(pool* p, value* exp) {
+    // y from (apply x y)
+    return exp->cdr->cdr->car;
+}
+
+value* verify_apply_arguments(pool* p, value* args) {
+    value* running = args;
+    while (running != NULL) {
+        if (running->type != VALUE_PAIR) {
+            MAKE_ERROR(p, "%s: can't apply to %s", "apply", args);
+        }
+        running = running->cdr;
+    }
+
+    return pool_new_bool(p, 1);
+}
+
 value* is_application(pool* p, value* exp) {
     // (f ...) with any f
-    return pool_new_bool(
-        p,
-        (exp != NULL && exp->type == VALUE_PAIR));
+    if (exp != NULL && exp->type == VALUE_PAIR) {
+        value* running = exp;
+        while (running != NULL) {
+            if (running->type != VALUE_PAIR) {
+                MAKE_ERROR(p, "%s: can't apply to %s", "apply", exp->cdr);
+            }
+            running = running->cdr;
+        }
+
+        return pool_new_bool(p, 1);
+    } else {
+        return pool_new_bool(p, 0);
+    }
 }
 
 value* is_true(pool* p, value* exp) {

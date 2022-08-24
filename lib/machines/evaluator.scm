@@ -20,6 +20,8 @@ eval-dispatch
     (branch (label ev-begin))
     (test (op eval?) (reg exp))
     (branch (label ev-eval))
+    (test (op apply?) (reg exp))
+    (branch (label ev-apply))
     (test (op application?) (reg exp))
     (branch (label ev-application))
     (perform (op signal-error) (const "can't evaluate %s") (reg exp))
@@ -107,15 +109,37 @@ ev-eval-did-once
     (assign exp (reg val))
     (goto (label eval-dispatch))
 
+ev-apply
+    (save continue)
+    (save env)
+    (assign unev (op apply-arguments) (reg exp))
+    (save unev)
+    (assign exp (op apply-operator) (reg exp))
+    (assign continue (label ev-apply-did-operator))
+    (goto (label eval-dispatch))
+ev-apply-did-operator
+    (restore unev)
+    (restore env)
+    (assign proc (reg val))
+    (save proc)
+    (assign exp (reg unev))
+    (assign continue (label ev-apply-did-arguments))
+    (goto (label eval-dispatch))
+ev-apply-did-arguments
+    (assign argl (reg val))
+    (restore proc)
+    (perform (op apply-verify) (reg argl))
+    (goto (label apply-dispatch))
+
 ev-application
     (save continue)
     (save env)
     (assign unev (op operands) (reg exp))
     (save unev)
     (assign exp (op operator) (reg exp))
-    (assign continue (label ev-appl-did-operator))
+    (assign continue (label ev-application-did-operator))
     (goto (label eval-dispatch))
-ev-appl-did-operator
+ev-application-did-operator
     (restore unev)
     (restore env)
     (assign argl (op make-empty-arglist))
@@ -123,26 +147,26 @@ ev-appl-did-operator
     (test (op no-operands?) (reg unev))
     (branch (label apply-dispatch))
     (save proc)
-ev-appl-operand-loop
+ev-application-operand-loop
     (save argl)
     (assign exp (op first-operand) (reg unev))
     (test (op last-operand?) (reg unev))
-    (branch (label ev-appl-last-arg))
+    (branch (label ev-application-last-arg))
     (save env)
     (save unev)
-    (assign continue (label ev-appl-accumulate-arg))
+    (assign continue (label ev-application-accumulate-arg))
     (goto (label eval-dispatch))
-ev-appl-accumulate-arg
+ev-application-accumulate-arg
     (restore unev)
     (restore env)
     (restore argl)
     (assign argl (op adjoin-arg) (reg val) (reg argl))
     (assign unev (op rest-operands) (reg unev))
-    (goto (label ev-appl-operand-loop))
-ev-appl-last-arg
-    (assign continue (label ev-appl-accumulate-last-arg))
+    (goto (label ev-application-operand-loop))
+ev-application-last-arg
+    (assign continue (label ev-application-accumulate-last-arg))
     (goto (label eval-dispatch))
-ev-appl-accumulate-last-arg
+ev-application-accumulate-last-arg
     (restore argl)
     (assign argl (op adjoin-arg) (reg val) (reg argl))
     (restore proc)

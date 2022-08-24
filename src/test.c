@@ -768,6 +768,33 @@ static void test_syntax(eval* e) {
     test_eval_error(e, "(eval)", "no expression");
     test_eval_error(e, "(eval 1 2)", "too many items");
 
+    // apply
+    test_eval_number(e, "(apply + '(1))", 1);
+    test_eval_number(e, "(apply - '(1))", -1);
+    test_eval_number(e, "(apply + '(1 2 3))", 6);
+    test_eval_info(e, "(define a1 10)", "a1 is defined");
+    test_eval_number(e, "(apply (if true + -) (list 1 a1 3))", 14);
+    test_eval_number(e, "(apply (if false + -) (list 1 a1 3))", -12);
+    test_eval_output(e, "(apply car '((1 2)))", "1");
+    test_eval_output(e, "(apply cdr '((1 2)))", "(2)");
+    test_eval_output(e, "(apply cons '(0 (1 2)))", "(0 1 2)");
+    test_eval_number(e, "(apply (car (list + -)) (cdr '(1 2 3)))", 5);
+    test_eval_number(e, "(apply (eval (car '(+ -))) (cdr '(1 2 3)))", 5);
+    test_eval_number(e, "(+ (apply (eval (car '(+ -))) (cdr '(1 2 3))) a1)", 15);
+    test_eval_output(e, "(apply car '('(1 2)))", "quote");
+    test_eval_output(e, "(apply cdr '('(1 2)))", "((1 2))");
+    test_eval_output(e, "(apply cons '('0 '(1 2)))", "((quote 0) quote (1 2))");
+    test_eval_number(e, "(apply * (list (apply + '(1 2 3)) (apply - '(4 5 6))))", -42);
+
+    // apply errors
+    test_eval_error(e, "(apply)", "no operator in");
+    test_eval_error(e, "(apply 1)", "no arguments in");
+    test_eval_error(e, "(apply 1 2 3)", "too many items in");
+    test_eval_error(e, "(apply 1 '(1 2 3))", "can't apply 1");
+    test_eval_error(e, "(apply + 1)", "can't apply to 1");
+    test_eval_error(e, "(apply + \"a\")", "can't apply to \"a\"");
+    test_eval_error(e, "(apply + '(1 . 2))", "can't apply to (1 . 2)");
+
     // function without params
     test_eval_info(e, "(define (f0) 1)", "f0 is defined");
     test_eval_output(e, "(f0)", "1");
@@ -848,6 +875,8 @@ static void test_syntax(eval* e) {
     test_eval_error(e, "(\"x\" 2 3)", "can't apply \"x\"");
     test_eval_error(e, "(true 2 3)", "can't apply true");
     test_eval_error(e, "('() 2 3)", "can't apply ()");
+    test_eval_error(e, "(+ 1 . 2)", "can't apply to (1 . 2)");
+    test_eval_error(e, "(+ . 1)", "can't apply to 1");
 }
 
 static void test_structural(eval* e) {

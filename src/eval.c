@@ -226,6 +226,30 @@ static value* op_get_eval_expression(machine* m, value* args) {
     return get_eval_expression(m->pool, exp);
 }
 
+static value* op_is_apply(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return is_apply(m->pool, exp);
+}
+
+static value* op_get_apply_operator(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return get_apply_operator(m->pool, exp);
+}
+
+static value* op_get_apply_arguments(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return get_apply_arguments(m->pool, exp);
+}
+
+static value* op_verify_apply_arguments(machine* m, value* args) {
+    value* apply_args = args->car->car;
+
+    return verify_apply_arguments(m->pool, apply_args);
+}
+
 static value* op_is_application(machine* m, value* args) {
     value* exp = args->car->car;
 
@@ -493,6 +517,11 @@ static void bind_machine_ops(eval* e) {
 
     machine_bind_op(m, "eval?", op_is_eval);
     machine_bind_op(m, "eval-expression", op_get_eval_expression);
+
+    machine_bind_op(m, "apply?", op_is_apply);
+    machine_bind_op(m, "apply-operator", op_get_apply_operator);
+    machine_bind_op(m, "apply-arguments", op_get_apply_arguments);
+    machine_bind_op(m, "apply-verify", op_verify_apply_arguments);
 
     machine_bind_op(m, "application?", op_is_application);
     machine_bind_op(m, "true?", op_is_true);

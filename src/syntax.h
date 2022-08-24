@@ -37,6 +37,11 @@ value* get_begin_actions(pool* p, value* exp);
 value* is_eval(pool* p, value* exp);
 value* get_eval_expression(pool* p, value* exp);
 
+value* is_apply(pool* p, value* exp);
+value* get_apply_operator(pool* p, value* exp);
+value* get_apply_arguments(pool* p, value* exp);
+value* verify_apply_arguments(pool* p, value* args);
+
 value* is_application(pool* p, value* exp);
 value* is_true(pool* p, value* exp);
 
