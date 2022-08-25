@@ -1161,8 +1161,8 @@ void eval_new(eval** e, char* path_to_code) {
 
     bind_machine_ops(*e);
 
-    (*e)->env = machine_get_register((*e)->machine, "env");
-    (*e)->env->car = make_global_environment(*e);
+    (*e)->env = make_global_environment(*e);
+    machine_get_register((*e)->machine, "env")->car = (*e)->env;
 }
 
 void eval_dispose(eval** e) {
@@ -1173,12 +1173,13 @@ void eval_dispose(eval** e) {
 }
 
 value* eval_evaluate(eval* e, value* v) {
-    machine_copy_to_register(e->machine, "exp", v);
-    machine_run(e->machine);
+    machine_get_register(e->machine, "env")->car = e->env;  // set the env
+    machine_copy_to_register(e->machine, "exp", v);         // set the input
+    machine_run(e->machine);                                // compute the output
 
     return machine_export_output(e->machine);
 }
 
 void eval_reset_env(eval* e) {
-    e->env->car = make_global_environment(e);
+    e->env = make_global_environment(e);
 }
