@@ -397,6 +397,82 @@ value* transform_cond(pool* p, value* exp) {
     return transform_cond_rec(p, exp->cdr);
 }
 
+value* is_let(pool* p, value* exp) {
+    static const char* tag = "let";
+    if (is_tagged_list(exp, tag)) {
+        if (exp->cdr == NULL) {
+            MAKE_ERROR(p, "%s: no variables in %s", tag, exp);
+        } else if (exp->cdr->cdr == NULL) {
+            MAKE_ERROR(p, "%s: no body in %s", tag, exp);
+        } else {
+            value* running = exp->cdr->car;
+            while (running != NULL) {
+                if (running->type != VALUE_PAIR) {
+                    MAKE_ERROR(p, "%s: non-list variables in %s", tag, exp);
+                }
+
+                value* pair = running->car;
+                if (pair == NULL) {
+                    MAKE_ERROR(p, "%s: no variable name in %s", tag, exp);
+                } else if (pair->type != VALUE_PAIR) {
+                    MAKE_ERROR(p, "%s: non-list variable pair in %s", tag, exp);
+                } else if (pair->car == NULL || pair->car->type != VALUE_SYMBOL) {
+                    MAKE_ERROR(p, "%s: variable name must be a symbol in %s", tag, exp);
+                } else if (pair->cdr == NULL) {
+                    MAKE_ERROR(p, "%s: no variable value in %s", tag, exp);
+                } else if (pair->cdr->type != VALUE_PAIR) {
+                    MAKE_ERROR(p, "%s: non-list variable pair in %s", tag, exp);
+                } else if (pair->cdr->cdr != NULL) {
+                    MAKE_ERROR(p, "%s: too many items in a variable pair in %s", tag, exp);
+                }
+
+                running = running->cdr;
+            }
+        }
+
+        return pool_new_bool(p, 1);
+    } else {
+        return pool_new_bool(p, 0);
+    }
+}
+
+value* transform_let(pool* p, value* exp) {
+    value* params = NULL;
+    value* args = NULL;
+    value* body = exp->cdr->cdr;
+
+    value* params_tail = NULL;
+    value* args_tail = NULL;
+    value* running = exp->cdr->car;
+    while (running != NULL) {
+        value* pair = running->car;
+        value* name = pair->car;
+        value* val = pair->cdr->car;
+
+        value* next_param = pool_new_pair(p, name, NULL);
+        value* next_arg = pool_new_pair(p, val, NULL);
+        if (params == NULL) {
+            params = next_param;
+            args = next_arg;
+        } else {
+            params_tail->cdr = next_param;
+            args_tail->cdr = next_arg;
+        }
+        params_tail = next_param;
+        args_tail = next_arg;
+
+        running = running->cdr;
+    }
+
+    return pool_new_pair(
+        p,
+        make_lambda(
+            p,
+            params,
+            body),
+        args);
+}
+
 value* is_eval(pool* p, value* exp) {
     // (eval exp)
     static const char* tag = "eval";

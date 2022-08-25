@@ -16,6 +16,8 @@ eval-dispatch
     (branch (label ev-if))
     (test (op lambda?) (reg exp))
     (branch (label ev-lambda))
+    (test (op let?) (reg exp))
+    (branch (label ev-let))
     (test (op begin?) (reg exp))
     (branch (label ev-begin))
     (test (op cond?) (reg exp))
@@ -95,6 +97,10 @@ ev-lambda
     (assign exp (op lambda-body) (reg exp))
     (assign val (op make-compound-procedure) (reg unev) (reg exp) (reg env))
     (goto (reg continue))
+
+ev-let
+    (assign exp (op transform-let) (reg exp))
+    (goto (label eval-dispatch))
 
 ev-begin
     (assign unev (op begin-actions) (reg exp))

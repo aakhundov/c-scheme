@@ -202,6 +202,18 @@ static value* op_get_lambda_body(machine* m, value* args) {
     return get_lambda_body(m->pool, exp);
 }
 
+static value* op_is_let(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return is_let(m->pool, exp);
+}
+
+static value* op_transform_let(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return transform_let(m->pool, exp);
+}
+
 static value* op_is_begin(machine* m, value* args) {
     value* exp = args->car->car;
 
@@ -523,6 +535,9 @@ static void bind_machine_ops(eval* e) {
     machine_bind_op(m, "lambda?", op_is_lambda);
     machine_bind_op(m, "lambda-parameters", op_get_lambda_parameters);
     machine_bind_op(m, "lambda-body", op_get_lambda_body);
+
+    machine_bind_op(m, "let?", op_is_let);
+    machine_bind_op(m, "transform-let", op_transform_let);
 
     machine_bind_op(m, "begin?", op_is_begin);
     machine_bind_op(m, "begin-actions", op_get_begin_actions);

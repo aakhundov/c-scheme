@@ -79,7 +79,10 @@ static void test_parse_output(char* input, char* expected) {
 
     static char buffer[16384];
     value_to_str(p, buffer);
-    assert(strcmp(buffer, expected) == 0);
+    if (strcmp(buffer, expected) != 0) {
+        printf("expected output: \"%s\"\n", expected);
+        exit(EXIT_FAILURE);
+    }
     value_dispose(p);
 }
 
@@ -88,7 +91,10 @@ static void test_parse_error(char* input, char* expected) {
 
     assert(p != NULL);
     assert(p->type == VALUE_ERROR);
-    assert(strstr(p->symbol, expected));
+    if (!strstr(p->symbol, expected)) {
+        printf("expected substring: \"%s\"\n", expected);
+        exit(EXIT_FAILURE);
+    }
     value_dispose(p);
 }
 
@@ -97,7 +103,10 @@ static void test_eval_output(eval* ev, char* input, char* expected) {
 
     static char buffer[16384];
     value_to_str(e, buffer);
-    assert(strcmp(buffer, expected) == 0);
+    if (strcmp(buffer, expected) != 0) {
+        printf("expected output: \"%s\"\n", expected);
+        exit(EXIT_FAILURE);
+    }
     value_dispose(e);
 }
 
@@ -107,9 +116,15 @@ static void test_eval_number(eval* ev, char* input, double expected) {
     assert(e != NULL);
     assert(e->type == VALUE_NUMBER);
     if (!isnan(expected)) {
-        assert(fabs(e->number - expected) < 1e-4);
+        if (fabs(e->number - expected) > 1e-4) {
+            printf("expected number: %g\n", expected);
+            exit(EXIT_FAILURE);
+        }
     } else {
-        assert(isnan(e->number));
+        if (!isnan(e->number)) {
+            printf("expected number: nan\n");
+            exit(EXIT_FAILURE);
+        }
     }
     value_dispose(e);
 }
@@ -119,7 +134,10 @@ static void test_eval_string(eval* ev, char* input, char* expected) {
 
     assert(e != NULL);
     assert(e->type == VALUE_STRING);
-    assert(strcmp(e->symbol, expected) == 0);
+    if (strcmp(e->symbol, expected) != 0) {
+        printf("expected string: \"%s\"\n", expected);
+        exit(EXIT_FAILURE);
+    }
     value_dispose(e);
 }
 
@@ -128,7 +146,15 @@ static void test_eval_bool(eval* ev, char* input, int expected) {
 
     assert(e != NULL);
     assert(e->type == VALUE_BOOL);
-    assert(e->number == expected);
+    if ((expected && !value_is_true(e))) {
+        printf("expected bool: true\n");
+        exit(EXIT_FAILURE);
+    }
+    if (!expected && value_is_true(e)) {
+        printf("expected bool: false\n");
+        exit(EXIT_FAILURE);
+    }
+
     value_dispose(e);
 }
 
@@ -137,7 +163,10 @@ static void test_eval_error(eval* ev, char* input, char* expected) {
 
     assert(e != NULL);
     assert(e->type == VALUE_ERROR);
-    assert(strstr(e->symbol, expected));
+    if (!strstr(e->symbol, expected)) {
+        printf("expected substring: \"%s\"\n", expected);
+        exit(EXIT_FAILURE);
+    }
     value_dispose(e);
 }
 
@@ -146,7 +175,10 @@ static void test_eval_info(eval* ev, char* input, char* expected) {
 
     assert(e != NULL);
     assert(e->type == VALUE_INFO);
-    assert(strstr(e->symbol, expected));
+    if (!strstr(e->symbol, expected)) {
+        printf("expected substring: \"%s\"\n", expected);
+        exit(EXIT_FAILURE);
+    }
     value_dispose(e);
 }
 
@@ -738,6 +770,30 @@ static void test_syntax(eval* e) {
     test_eval_error(e, "(lambda (x y z x) 1)", "duplicate parameter names");
     test_eval_error(e, "(lambda (x . x) 1)", "duplicate parameter names");
     test_eval_error(e, "(lambda (x y z . x) 1)", "duplicate parameter names");
+
+    // let
+    test_eval_number(e, "(let () 1)", 1);
+    test_eval_number(e, "(let ((x 10)) x)", 10);
+    test_eval_bool(e, "(let ((x true)) x)", 1);
+    test_eval_string(e, "(let ((x \"abc\")) x)", "abc");
+    test_eval_output(e, "(let ((x '(1 2 3))) x)", "(1 2 3)");
+    test_eval_output(e, "(let ((x ())) x)", "()");
+    test_eval_number(e, "(let ((x 10) (y 20)) x y)", 20);
+    test_eval_number(e, "(let ((x 10) (y 20)) (+ x y))", 30);
+    test_eval_number(e, "(let ((x 10) (y 20)) (let ((z 30)) (+ (* x y) z)))", 230);
+    test_eval_number(e, "(let ((x 10)) (let ((y 20)) (let ((z 30)) (+ x (* y z)))))", 610);
+
+    // let errors
+    test_eval_error(e, "(let)", "no variables in");
+    test_eval_error(e, "(let ((x 10)))", "no body in");
+    test_eval_error(e, "(let 1 2)", "non-list variables in");
+    test_eval_error(e, "(let (()) 1)", "no variable name in");
+    test_eval_error(e, "(let (1) 2)", "non-list variable pair in");
+    test_eval_error(e, "(let ((a . 1)) 3)", "non-list variable pair in");
+    test_eval_error(e, "(let ((a)) 1)", "no variable value in");
+    test_eval_error(e, "(let ((a 1 2)) 3)", "too many items in a variable pair in");
+    test_eval_error(e, "(let ((1 2)) 3)", "variable name must be a symbol in");
+    test_eval_error(e, "(let ((1)) 3)", "variable name must be a symbol in");
 
     // begin
     test_eval_number(e, "(begin 1)", 1);

@@ -39,6 +39,9 @@ value* transform_sequence(pool* p, value* seq);
 value* is_cond(pool* p, value* exp);
 value* transform_cond(pool* p, value* exp);
 
+value* is_let(pool* p, value* exp);
+value* transform_let(pool* p, value* exp);
+
 value* is_eval(pool* p, value* exp);
 value* get_eval_expression(pool* p, value* exp);
 
