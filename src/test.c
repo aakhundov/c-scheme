@@ -876,16 +876,50 @@ static void test_syntax(eval* e) {
     test_eval_bool(e, "(and 1 false)", 0);
     test_eval_bool(e, "(and false 1)", 0);
     test_eval_bool(e, "(and 1 2 3 false)", 0);
+    test_eval_bool(e, "(and 3 2 1 false)", 0);
     test_eval_bool(e, "(and false 1 2 3)", 0);
     test_eval_bool(e, "(and false (/ 1 0))", 0);
     test_eval_error(e, "(and (/ 1 0) false)", "division by zero");
     test_eval_error(e, "and1", "and1 is unbound");
     test_eval_info(e, "(and (define and1 1) (define and1 2) (define and1 3))", "and1 is updated");
     test_eval_number(e, "and1", 3);
+    test_eval_bool(e, "(and (= and1 1) (= and1 2) (= and1 3))", 0);
+    test_eval_bool(e, "(and (> and1 0) (> and1 1) (> and1 2))", 1);
+
+    // or
+    test_eval_bool(e, "(or)", 0);
+    test_eval_number(e, "(or 1)", 1);
+    test_eval_number(e, "(or 2)", 2);
+    test_eval_number(e, "(or 1 2)", 1);
+    test_eval_number(e, "(or 1 2 3)", 1);
+    test_eval_number(e, "(or 3 2 1)", 3);
+    test_eval_number(e, "(or 3 2 \"abc\")", 3);
+    test_eval_string(e, "(or \"abc\" 3 2)", "abc");
+    test_eval_number(e, "(or 3 2 true)", 3);
+    test_eval_bool(e, "(or true 3 2)", 1);
+    test_eval_number(e, "(or 3 2 ())", 3);
+    test_eval_output(e, "(or () 3 2)", "()");
+    test_eval_bool(e, "(or false)", 0);
+    test_eval_number(e, "(or 1 false)", 1);
+    test_eval_number(e, "(or false 1)", 1);
+    test_eval_number(e, "(or 1 2 3 false)", 1);
+    test_eval_number(e, "(or false 1 2 3)", 1);
+    test_eval_number(e, "(or false 3 2 1)", 3);
+    test_eval_bool(e, "(or true (/ 1 0))", 1);
+    test_eval_error(e, "(or (/ 1 0) true)", "division by zero");
+    test_eval_error(e, "or1", "or1 is unbound");
+    test_eval_info(e, "(or (define or1 1) (define or1 2) (define or1 3))", "or1 is defined");
+    test_eval_number(e, "or1", 1);
+    test_eval_bool(e, "(or (= or1 1) (= or1 2) (= or1 3))", 1);
+    test_eval_bool(e, "(or (> or1 1) (> or1 2) (> or1 3))", 0);
 
     // and errors
     test_eval_error(e, "(and 1 . 2)", "non-list structure");
     test_eval_error(e, "(and . 1)", "non-list structure");
+
+    // or errors
+    test_eval_error(e, "(or 1 . 2)", "non-list structure");
+    test_eval_error(e, "(or . 1)", "non-list structure");
 
     // eval
     test_eval_number(e, "(eval 1)", 1);

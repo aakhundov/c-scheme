@@ -24,6 +24,8 @@ eval-dispatch
     (branch (label ev-cond))
     (test (op and?) (reg exp))
     (branch (label ev-and))
+    (test (op or?) (reg exp))
+    (branch (label ev-or))
     (test (op eval?) (reg exp))
     (branch (label ev-eval))
     (test (op apply?) (reg exp))
@@ -141,6 +143,36 @@ ev-and-return-val
     (goto (reg continue))
 ev-and-return-true
     (assign val (op make-true))
+    (goto (reg continue))
+
+ev-or
+    (assign unev (op or-expressions) (reg exp))
+    (test (op no-exps?) (reg unev))
+    (branch (label ev-or-return-false))
+    (save continue)
+ev-or-before-eval
+    (assign exp (op first-exp) (reg unev))
+    (test (op last-exp?) (reg unev))
+    (branch (label ev-or-last-exp))
+    (save unev)
+    (save env)
+    (assign continue (label ev-or-after-eval))
+    (goto (label eval-dispatch))
+ev-or-after-eval
+    (restore env)
+    (restore unev)
+    (test (op true?) (reg val))
+    (branch (label ev-or-return-val))
+    (assign unev (op rest-exps) (reg unev))
+    (goto (label ev-or-before-eval))
+ev-or-last-exp
+    (restore continue)
+    (goto (label eval-dispatch))
+ev-or-return-val
+    (restore continue)
+    (goto (reg continue))
+ev-or-return-false
+    (assign val (op make-false))
     (goto (reg continue))
 
 ev-eval

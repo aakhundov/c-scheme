@@ -517,6 +517,26 @@ value* get_and_expressions(pool* p, value* exp) {
     return exp->cdr;
 }
 
+value* is_or(pool* p, value* exp) {
+    // (or) or (or e1 e2 ...)
+    static const char* tag = "or";
+    if (is_tagged_list(exp, tag)) {
+        if (!is_null_terminated_list(exp)) {
+            MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
+        }
+
+        return pool_new_bool(p, 1);
+    } else {
+        return pool_new_bool(p, 0);
+    }
+}
+
+value* get_or_expressions(pool* p, value* exp) {
+    // () from (or)
+    // (e1 e2 ...) from (or e1 e2 ...)
+    return exp->cdr;
+}
+
 value* is_eval(pool* p, value* exp) {
     // (eval exp)
     static const char* tag = "eval";

@@ -43,6 +43,9 @@ value* transform_cond(pool* p, value* exp);
 value* is_and(pool* p, value* exp);
 value* get_and_expressions(pool* p, value* exp);
 
+value* is_or(pool* p, value* exp);
+value* get_or_expressions(pool* p, value* exp);
+
 value* is_eval(pool* p, value* exp);
 value* get_eval_expression(pool* p, value* exp);
 

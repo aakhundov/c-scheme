@@ -250,6 +250,18 @@ static value* op_get_and_expressions(machine* m, value* args) {
     return get_and_expressions(m->pool, exp);
 }
 
+static value* op_is_or(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return is_or(m->pool, exp);
+}
+
+static value* op_get_or_expressions(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return get_or_expressions(m->pool, exp);
+}
+
 static value* op_is_eval(machine* m, value* args) {
     value* exp = args->car->car;
 
@@ -579,6 +591,9 @@ static void bind_machine_ops(eval* e) {
 
     machine_bind_op(m, "and?", op_is_and);
     machine_bind_op(m, "and-expressions", op_get_and_expressions);
+
+    machine_bind_op(m, "or?", op_is_or);
+    machine_bind_op(m, "or-expressions", op_get_or_expressions);
 
     machine_bind_op(m, "eval?", op_is_eval);
     machine_bind_op(m, "eval-expression", op_get_eval_expression);
