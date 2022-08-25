@@ -238,6 +238,18 @@ static value* op_transform_cond(machine* m, value* args) {
     return transform_cond(m->pool, exp);
 }
 
+static value* op_is_and(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return is_and(m->pool, exp);
+}
+
+static value* op_get_and_expressions(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return get_and_expressions(m->pool, exp);
+}
+
 static value* op_is_eval(machine* m, value* args) {
     value* exp = args->car->car;
 
@@ -286,6 +298,26 @@ static value* op_is_true(machine* m, value* args) {
     return is_true(m->pool, exp);
 }
 
+static value* op_is_false(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return is_false(m->pool, exp);
+}
+
+static value* op_make_true(machine* m, value* args) {
+    return pool_new_bool(m->pool, 1);
+}
+
+static value* op_make_false(machine* m, value* args) {
+    return pool_new_bool(m->pool, 0);
+}
+
+static value* op_has_no_exps(machine* m, value* args) {
+    value* seq = args->car->car;
+
+    return has_no_exps(m->pool, seq);
+}
+
 static value* op_is_last_exp(machine* m, value* args) {
     value* seq = args->car->car;
 
@@ -316,10 +348,10 @@ static value* op_get_operands(machine* m, value* args) {
     return get_operands(m->pool, compound);
 }
 
-static value* op_is_no_operands(machine* m, value* args) {
+static value* op_has_no_operands(machine* m, value* args) {
     value* operands = args->car->car;
 
-    return is_no_operands(m->pool, operands);
+    return has_no_operands(m->pool, operands);
 }
 
 static value* op_is_last_operand(machine* m, value* args) {
@@ -545,6 +577,9 @@ static void bind_machine_ops(eval* e) {
     machine_bind_op(m, "cond?", op_is_cond);
     machine_bind_op(m, "transform-cond", op_transform_cond);
 
+    machine_bind_op(m, "and?", op_is_and);
+    machine_bind_op(m, "and-expressions", op_get_and_expressions);
+
     machine_bind_op(m, "eval?", op_is_eval);
     machine_bind_op(m, "eval-expression", op_get_eval_expression);
 
@@ -554,15 +589,20 @@ static void bind_machine_ops(eval* e) {
     machine_bind_op(m, "apply-verify", op_verify_apply_arguments);
 
     machine_bind_op(m, "application?", op_is_application);
-    machine_bind_op(m, "true?", op_is_true);
 
+    machine_bind_op(m, "true?", op_is_true);
+    machine_bind_op(m, "false?", op_is_false);
+    machine_bind_op(m, "make-true", op_make_true);
+    machine_bind_op(m, "make-false", op_make_false);
+
+    machine_bind_op(m, "no-exps?", op_has_no_exps);
     machine_bind_op(m, "last-exp?", op_is_last_exp);
     machine_bind_op(m, "first-exp", op_get_first_exp);
     machine_bind_op(m, "rest-exps", op_get_rest_exps);
 
     machine_bind_op(m, "operator", op_get_operator);
     machine_bind_op(m, "operands", op_get_operands);
-    machine_bind_op(m, "no-operands?", op_is_no_operands);
+    machine_bind_op(m, "no-operands?", op_has_no_operands);
     machine_bind_op(m, "last-operand?", op_is_last_operand);
     machine_bind_op(m, "first-operand", op_get_first_operand);
     machine_bind_op(m, "rest-operands", op_get_rest_operands);

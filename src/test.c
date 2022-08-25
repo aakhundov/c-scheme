@@ -690,9 +690,11 @@ static void test_syntax(eval* e) {
     test_eval_output(e, "(quote (quote 1 2 3))", "(quote 1 2 3)");
     test_eval_output(e, "(quote ())", "()");
 
-    // quote error
-    test_eval_error(e, "(quote)", "quote: no item");
-    test_eval_error(e, "(quote 1 2)", "quote: more than one item");
+    // quote errors
+    test_eval_error(e, "(quote)", "no expression");
+    test_eval_error(e, "(quote 1 2)", "more than one item");
+    test_eval_error(e, "(quote 1 . 2)", "non-list structure");
+    test_eval_error(e, "(quote . 1)", "non-list structure");
 
     // set!
     test_eval_error(e, "b", "b is unbound");
@@ -703,10 +705,12 @@ static void test_syntax(eval* e) {
     test_eval_number(e, "b", 30);
 
     // set! errors
-    test_eval_error(e, "(set!)", "set!: no variable");
-    test_eval_error(e, "(set! y)", "set!: no value");
-    test_eval_error(e, "(set! 1 30)", "set!: variable is not a symbol");
-    test_eval_error(e, "(set! y 30 40)", "set!: more than two items");
+    test_eval_error(e, "(set!)", "no variable");
+    test_eval_error(e, "(set! y)", "no value");
+    test_eval_error(e, "(set! 1 30)", "variable is not a symbol");
+    test_eval_error(e, "(set! y 30 40)", "more than two items");
+    test_eval_error(e, "(set! 1 . 2)", "non-list structure");
+    test_eval_error(e, "(set! . 1)", "non-list structure");
 
     // define
     test_eval_error(e, "c", "c is unbound");
@@ -727,8 +731,10 @@ static void test_syntax(eval* e) {
     test_eval_error(e, "(define (1) 1)", "function name is not a symbol");
     test_eval_error(e, "(define (1 x y) 1)", "function name is not a symbol");
     test_eval_error(e, "(define x 1 2)", "can't be more than one item");
-    test_eval_error(e, "(define 1 2)", "either variable or function");
-    test_eval_error(e, "(define \"x\" 2)", "either variable or function");
+    test_eval_error(e, "(define 1 2)", "either variable or function must be defined");
+    test_eval_error(e, "(define \"x\" 2)", "either variable or function must be defined");
+    test_eval_error(e, "(define 1 . 2)", "non-list structure");
+    test_eval_error(e, "(define . 1)", "non-list structure");
 
     // if
     test_eval_number(e, "(if 1 2 3)", 2);
@@ -748,6 +754,8 @@ static void test_syntax(eval* e) {
     test_eval_error(e, "(if)", "no predicate");
     test_eval_error(e, "(if 1)", "no consequent");
     test_eval_error(e, "(if 1 2 3 4)", "too many items");
+    test_eval_error(e, "(if 1 . 2)", "non-list structure");
+    test_eval_error(e, "(if . 1)", "non-list structure");
 
     // lambda
     test_eval_output(e, "(lambda x x)", "(lambda x x)");
@@ -770,6 +778,8 @@ static void test_syntax(eval* e) {
     test_eval_error(e, "(lambda (x y z x) 1)", "duplicate parameter names");
     test_eval_error(e, "(lambda (x . x) 1)", "duplicate parameter names");
     test_eval_error(e, "(lambda (x y z . x) 1)", "duplicate parameter names");
+    test_eval_error(e, "(lambda 1 . 2)", "non-list structure");
+    test_eval_error(e, "(lambda . 1)", "non-list structure");
 
     // let
     test_eval_number(e, "(let () 1)", 1);
@@ -784,16 +794,18 @@ static void test_syntax(eval* e) {
     test_eval_number(e, "(let ((x 10)) (let ((y 20)) (let ((z 30)) (+ x (* y z)))))", 610);
 
     // let errors
-    test_eval_error(e, "(let)", "no variables in");
-    test_eval_error(e, "(let ((x 10)))", "no body in");
-    test_eval_error(e, "(let 1 2)", "non-list variables in");
-    test_eval_error(e, "(let (()) 1)", "no variable name in");
-    test_eval_error(e, "(let (1) 2)", "non-list variable pair in");
-    test_eval_error(e, "(let ((a . 1)) 3)", "non-list variable pair in");
-    test_eval_error(e, "(let ((a)) 1)", "no variable value in");
-    test_eval_error(e, "(let ((a 1 2)) 3)", "too many items in a variable pair in");
-    test_eval_error(e, "(let ((1 2)) 3)", "variable name must be a symbol in");
-    test_eval_error(e, "(let ((1)) 3)", "variable name must be a symbol in");
+    test_eval_error(e, "(let)", "no variables");
+    test_eval_error(e, "(let ((x 10)))", "no body");
+    test_eval_error(e, "(let 1 2)", "non-list variables");
+    test_eval_error(e, "(let (()) 1)", "no variable name");
+    test_eval_error(e, "(let (1) 2)", "non-list variable pair");
+    test_eval_error(e, "(let ((a . 1)) 3)", "non-list variable pair");
+    test_eval_error(e, "(let ((a)) 1)", "no variable value");
+    test_eval_error(e, "(let ((a 1 2)) 3)", "too many items in a variable pair");
+    test_eval_error(e, "(let ((1 2)) 3)", "variable name must be a symbol");
+    test_eval_error(e, "(let ((1)) 3)", "variable name must be a symbol");
+    test_eval_error(e, "(let 1 . 2)", "non-list structure");
+    test_eval_error(e, "(let . 1)", "non-list structure");
 
     // begin
     test_eval_number(e, "(begin 1)", 1);
@@ -802,7 +814,9 @@ static void test_syntax(eval* e) {
     test_eval_output(e, "(begin '(1 2 3) '(4 5) '())", "()");
 
     // begin errors
-    test_eval_error(e, "(begin)", "no items");
+    test_eval_error(e, "(begin)", "no expressions");
+    test_eval_error(e, "(begin 1 . 2)", "non-list structure");
+    test_eval_error(e, "(begin . 1)", "non-list structure");
 
     // cond
     test_eval_number(e, "(cond (else 1))", 1);
@@ -837,14 +851,41 @@ static void test_syntax(eval* e) {
     test_eval_number(e, "(c3 0)", 3.14);
 
     // cond errors
-    test_eval_error(e, "(cond)", "no clauses in");
-    test_eval_error(e, "(cond ())", "empty clause in");
-    test_eval_error(e, "(cond (1 2) ())", "empty clause in");
-    test_eval_error(e, "(cond 1)", "non-list clause in");
-    test_eval_error(e, "(cond (1 2) 1)", "non-list clause in");
-    test_eval_error(e, "(cond (1))", "actionless clause in");
-    test_eval_error(e, "(cond (1 2) (1))", "actionless clause in");
-    test_eval_error(e, "(cond (else 2) (1))", "else clause must be the last in");
+    test_eval_error(e, "(cond)", "no clauses");
+    test_eval_error(e, "(cond ())", "empty clause");
+    test_eval_error(e, "(cond (1 2) ())", "empty clause");
+    test_eval_error(e, "(cond 1)", "non-list clause");
+    test_eval_error(e, "(cond (1 2) 1)", "non-list clause");
+    test_eval_error(e, "(cond (1))", "actionless clause");
+    test_eval_error(e, "(cond (1 2) (1))", "actionless clause");
+    test_eval_error(e, "(cond (else 2) (1))", "else clause must be the last");
+    test_eval_error(e, "(cond 1 . 2)", "non-list structure");
+    test_eval_error(e, "(cond . 1)", "non-list structure");
+
+    // and
+    test_eval_bool(e, "(and)", 1);
+    test_eval_number(e, "(and 1)", 1);
+    test_eval_number(e, "(and 2)", 2);
+    test_eval_number(e, "(and 1 2)", 2);
+    test_eval_number(e, "(and 1 2 3)", 3);
+    test_eval_number(e, "(and 3 2 1)", 1);
+    test_eval_string(e, "(and 3 2 \"abc\")", "abc");
+    test_eval_bool(e, "(and 3 2 true)", 1);
+    test_eval_output(e, "(and 3 2 ())", "()");
+    test_eval_bool(e, "(and false)", 0);
+    test_eval_bool(e, "(and 1 false)", 0);
+    test_eval_bool(e, "(and false 1)", 0);
+    test_eval_bool(e, "(and 1 2 3 false)", 0);
+    test_eval_bool(e, "(and false 1 2 3)", 0);
+    test_eval_bool(e, "(and false (/ 1 0))", 0);
+    test_eval_error(e, "(and (/ 1 0) false)", "division by zero");
+    test_eval_error(e, "and1", "and1 is unbound");
+    test_eval_info(e, "(and (define and1 1) (define and1 2) (define and1 3))", "and1 is updated");
+    test_eval_number(e, "and1", 3);
+
+    // and errors
+    test_eval_error(e, "(and 1 . 2)", "non-list structure");
+    test_eval_error(e, "(and . 1)", "non-list structure");
 
     // eval
     test_eval_number(e, "(eval 1)", 1);
@@ -869,6 +910,8 @@ static void test_syntax(eval* e) {
     // eval errors
     test_eval_error(e, "(eval)", "no expression");
     test_eval_error(e, "(eval 1 2)", "too many items");
+    test_eval_error(e, "(eval 1 . 2)", "non-list structure");
+    test_eval_error(e, "(eval . 1)", "non-list structure");
 
     // apply
     test_eval_number(e, "(apply + '(1))", 1);
@@ -889,13 +932,15 @@ static void test_syntax(eval* e) {
     test_eval_number(e, "(apply * (list (apply + '(1 2 3)) (apply - '(4 5 6))))", -42);
 
     // apply errors
-    test_eval_error(e, "(apply)", "no operator in");
-    test_eval_error(e, "(apply 1)", "no arguments in");
-    test_eval_error(e, "(apply 1 2 3)", "too many items in");
+    test_eval_error(e, "(apply)", "no operator");
+    test_eval_error(e, "(apply 1)", "no arguments");
+    test_eval_error(e, "(apply 1 2 3)", "too many items");
     test_eval_error(e, "(apply 1 '(1 2 3))", "can't apply 1");
     test_eval_error(e, "(apply + 1)", "can't apply to 1");
     test_eval_error(e, "(apply + \"a\")", "can't apply to \"a\"");
     test_eval_error(e, "(apply + '(1 . 2))", "can't apply to (1 . 2)");
+    test_eval_error(e, "(apply 1 . 2)", "non-list structure");
+    test_eval_error(e, "(apply . 1)", "non-list structure");
 
     // function without params
     test_eval_info(e, "(define (f0) 1)", "f0 is defined");
@@ -1684,7 +1729,7 @@ void run_test() {
     RUN_EVAL_TEST_FN(e, test_predicates);
     RUN_EVAL_TEST_FN(e, test_other);
 
-    printf("all tests have passed!\n");
+    printf("all tests have been passed!\n");
 
     eval_dispose(&e);
 }

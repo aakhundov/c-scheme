@@ -4,8 +4,6 @@
 #include "pool.h"
 #include "value.h"
 
-int is_tagged_list(value* v, const char* tag);
-
 value* is_self_evaluating(pool* p, value* exp);
 
 value* is_variable(pool* p, value* exp);
@@ -32,6 +30,9 @@ value* get_lambda_parameters(pool* p, value* exp);
 value* get_lambda_body(pool* p, value* exp);
 value* make_lambda(pool* p, value* params, value* body);
 
+value* is_let(pool* p, value* exp);
+value* transform_let(pool* p, value* exp);
+
 value* is_begin(pool* p, value* exp);
 value* get_begin_actions(pool* p, value* exp);
 value* transform_sequence(pool* p, value* seq);
@@ -39,8 +40,8 @@ value* transform_sequence(pool* p, value* seq);
 value* is_cond(pool* p, value* exp);
 value* transform_cond(pool* p, value* exp);
 
-value* is_let(pool* p, value* exp);
-value* transform_let(pool* p, value* exp);
+value* is_and(pool* p, value* exp);
+value* get_and_expressions(pool* p, value* exp);
 
 value* is_eval(pool* p, value* exp);
 value* get_eval_expression(pool* p, value* exp);
@@ -55,13 +56,14 @@ value* is_application(pool* p, value* exp);
 value* is_true(pool* p, value* exp);
 value* is_false(pool* p, value* exp);
 
+value* has_no_exps(pool* p, value* seq);
 value* is_last_exp(pool* p, value* seq);
 value* get_first_exp(pool* p, value* seq);
 value* get_rest_exps(pool* p, value* seq);
 
 value* get_operator(pool* p, value* compound);
 value* get_operands(pool* p, value* compound);
-value* is_no_operands(pool* p, value* operands);
+value* has_no_operands(pool* p, value* operands);
 value* is_last_operand(pool* p, value* operands);
 value* get_first_operand(pool* p, value* operands);
 value* get_rest_operands(pool* p, value* operands);
