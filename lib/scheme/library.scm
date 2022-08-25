@@ -41,11 +41,9 @@
 (define (tenth x) (car (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr x)))))))))))
 
 (define (list-ref n lst)
-  (if (null? lst)
-      '()
-      (if (<= n 0)
-          (car lst)
-          (list-ref (- n 1) (cdr lst)))))
+  (cond ((null? lst) '())
+        ((= n 0) (car lst))
+        (else (list-ref (- n 1) (cdr lst)))))
 
 (define (map f lst)
   (if (null? lst)
@@ -54,9 +52,10 @@
             (map f (cdr lst)))))
 
 (define (assert-equal expression expected)
-  (if (equal? (eval expression) expected)
-      (info "ok")
-      (error "%s != %s, but %s" expression expected (eval expression))))
+  (let ((result (eval expression)))
+    (if (equal? result expected)
+        (info "ok")
+        (error "%s != %s, but %s" expression expected result))))
 
 (assert-equal '(caar '((1 2) 3 4)) 1)
 (assert-equal '(cadr '((1 2) 3 4)) 3)
