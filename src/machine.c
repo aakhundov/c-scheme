@@ -10,11 +10,10 @@
 typedef enum {
     INST_ASSIGN = 0,
     INST_CALL = 1,
-    INST_TEST = 2,
-    INST_BRANCH = 3,
-    INST_GOTO = 4,
-    INST_SAVE = 5,
-    INST_RESTORE = 6,
+    INST_BRANCH = 2,
+    INST_GOTO = 3,
+    INST_SAVE = 4,
+    INST_RESTORE = 5,
 } instruction_type;
 
 static const size_t MAX_STACK_VALUES = 100000;
@@ -70,12 +69,10 @@ static void create_backbone(machine* m, char* output_register_name) {
     m->code = pool_new_pair(m->pool, m->labels, NULL);
     m->ops = pool_new_pair(m->pool, m->code, NULL);
     m->stack = pool_new_pair(m->pool, m->ops, NULL);
-    m->flag = pool_new_pair(m->pool, m->stack, NULL);
-    m->pc = pool_new_pair(m->pool, m->flag, NULL);
+    m->pc = pool_new_pair(m->pool, m->stack, NULL);
     m->trace = pool_new_pair(m->pool, m->pc, NULL);
     m->root = pool_new_pair(m->pool, m->trace, NULL);  // memory root
 
-    m->flag->cdr = pool_new_number(m->pool, 0);      // test/branch flag
     m->val = get_register(m, output_register_name);  // output register
     m->trace->cdr = pool_new_number(m->pool, 0);     // trace flag
 }
@@ -106,14 +103,6 @@ static value* pop_from_stack(machine* m) {
 static void clear_stack(machine* m) {
     m->stack->cdr = NULL;
     m->stats.stack_depth = 0;
-}
-
-static void set_flag(machine* m, value* v) {
-    m->flag->cdr->number = value_is_true(v);
-}
-
-static int get_flag(machine* m) {
-    return (int)m->flag->cdr->number;
 }
 
 static int in_trace_mode(machine* m) {
@@ -205,6 +194,9 @@ static value* process_assign(machine* m, value* source) {
     if (strcmp(src_type->symbol, "op") == 0) {
         assert(src_value->type == VALUE_SYMBOL);
 
+        // (arg1) (arg2) ...
+        value* op_args = source->cdr->cdr;
+
         // call the op and assign
         // the result to the register
         return pool_new_pair(
@@ -215,8 +207,8 @@ static value* process_assign(machine* m, value* source) {
                 get_register(m, dst_reg->symbol),  // dst register
                 pool_new_pair(
                     m->pool,
-                    get_op(m, src_value->symbol),       // src op
-                    make_args(m, source->cdr->cdr))));  // src op's args
+                    get_op(m, src_value->symbol),  // src op
+                    make_args(m, op_args))));      // src op's args
     } else {
         value* src = NULL;
         if (strcmp(src_type->symbol, "reg") == 0) {
@@ -245,7 +237,8 @@ static value* process_assign(machine* m, value* source) {
 }
 
 static value* process_perform(machine* m, value* source) {
-    value* op_pair = source->car;  // (op name) pair
+    // (op name) pair
+    value* op_pair = source->car;
     assert(op_pair->type == VALUE_PAIR);
     assert(op_pair->car != NULL);
     assert(op_pair->cdr != NULL);
@@ -254,6 +247,9 @@ static value* process_perform(machine* m, value* source) {
     assert(strcmp(op_symbol->symbol, "op") == 0);
     value* op_name = op_pair->cdr->car;
     assert(op_name->type == VALUE_SYMBOL);
+
+    // (arg1) (arg2) ...
+    value* op_args = source->cdr;
 
     // call the op without assigning
     // the result to a register
@@ -265,30 +261,8 @@ static value* process_perform(machine* m, value* source) {
             NULL,  // no dst register
             pool_new_pair(
                 m->pool,
-                get_op(m, op_name->symbol),    // op
-                make_args(m, source->cdr))));  // op's args
-}
-
-static value* process_test(machine* m, value* source) {
-    value* op_pair = source->car;  // (op name) pair
-    assert(op_pair->type == VALUE_PAIR);
-    assert(op_pair->car != NULL);
-    assert(op_pair->cdr != NULL);
-    value* op_symbol = op_pair->car;
-    assert(op_symbol->type == VALUE_SYMBOL);
-    assert(strcmp(op_symbol->symbol, "op") == 0);
-    value* op_name = op_pair->cdr->car;
-    assert(op_name->type == VALUE_SYMBOL);
-
-    // call the op and assign
-    // the result to the flag
-    return pool_new_pair(
-        m->pool,
-        pool_new_number(m->pool, INST_TEST),  // instruction
-        pool_new_pair(
-            m->pool,
-            get_op(m, op_name->symbol),   // op
-            make_args(m, source->cdr)));  // op's args
+                get_op(m, op_name->symbol),  // op
+                make_args(m, op_args))));    // op's args
 }
 
 static value* process_branch(machine* m, value* source) {
@@ -303,11 +277,32 @@ static value* process_branch(machine* m, value* source) {
     value* label_name = label_pair->cdr->car;
     assert(label_name->type == VALUE_SYMBOL);
 
-    // jump to the label
+    // (op name) pair
+    assert(source->cdr != NULL);
+    assert(source->cdr->car != NULL);
+    value* op_pair = source->cdr->car;
+    assert(op_pair->type == VALUE_PAIR);
+    assert(op_pair->car != NULL);
+    assert(op_pair->cdr != NULL);
+    value* op_symbol = op_pair->car;
+    assert(op_symbol->type == VALUE_SYMBOL);
+    assert(strcmp(op_symbol->symbol, "op") == 0);
+    value* op_name = op_pair->cdr->car;
+    assert(op_name->type == VALUE_SYMBOL);
+
+    // (arg1) (arg2) ...
+    value* op_args = source->cdr->cdr;
+
     return pool_new_pair(
         m->pool,
         pool_new_number(m->pool, INST_BRANCH),  // instruction
-        get_label(m, label_name->symbol));      // label
+        pool_new_pair(
+            m->pool,
+            get_label(m, label_name->symbol),  // label
+            pool_new_pair(
+                m->pool,
+                get_op(m, op_name->symbol),  // op
+                make_args(m, op_args))));    // op's args
 }
 
 static value* process_goto(machine* m, value* source) {
@@ -405,8 +400,6 @@ static void process_code(machine* m, value* source) {
                 instruction = process_assign(m, line->cdr);
             } else if (strcmp(statement, "perform") == 0) {
                 instruction = process_perform(m, line->cdr);
-            } else if (strcmp(statement, "test") == 0) {
-                instruction = process_test(m, line->cdr);
             } else if (strcmp(statement, "branch") == 0) {
                 instruction = process_branch(m, line->cdr);
             } else if (strcmp(statement, "goto") == 0) {
@@ -465,8 +458,8 @@ static void execute_call(machine* m, value* inst) {
 
     if (result != NULL && result->type == VALUE_ERROR) {
         // set the output register to the error
+        // and halt immediately
         m->val->car = result;
-        // halt immediately
         m->pc = NULL;
     } else {
         if (dst != NULL) {
@@ -478,33 +471,26 @@ static void execute_call(machine* m, value* inst) {
     }
 }
 
-static void execute_test(machine* m, value* inst) {
-    value* op = inst->car;    // op record (pointer . name)
-    value* args = inst->cdr;  // op's args
+static void execute_branch(machine* m, value* inst) {
+    value* label = inst->car;
+    value* op = inst->cdr->car;    // op record (pointer . name)
+    value* args = inst->cdr->cdr;  // op's args
 
     value* result = call_op(m, op, args);
 
     if (result != NULL && result->type == VALUE_ERROR) {
         // set the output register to the error
+        // and halt immediately
+        m->stats.flag = -1;
         m->val->car = result;
-        // halt immediately
         m->pc = NULL;
-    } else {
-        // set the flag from the result
-        set_flag(m, result);
-        // advance the pc
-        m->pc = m->pc->cdr;
-    }
-}
-
-static void execute_branch(machine* m, value* inst) {
-    value* label = inst;
-
-    if (get_flag(m)) {
+    } else if (value_is_true(result)) {
         // jump to the label
+        m->stats.flag = 1;
         m->pc = label->car;
     } else {
         // advance the pc
+        m->stats.flag = 0;
         m->pc = m->pc->cdr;
     }
 }
@@ -520,10 +506,10 @@ static void execute_save(machine* m, value* inst) {
     value* src = inst;
 
     if (m->stats.stack_depth >= MAX_STACK_VALUES) {
-        // clear the stack, return and error
-        m->val->car = pool_new_error(m->pool, "stack limit exceeded");
+        // clear the stack
         clear_stack(m);
-        // halt the program
+        // return and error and halt the program
+        m->val->car = pool_new_error(m->pool, "stack limit exceeded");
         m->pc = NULL;
     } else {
         // push the src register to the stack
@@ -546,7 +532,6 @@ static void execute_restore(machine* m, value* inst) {
 static void (*execution_fns[])(machine*, value*) = {
     execute_assign,
     execute_call,
-    execute_test,
     execute_branch,
     execute_goto,
     execute_save,
@@ -574,13 +559,13 @@ static void trace_after(machine* m, value* line, value* instruction) {
                 message[0] = '\0';
             }
             break;
-        case INST_TEST:
-            // print the result of the test
-            sprintf(message, "%s", (get_flag(m) ? "true" : "false"));
-            break;
         case INST_BRANCH:
             // print the result of the previous test
-            sprintf(message, "%s", (get_flag(m) ? "true" : "false"));
+            if (m->stats.flag == -1) {
+                sprintf(message, "%s", "error");
+            } else {
+                sprintf(message, "%s", (m->stats.flag ? "true" : "false"));
+            }
             break;
         case INST_SAVE:
         case INST_RESTORE:

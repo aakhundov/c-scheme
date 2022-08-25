@@ -16,6 +16,7 @@ struct machine_stats {
     size_t stack_depth_max;
     size_t garbage_before;
     size_t garbage_after;
+    int flag;
 };
 
 struct machine {

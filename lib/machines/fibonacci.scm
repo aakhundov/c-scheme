@@ -1,8 +1,7 @@
 start
     (assign continue (label end))
 fib-loop
-    (test (op <) (reg n) (const 2))
-    (branch (label immediate-answer))
+    (branch (label immediate-answer) (op <) (reg n) (const 2))
     (save continue)
     (assign continue (label afterfib-n-1))
     (save n)

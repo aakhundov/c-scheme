@@ -1,8 +1,7 @@
 start
     (assign continue (label end))
 fact-loop
-    (test (op =) (reg n) (const 1))
-    (branch (label base-case))
+    (branch (label base-case) (op =) (reg n) (const 1))
     (save continue)
     (save n)
     (assign n (op -) (reg n) (const 1))

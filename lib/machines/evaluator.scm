@@ -2,36 +2,21 @@ start
     (assign continue (label end))
 
 eval-dispatch
-    (test (op self-evaluating?) (reg exp))
-    (branch (label ev-self-eval))
-    (test (op variable?) (reg exp))
-    (branch (label ev-variable))
-    (test (op quoted?) (reg exp))
-    (branch (label ev-quoted))
-    (test (op assignment?) (reg exp))
-    (branch (label ev-assignment))
-    (test (op definition?) (reg exp))
-    (branch (label ev-definition))
-    (test (op if?) (reg exp))
-    (branch (label ev-if))
-    (test (op lambda?) (reg exp))
-    (branch (label ev-lambda))
-    (test (op let?) (reg exp))
-    (branch (label ev-let))
-    (test (op begin?) (reg exp))
-    (branch (label ev-begin))
-    (test (op cond?) (reg exp))
-    (branch (label ev-cond))
-    (test (op and?) (reg exp))
-    (branch (label ev-and))
-    (test (op or?) (reg exp))
-    (branch (label ev-or))
-    (test (op eval?) (reg exp))
-    (branch (label ev-eval))
-    (test (op apply?) (reg exp))
-    (branch (label ev-apply))
-    (test (op application?) (reg exp))
-    (branch (label ev-application))
+    (branch (label ev-self-eval) (op self-evaluating?) (reg exp))
+    (branch (label ev-variable) (op variable?) (reg exp))
+    (branch (label ev-quoted) (op quoted?) (reg exp))
+    (branch (label ev-assignment) (op assignment?) (reg exp))
+    (branch (label ev-definition) (op definition?) (reg exp))
+    (branch (label ev-if) (op if?) (reg exp))
+    (branch (label ev-lambda) (op lambda?) (reg exp))
+    (branch (label ev-let) (op let?) (reg exp))
+    (branch (label ev-begin) (op begin?) (reg exp))
+    (branch (label ev-cond) (op cond?) (reg exp))
+    (branch (label ev-and) (op and?) (reg exp))
+    (branch (label ev-or) (op or?) (reg exp))
+    (branch (label ev-eval) (op eval?) (reg exp))
+    (branch (label ev-apply) (op apply?) (reg exp))
+    (branch (label ev-application) (op application?) (reg exp))
     (perform (op signal-error) (const "can't evaluate %s") (reg exp))
 
 ev-self-eval
@@ -87,8 +72,7 @@ ev-if-decide
     (restore continue)
     (restore env)
     (restore exp)
-    (test (op true?) (reg val))
-    (branch (label ev-if-consequent))
+    (branch (label ev-if-consequent) (op true?) (reg val))
 ev-if-alternative
     (assign exp (op if-alternative) (reg exp))
     (goto (label eval-dispatch))
@@ -117,13 +101,11 @@ ev-cond
 
 ev-and
     (assign unev (op and-expressions) (reg exp))
-    (test (op no-exps?) (reg unev))
-    (branch (label ev-and-return-true))
+    (branch (label ev-and-return-true) (op no-exps?) (reg unev))
     (save continue)
 ev-and-before-eval
     (assign exp (op first-exp) (reg unev))
-    (test (op last-exp?) (reg unev))
-    (branch (label ev-and-last-exp))
+    (branch (label ev-and-last-exp) (op last-exp?) (reg unev))
     (save unev)
     (save env)
     (assign continue (label ev-and-after-eval))
@@ -131,8 +113,7 @@ ev-and-before-eval
 ev-and-after-eval
     (restore env)
     (restore unev)
-    (test (op false?) (reg val))
-    (branch (label ev-and-return-val))
+    (branch (label ev-and-return-val) (op false?) (reg val))
     (assign unev (op rest-exps) (reg unev))
     (goto (label ev-and-before-eval))
 ev-and-last-exp
@@ -147,13 +128,11 @@ ev-and-return-true
 
 ev-or
     (assign unev (op or-expressions) (reg exp))
-    (test (op no-exps?) (reg unev))
-    (branch (label ev-or-return-false))
+    (branch (label ev-or-return-false) (op no-exps?) (reg unev))
     (save continue)
 ev-or-before-eval
     (assign exp (op first-exp) (reg unev))
-    (test (op last-exp?) (reg unev))
-    (branch (label ev-or-last-exp))
+    (branch (label ev-or-last-exp) (op last-exp?) (reg unev))
     (save unev)
     (save env)
     (assign continue (label ev-or-after-eval))
@@ -161,8 +140,7 @@ ev-or-before-eval
 ev-or-after-eval
     (restore env)
     (restore unev)
-    (test (op true?) (reg val))
-    (branch (label ev-or-return-val))
+    (branch (label ev-or-return-val) (op true?) (reg val))
     (assign unev (op rest-exps) (reg unev))
     (goto (label ev-or-before-eval))
 ev-or-last-exp
@@ -220,14 +198,12 @@ ev-application-did-operator
     (restore env)
     (assign argl (op make-empty-arglist))
     (assign proc (reg val))
-    (test (op no-operands?) (reg unev))
-    (branch (label apply-dispatch))
+    (branch (label apply-dispatch) (op no-operands?) (reg unev))
     (save proc)
 ev-application-operand-loop
     (save argl)
     (assign exp (op first-operand) (reg unev))
-    (test (op last-operand?) (reg unev))
-    (branch (label ev-application-last-arg))
+    (branch (label ev-application-last-arg) (op last-operand?) (reg unev))
     (save env)
     (save unev)
     (assign continue (label ev-application-accumulate-arg))
@@ -249,10 +225,8 @@ ev-application-accumulate-last-arg
     (goto (label apply-dispatch))
 
 apply-dispatch
-    (test (op primitive-procedure?) (reg proc))
-    (branch (label primitive-apply))
-    (test (op compound-procedure?) (reg proc))
-    (branch (label compound-apply))
+    (branch (label primitive-apply) (op primitive-procedure?) (reg proc))
+    (branch (label compound-apply) (op compound-procedure?) (reg proc))
     (perform (op signal-error) (const "can't apply %s") (reg proc))
 primitive-apply
     (assign val (op apply-primitive-procedure) (reg proc) (reg argl))
@@ -267,8 +241,7 @@ compound-apply
 
 ev-sequence
     (assign exp (op first-exp) (reg unev))
-    (test (op last-exp?) (reg unev))
-    (branch (label ev-sequence-last-exp))
+    (branch (label ev-sequence-last-exp) (op last-exp?) (reg unev))
     (save unev)
     (save env)
     (assign continue (label ev-sequence-continue))
