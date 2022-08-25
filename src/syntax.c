@@ -43,7 +43,7 @@ value* is_variable(pool* p, value* exp) {
 }
 
 value* is_quoted(pool* p, value* exp) {
-    // (quote ...)
+    // (quote text)
     static const char* tag = "quote";
     if (is_tagged_list(exp, tag)) {
         if (exp->cdr == NULL) {
@@ -64,7 +64,7 @@ value* get_text_of_quotation(pool* p, value* exp) {
 }
 
 value* is_assignment(pool* p, value* exp) {
-    // (!set ...)
+    // (!set variable value)
     static const char* tag = "set!";
     if (is_tagged_list(exp, tag)) {
         if (exp->cdr == NULL) {
@@ -94,7 +94,8 @@ value* get_assignment_value(pool* p, value* exp) {
 }
 
 value* is_definition(pool* p, value* exp) {
-    // (define ...)
+    // (define variable value)
+    // (define (function p1 p2 ...) body)
     static const char* tag = "define";
     if (is_tagged_list(exp, tag)) {
         if (exp->cdr == NULL) {
@@ -150,7 +151,8 @@ value* get_definition_value(pool* p, value* exp) {
 }
 
 value* is_if(pool* p, value* exp) {
-    // (if ...)
+    // (if pred cons)
+    // (if pred cons alt)
     static const char* tag = "if";
     if (is_tagged_list(exp, tag)) {
         if (exp->cdr == NULL) {
@@ -168,27 +170,45 @@ value* is_if(pool* p, value* exp) {
 }
 
 value* get_if_predicate(pool* p, value* exp) {
-    // x from (if x y z) or (if x y)
+    // pred from (if pred cons alt) or (if pred cons)
     return exp->cdr->car;
 }
 
 value* get_if_consequent(pool* p, value* exp) {
-    // y from (if x y z) or (if x y)
+    // cons from (if pred cons alt) or (if pred cons)
     return exp->cdr->cdr->car;
 }
 
 value* get_if_alternative(pool* p, value* exp) {
     if (exp->cdr->cdr->cdr != NULL) {
-        // z from (if x y z) or
+        // alt from (if pred cons alt)
         return exp->cdr->cdr->cdr->car;
     } else {
-        // false from (if x y)
+        // no consequent -> false
+        // false from (if pred cons)
         return pool_new_bool(p, 0);
     }
 }
 
+value* make_if(pool* p, value* predicate, value* consequent, value* alternative) {
+    // pred, cons, alt -> (if pred cons alt)
+    return pool_new_pair(
+        p,
+        pool_new_symbol(p, "if"),
+        pool_new_pair(
+            p,
+            predicate,
+            pool_new_pair(
+                p,
+                consequent,
+                pool_new_pair(
+                    p,
+                    alternative,
+                    NULL))));
+}
+
 value* is_lambda(pool* p, value* exp) {
-    // (lambda ...)
+    // (lambda (p1 p2 ...) e1 e2 ...)
     static const char* tag = "lambda";
     if (is_tagged_list(exp, tag)) {
         if (exp->cdr == NULL) {
@@ -247,18 +267,18 @@ value* is_lambda(pool* p, value* exp) {
 }
 
 value* get_lambda_parameters(pool* p, value* exp) {
-    // (x y) from (lambda (x y) (+ x y) x)
+    // (p1 p2 ...) from (lambda (p1 p2 ...) e1 e2 ...)
     return exp->cdr->car;
 }
 
 value* get_lambda_body(pool* p, value* exp) {
-    // ((+ x y) x) from (lambda (x y) (+ x y) x)
+    // (e1 e2 ...) from (lambda (p1 p2 ...) e1 e2 ...)
     return exp->cdr->cdr;
 }
 
 value* make_lambda(pool* p, value* params, value* body) {
-    // (lambda (x y) (+ x y) x) from
-    // params = (x y), body = ((+ x y) x)
+    // (p1 p2 ...), (e1 e2 ...) ->
+    // (lambda (p1 p2 ...) e1 e2 ...)
     return pool_new_pair(
         p,
         pool_new_symbol(p, "lambda"),
@@ -266,7 +286,7 @@ value* make_lambda(pool* p, value* params, value* body) {
 }
 
 value* is_begin(pool* p, value* exp) {
-    // (begin ...)
+    // (begin a1 a2 ...)
     static const char* tag = "begin";
     if (is_tagged_list(exp, tag)) {
         if (exp->cdr == NULL) {
@@ -280,11 +300,105 @@ value* is_begin(pool* p, value* exp) {
 }
 
 value* get_begin_actions(pool* p, value* exp) {
-    // (x y z) from (begin x y z)
+    // (a1 a2 ...) from (begin a1 a2 ...)
     return exp->cdr;
 }
 
+value* transform_sequence(pool* p, value* seq) {
+    if (seq == NULL) {
+        // () -> ()
+        return NULL;
+    } else if (seq->cdr == NULL) {
+        // (a) -> a
+        return seq->car;
+    } else {
+        // (a1 a2 ...) -> (begin a1 a2 ...)
+        return pool_new_pair(
+            p,
+            pool_new_symbol(p, "begin"),
+            seq);
+    }
+}
+
+value* is_cond(pool* p, value* exp) {
+    // (cond (p1 a11 a12 ...) (p2 a21 a22 ...) ...)
+    // (cond (p1 a11 a12 ...) (p2 a21 a22 ...) ... (else ae1 ae2 ...))
+    static const char* tag = "cond";
+    if (is_tagged_list(exp, tag)) {
+        if (exp->cdr == NULL) {
+            MAKE_ERROR(p, "%s: no clauses in %s", tag, exp);
+        } else {
+            value* running = exp->cdr;
+            while (running != NULL) {
+                value* clause = running->car;
+                if (clause == NULL) {
+                    MAKE_ERROR(p, "%s: empty clause in %s", tag, exp);
+                } else {
+                    value* item = clause;
+                    while (item != NULL) {
+                        if (item->type != VALUE_PAIR) {
+                            MAKE_ERROR(p, "%s: non-list clause in %s", tag, exp);
+                        }
+                        item = item->cdr;
+                    }
+
+                    value* predicate = clause->car;
+                    value* actions = clause->cdr;
+                    if (predicate != NULL &&
+                        predicate->type == VALUE_SYMBOL &&
+                        strcmp(predicate->symbol, "else") == 0 &&
+                        running->cdr != NULL) {
+                        MAKE_ERROR(p, "%s: else clause must be the last in %s", tag, exp);
+                    } else if (actions == NULL) {
+                        MAKE_ERROR(p, "%s: actionless clause in %s", tag, exp);
+                    }
+                }
+                running = running->cdr;
+            }
+        }
+
+        return pool_new_bool(p, 1);
+    } else {
+        return pool_new_bool(p, 0);
+    }
+}
+
+static value* transform_cond_rec(pool* p, value* clauses) {
+    // (cond (p1 a1) (p2 a21 a22) (else ae) ->
+    // (if p1 a1 (if p2 (begin a21 a22) ae))
+    if (clauses == NULL) {
+        // if no terminal clause -> false
+        return pool_new_bool(p, 0);
+    } else {
+        value* first = clauses->car;
+        value* rest = clauses->cdr;
+        value* predicate = first->car;
+        value* actions = first->cdr;
+
+        if (predicate != NULL &&
+            predicate->type == VALUE_SYMBOL &&
+            strcmp(predicate->symbol, "else") == 0) {
+            // terminal clause: actions
+            return transform_sequence(p, actions);
+        } else {
+            // non-terminal clause:
+            // (if predicate actions <transform rest>)
+            return make_if(
+                p,
+                predicate,
+                transform_sequence(p, actions),
+                transform_cond_rec(p, rest));
+        }
+    }
+}
+
+value* transform_cond(pool* p, value* exp) {
+    // transform clauses recursively
+    return transform_cond_rec(p, exp->cdr);
+}
+
 value* is_eval(pool* p, value* exp) {
+    // (eval exp)
     static const char* tag = "eval";
     if (is_tagged_list(exp, tag)) {
         if (exp->cdr == NULL) {
@@ -300,11 +414,12 @@ value* is_eval(pool* p, value* exp) {
 }
 
 value* get_eval_expression(pool* p, value* exp) {
-    // x from (eval x)
+    // exp from (eval exp)
     return exp->cdr->car;
 }
 
 value* is_apply(pool* p, value* exp) {
+    // (apply f (a1 a2 ...))
     static const char* tag = "apply";
     if (is_tagged_list(exp, tag)) {
         if (exp->cdr == NULL) {
@@ -322,16 +437,17 @@ value* is_apply(pool* p, value* exp) {
 }
 
 value* get_apply_operator(pool* p, value* exp) {
-    // x from (apply x y)
+    // f from (apply f (a1 a2 ...))
     return exp->cdr->car;
 }
 
 value* get_apply_arguments(pool* p, value* exp) {
-    // y from (apply x y)
+    // (a1 a2 ...) from (apply f (a1 a2 ...))
     return exp->cdr->cdr->car;
 }
 
 value* verify_apply_arguments(pool* p, value* args) {
+    // make sure (a1 a2 ...) is a NULL-terminated list
     value* running = args;
     while (running != NULL) {
         if (running->type != VALUE_PAIR) {
@@ -361,32 +477,45 @@ value* is_application(pool* p, value* exp) {
 }
 
 value* is_true(pool* p, value* exp) {
-    // anything resolving to the true bool is true
-    return pool_new_bool(p, value_is_true(exp));
+    // exp != false
+    if (exp != NULL && exp->type == VALUE_BOOL && !value_is_true(exp)) {
+        return pool_new_bool(p, 0);
+    } else {
+        return pool_new_bool(p, 1);
+    }
+}
+
+value* is_false(pool* p, value* exp) {
+    // exp == false
+    if (exp != NULL && exp->type == VALUE_BOOL && !value_is_true(exp)) {
+        return pool_new_bool(p, 1);
+    } else {
+        return pool_new_bool(p, 0);
+    }
 }
 
 value* is_last_exp(pool* p, value* seq) {
-    // (x)
+    // (e)
     return pool_new_bool(p, seq->cdr == NULL);
 }
 
 value* get_first_exp(pool* p, value* seq) {
-    // x from (x y z)
+    // e1 from (e1 e2 ...)
     return seq->car;
 }
 
 value* get_rest_exps(pool* p, value* seq) {
-    // (y z) from (x y z)
+    // (e2 ...) from (e1 e2 ...)
     return seq->cdr;
 }
 
 value* get_operator(pool* p, value* compound) {
-    // f from (f x y z)
+    // op from (op p1 p2 ...)
     return compound->car;
 }
 
 value* get_operands(pool* p, value* compound) {
-    // (x y z) from (f x y z)
+    // (p1 p2 ...) from (op p1 p2 ...)
     return compound->cdr;
 }
 
@@ -396,17 +525,17 @@ value* is_no_operands(pool* p, value* operands) {
 }
 
 value* is_last_operand(pool* p, value* operands) {
-    // (x)
+    // (p)
     return pool_new_bool(p, operands->cdr == NULL);
 }
 
 value* get_first_operand(pool* p, value* operands) {
-    // x from (x y z)
+    // p1 from (p1 p2 ...)
     return operands->car;
 }
 
 value* get_rest_operands(pool* p, value* operands) {
-    // (y z) from (x y z)
+    // (p2 ...) from (p1 p2 ...)
     return operands->cdr;
 }
 
@@ -416,7 +545,8 @@ value* make_empty_arglist(pool* p) {
 }
 
 value* adjoin_arg(pool* p, value* arg, value* arg_list) {
-    // (x y z) from arg_list = (x y) and new_arg = z
+    // p, () -> (p)
+    // p, (p1 p2 ... pn) -> (p1 p2 ... pn p)
     value* new_arg = pool_new_pair(p, arg, NULL);
 
     if (arg_list == NULL) {

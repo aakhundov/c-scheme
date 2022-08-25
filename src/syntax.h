@@ -25,6 +25,7 @@ value* is_if(pool* p, value* exp);
 value* get_if_predicate(pool* p, value* exp);
 value* get_if_consequent(pool* p, value* exp);
 value* get_if_alternative(pool* p, value* exp);
+value* make_if(pool* p, value* predicate, value* consequent, value* alternative);
 
 value* is_lambda(pool* p, value* exp);
 value* get_lambda_parameters(pool* p, value* exp);
@@ -33,6 +34,10 @@ value* make_lambda(pool* p, value* params, value* body);
 
 value* is_begin(pool* p, value* exp);
 value* get_begin_actions(pool* p, value* exp);
+value* transform_sequence(pool* p, value* seq);
+
+value* is_cond(pool* p, value* exp);
+value* transform_cond(pool* p, value* exp);
 
 value* is_eval(pool* p, value* exp);
 value* get_eval_expression(pool* p, value* exp);
@@ -43,7 +48,9 @@ value* get_apply_arguments(pool* p, value* exp);
 value* verify_apply_arguments(pool* p, value* args);
 
 value* is_application(pool* p, value* exp);
+
 value* is_true(pool* p, value* exp);
+value* is_false(pool* p, value* exp);
 
 value* is_last_exp(pool* p, value* seq);
 value* get_first_exp(pool* p, value* seq);

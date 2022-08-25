@@ -700,12 +700,16 @@ static void test_syntax(eval* e) {
 
     // if
     test_eval_number(e, "(if 1 2 3)", 2);
+    test_eval_number(e, "(if 0 2 3)", 2);
+    test_eval_number(e, "(if \"\" 2 3)", 2);
+    test_eval_number(e, "(if \"x\" 2 3)", 2);
+    test_eval_number(e, "(if () 2 3)", 2);
+    test_eval_number(e, "(if nil 2 3)", 2);
     test_eval_number(e, "(if true 2 3)", 2);
-    test_eval_number(e, "(if 0 2 3)", 3);
     test_eval_number(e, "(if false 2 3)", 3);
     test_eval_number(e, "(if 1 2)", 2);
     test_eval_number(e, "(if true 2)", 2);
-    test_eval_bool(e, "(if 0 2)", 0);
+    test_eval_number(e, "(if 0 2)", 2);
     test_eval_bool(e, "(if false 2)", 0);
 
     // if errors
@@ -743,6 +747,48 @@ static void test_syntax(eval* e) {
 
     // begin errors
     test_eval_error(e, "(begin)", "no items");
+
+    // cond
+    test_eval_number(e, "(cond (else 1))", 1);
+    test_eval_number(e, "(cond (1 2))", 2);
+    test_eval_number(e, "(cond (1 2) (else 3))", 2);
+    test_eval_number(e, "(cond (false 2) (1 3))", 3);
+    test_eval_bool(e, "(cond (false 2))", 0);
+    test_eval_number(e, "(cond (false 2) (else 3))", 3);
+    test_eval_number(e, "(cond (1 2) (1 3) (else 4))", 2);
+    test_eval_number(e, "(cond (false 2) (1 3) (else 4))", 3);
+    test_eval_bool(e, "(cond (false 2) (false 3))", 0);
+    test_eval_number(e, "(cond (false 2) (false 3) (else 4))", 4);
+    test_eval_info(e, "(define (c1 x) (cond ((> x 0) 1) ((< x 0) -1) (else 0)))", "c1 is defined");
+    test_eval_number(e, "(c1 1)", 1);
+    test_eval_number(e, "(c1 10)", 1);
+    test_eval_number(e, "(c1 100)", 1);
+    test_eval_number(e, "(c1 -1)", -1);
+    test_eval_number(e, "(c1 -10)", -1);
+    test_eval_number(e, "(c1 -100)", -1);
+    test_eval_number(e, "(c1 0)", 0);
+    test_eval_info(e, "(define (c2 x) (cond ((> x 0) 1) ((< x 0) -1)))", "c2 is defined");
+    test_eval_number(e, "(c2 1)", 1);
+    test_eval_number(e, "(c2 10)", 1);
+    test_eval_number(e, "(c2 100)", 1);
+    test_eval_number(e, "(c2 -1)", -1);
+    test_eval_number(e, "(c2 -10)", -1);
+    test_eval_number(e, "(c2 -100)", -1);
+    test_eval_bool(e, "(c2 0)", 0);
+    test_eval_info(e, "(define (c3 x) (cond (else 3.14)))", "c3 is defined");
+    test_eval_number(e, "(c3 -100)", 3.14);
+    test_eval_number(e, "(c3 100)", 3.14);
+    test_eval_number(e, "(c3 0)", 3.14);
+
+    // cond errors
+    test_eval_error(e, "(cond)", "no clauses in");
+    test_eval_error(e, "(cond ())", "empty clause in");
+    test_eval_error(e, "(cond (1 2) ())", "empty clause in");
+    test_eval_error(e, "(cond 1)", "non-list clause in");
+    test_eval_error(e, "(cond (1 2) 1)", "non-list clause in");
+    test_eval_error(e, "(cond (1))", "actionless clause in");
+    test_eval_error(e, "(cond (1 2) (1))", "actionless clause in");
+    test_eval_error(e, "(cond (else 2) (1))", "else clause must be the last in");
 
     // eval
     test_eval_number(e, "(eval 1)", 1);
@@ -1375,13 +1421,13 @@ void test_relational(eval* e) {
 
     // not
     test_eval_bool(e, "(not 1)", 0);
-    test_eval_bool(e, "(not 0)", 1);
+    test_eval_bool(e, "(not 0)", 0);
     test_eval_bool(e, "(not true)", 0);
     test_eval_bool(e, "(not false)", 1);
     test_eval_bool(e, "(not \"a\")", 0);
-    test_eval_bool(e, "(not \"\")", 1);
+    test_eval_bool(e, "(not \"\")", 0);
     test_eval_bool(e, "(not '(1 2 3))", 0);
-    test_eval_bool(e, "(not '())", 1);
+    test_eval_bool(e, "(not '())", 0);
     test_eval_bool(e, "(not (< 1 2))", 0);
     test_eval_bool(e, "(not (< 2 1))", 1);
 

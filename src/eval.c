@@ -214,6 +214,18 @@ static value* op_get_begin_actions(machine* m, value* args) {
     return get_begin_actions(m->pool, exp);
 }
 
+static value* op_is_cond(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return is_cond(m->pool, exp);
+}
+
+static value* op_transform_cond(machine* m, value* args) {
+    value* exp = args->car->car;
+
+    return transform_cond(m->pool, exp);
+}
+
 static value* op_is_eval(machine* m, value* args) {
     value* exp = args->car->car;
 
@@ -514,6 +526,9 @@ static void bind_machine_ops(eval* e) {
 
     machine_bind_op(m, "begin?", op_is_begin);
     machine_bind_op(m, "begin-actions", op_get_begin_actions);
+
+    machine_bind_op(m, "cond?", op_is_cond);
+    machine_bind_op(m, "transform-cond", op_transform_cond);
 
     machine_bind_op(m, "eval?", op_is_eval);
     machine_bind_op(m, "eval-expression", op_get_eval_expression);
@@ -929,17 +944,13 @@ static value* prim_gte(machine* m, value* args) {
 static value* prim_not(machine* m, value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
 
-    return pool_new_bool(
-        m->pool,
-        (value_is_true(args->car) ? 0 : 1));
-}
-
-static value* prim_null_q(machine* m, value* args) {
-    ASSERT_NUM_ARGS(m->pool, args, 1);
-
     value* arg = args->car;
 
-    return pool_new_bool(m->pool, arg == NULL);
+    if (value_is_true(is_true(m->pool, arg))) {
+        return pool_new_bool(m->pool, 0);
+    } else {
+        return pool_new_bool(m->pool, 1);
+    }
 }
 
 static value* prim_number_q(machine* m, value* args) {
@@ -996,6 +1007,30 @@ static value* prim_list_q(machine* m, value* args) {
     return pool_new_bool(m->pool, 1);
 }
 
+static value* prim_null_q(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+
+    value* arg = args->car;
+
+    return pool_new_bool(m->pool, arg == NULL);
+}
+
+static value* prim_true_q(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+
+    value* arg = args->car;
+
+    return is_true(m->pool, arg);
+}
+
+static value* prim_false_q(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+
+    value* arg = args->car;
+
+    return is_false(m->pool, arg);
+}
+
 static value* prim_equal_q(machine* m, value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 2);
 
@@ -1042,14 +1077,18 @@ static value* prim_info(machine* m, value* args) {
 
 static value* prim_display(machine* m, value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
-    ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_STRING);
 
-    value* display_message = args->car;
-    value* display_args = args->cdr;
+    while (args != NULL) {
+        static char buffer[16384];
+        value_to_str(args->car, buffer);
+        printf("%s", buffer);
 
-    static char buffer[16384];
-    format_args(display_message, display_args, buffer);
-    printf("%s", buffer);
+        if (args->cdr != NULL) {
+            printf(" ");
+        }
+
+        args = args->cdr;
+    }
 
     return NULL;
 }
@@ -1138,6 +1177,8 @@ static value* make_global_environment(eval* e) {
     add_primitive(e, env, "pair?", prim_pair_q);
     add_primitive(e, env, "list?", prim_list_q);
     add_primitive(e, env, "null?", prim_null_q);
+    add_primitive(e, env, "true?", prim_true_q);
+    add_primitive(e, env, "false?", prim_false_q);
     add_primitive(e, env, "equal?", prim_equal_q);
     add_primitive(e, env, "eq?", prim_eq_q);
 

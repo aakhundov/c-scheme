@@ -18,6 +18,8 @@ eval-dispatch
     (branch (label ev-lambda))
     (test (op begin?) (reg exp))
     (branch (label ev-begin))
+    (test (op cond?) (reg exp))
+    (branch (label ev-cond))
     (test (op eval?) (reg exp))
     (branch (label ev-eval))
     (test (op apply?) (reg exp))
@@ -98,6 +100,10 @@ ev-begin
     (assign unev (op begin-actions) (reg exp))
     (save continue)
     (goto (label ev-sequence))
+
+ev-cond
+    (assign exp (op transform-cond) (reg exp))
+    (goto (label eval-dispatch))
 
 ev-eval
     (save continue)
