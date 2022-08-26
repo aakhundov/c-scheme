@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "map.h"
 #include "str.h"
 
 void value_init_number(value* v, double number) {
@@ -115,12 +116,13 @@ void value_init_code(value* v, value* car, value* cdr) {
     v->cdr = cdr;
 }
 
-void value_init_env(value* v, value* car, value* cdr) {
+void value_init_env(value* v) {
     assert(v != NULL);
 
     v->type = VALUE_ENV;
-    v->car = car;
-    v->cdr = cdr;
+    v->ptr = map_new();
+    v->car = NULL;
+    v->cdr = NULL;
 }
 
 static value* value_new() {
@@ -226,7 +228,7 @@ value* value_new_code(value* car, value* cdr) {
 
 value* value_new_env() {
     value* v = value_new();
-    value_init_env(v, NULL, NULL);
+    value_init_env(v);
 
     return v;
 }
@@ -286,7 +288,6 @@ void value_cleanup(value* v) {
             case VALUE_PAIR:
             case VALUE_LAMBDA:
             case VALUE_CODE:
-            case VALUE_ENV:
                 break;
             case VALUE_SYMBOL:
             case VALUE_STRING:
@@ -294,6 +295,9 @@ void value_cleanup(value* v) {
             case VALUE_INFO:
             case VALUE_BUILTIN:
                 free(v->symbol);
+                break;
+            case VALUE_ENV:
+                map_dispose((map*)v->ptr);
                 break;
         }
     }
@@ -514,10 +518,9 @@ void value_copy(value* dest, value* source) {
             value_init_lambda(dest, source->car, source->cdr);
             break;
         case VALUE_CODE:
-            value_init_code(dest, source->car, source->cdr);
-            break;
         case VALUE_ENV:
-            value_init_env(dest, source->car, source->cdr);
+            // can't copy env or code
+            assert(0);
             break;
     }
 }
@@ -527,7 +530,7 @@ static value* value_clone_rec(value* source) {
         return NULL;
     } else if (source->type == VALUE_ENV || source->type == VALUE_CODE) {
         // envs and code are not allowed to be cloned
-        // (maybe should be allowed in future)
+        // (maybe should be allowed in the future)
         return NULL;
     } else if (source->gen != 0) {
         // "broken heart": already cloned

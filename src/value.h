@@ -47,7 +47,7 @@ void value_init_info_from_args(value* v, char* info, va_list args);
 void value_init_pair(value* v, value* car, value* cdr);
 void value_init_lambda(value* v, value* car, value* cdr);
 void value_init_code(value* v, value* car, value* cdr);
-void value_init_env(value* v, value* car, value* cdr);
+void value_init_env(value* v);
 
 // with malloc
 value* value_new_number(double number);
