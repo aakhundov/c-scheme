@@ -70,11 +70,9 @@ static void create_backbone(machine* m, char* output_register_name) {
     m->ops = pool_new_pair(m->pool, m->code, NULL);
     m->stack = pool_new_pair(m->pool, m->ops, NULL);
     m->pc = pool_new_pair(m->pool, m->stack, NULL);
-    m->trace = pool_new_pair(m->pool, m->pc, NULL);
-    m->root = pool_new_pair(m->pool, m->trace, NULL);  // memory root
+    m->root = pool_new_pair(m->pool, m->pc, NULL);  // memory root
 
     m->val = get_register(m, output_register_name);  // output register
-    m->trace->cdr = pool_new_number(m->pool, 0);     // trace flag
 }
 
 static void push_to_stack(machine* m, value* v) {
@@ -103,10 +101,6 @@ static value* pop_from_stack(machine* m) {
 static void clear_stack(machine* m) {
     m->stack->cdr = NULL;
     m->stats.stack_depth = 0;
-}
-
-static int in_trace_mode(machine* m) {
-    return m->trace->cdr->number == 1;
 }
 
 static value* call_op(machine* m, value* op, value* args) {
@@ -607,16 +601,22 @@ static void execute_next_instruction(machine* m) {
     value* instruction = m->pc->car->car;  // current instruction
     value* line = m->pc->car->cdr;         // current line of code
 
+    if (m->stop) {
+        m->val->car = pool_new_error(m->pool, "keyboard interrupt");
+        m->pc = NULL;
+        return;
+    }
+
     m->stats.num_inst += 1;
 
-    if (in_trace_mode(m)) {
+    if (m->trace) {
         trace_before(m, line, instruction);
     }
 
     instruction_type type = (int)instruction->car->number;
     execution_fns[type](m, instruction->cdr);
 
-    if (in_trace_mode(m)) {
+    if (m->trace) {
         trace_after(m, line, instruction);
     }
 
@@ -636,6 +636,9 @@ machine* machine_new(value* code, char* output_register_name) {
     pool_register_root(m->pool, m->root);
     process_code(m, code);
 
+    m->stop = 0;
+    m->trace = 0;
+
     return m;
 }
 
@@ -644,10 +647,6 @@ void machine_dispose(machine* m) {
     pool_dispose(m->pool);
 
     free(m);
-}
-
-void machine_set_trace(machine* m, int on) {
-    m->trace->cdr->number = (on ? 1 : 0);
 }
 
 void machine_bind_op(machine* m, char* name, builtin fn) {
@@ -682,12 +681,21 @@ void machine_run(machine* m) {
     reset_stats(m);
     clear_stack(m);
 
+    m->stop = 0;
     m->pc = m->code->cdr;
     while (m->pc != NULL) {
         execute_next_instruction(m);
     }
 
-    if (in_trace_mode(m)) {
+    if (m->trace) {
         report_stats(m);
     }
+}
+
+void machine_set_trace(machine* m, int on) {
+    m->trace = (on ? 1 : 0);
+}
+
+void machine_interrupt(machine* m) {
+    m->stop = 1;
 }

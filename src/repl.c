@@ -1,5 +1,6 @@
 #include "repl.h"
 
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,6 +46,9 @@ static const size_t command_counts[] = {
 static char* history_path = "./.history";
 static char* evaluator_path = "./lib/machines/evaluator.scm";
 static char* library_path = "./lib/scheme/library.scm";
+
+static eval* e = NULL;
+static hist* h = NULL;
 
 static void get_input(char* input) {
     char* line = readline(">>> ");
@@ -123,7 +127,7 @@ value* load_from_path(eval* e, char* path) {
     value* running = content;
     while (running != NULL) {
         value* result = eval_evaluate(e, running->car);
-        if (result->type == VALUE_ERROR) {
+        if (result != NULL && result->type == VALUE_ERROR) {
             value_dispose(content);
             return result;
         }
@@ -149,16 +153,24 @@ void load_library(eval* e) {
     value_dispose(result);
 }
 
+static void signal_handler(int signal) {
+    printf("\b\b");
+    if (e != NULL) {
+        machine_interrupt(e->machine);
+    }
+}
+
 void run_repl() {
-    printf("c-scheme version 0.0.1\n");
-    printf("type in \"q\" to quit\n\n");
+    printf("c-scheme version 0.1.0\n");
+    printf("press Ctrl-C to interrupt\n");
+    printf("type in \"quit\" to quit\n\n");
 
     int stop = 0;
     char input[65536];
     char output[65536];
 
-    eval* e = eval_new(evaluator_path);
-    hist* h = hist_new(history_path);
+    e = eval_new(evaluator_path);
+    h = hist_new(history_path);
 
     load_library(e);
 
@@ -184,7 +196,9 @@ void run_repl() {
                 printf("\x1B[32menv was reset\x1B[0m\n");
                 break;
             default:
+                signal(SIGINT, signal_handler);
                 process_repl_command(e, h, input, output);
+                signal(SIGINT, NULL);
                 printf("%s", output);
         }
     }

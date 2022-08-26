@@ -30,18 +30,18 @@ struct machine {
     value* ops;
 
     value* stack;
-    value* flag;
     value* pc;
     value* val;
-    value* trace;
 
     machine_stats stats;
+
+    volatile int stop;
+    volatile int trace;
 };
 
 machine* machine_new(value* code, char* output_register_name);
 void machine_dispose(machine* m);
 
-void machine_set_trace(machine* m, int on);
 void machine_bind_op(machine* m, char* name, builtin fn);
 void machine_copy_to_register(machine* m, char* name, value* v);
 value* machine_copy_from_register(machine* m, char* name);
@@ -49,5 +49,8 @@ value* machine_get_register(machine* m, char* name);
 value* machine_get_label(machine* m, char* name);
 value* machine_export_output(machine* m);
 void machine_run(machine* m);
+
+void machine_set_trace(machine* m, int on);
+void machine_interrupt(machine* m);
 
 #endif  // MACHINE_H_
