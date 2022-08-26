@@ -336,7 +336,8 @@ static value* recover_str_rec(value* v) {
             v->type == VALUE_PAIR &&
             v->car != NULL &&
             v->car->type == VALUE_SYMBOL &&
-            strcmp(v->car->symbol, QUOTE_SYMBOL) == 0) {
+            strcmp(v->car->symbol, QUOTE_SYMBOL) == 0 &&
+            v->cdr != NULL) {
             // replace the (quote x) expression by
             // its string representation with 'x
             buffer[0] = QUOTE_CHAR;
