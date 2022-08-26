@@ -51,6 +51,11 @@
       (cons (f (car lst))
             (map f (cdr lst)))))
 
+(define (measure expression)
+  (let ((start (time)))
+    (begin (eval expression)
+           (info "%s took %s seconds" expression (- (time) start)))))
+
 (define (assert-equal expression expected)
   (let ((result (eval expression)))
     (if (equal? result expected)

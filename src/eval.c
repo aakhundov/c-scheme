@@ -3,7 +3,9 @@
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "env.h"
 #include "machine.h"
@@ -1222,6 +1224,31 @@ static value* prim_collect(machine* m, value* args) {
         collected, percentage, values_before);
 }
 
+static value* prim_srand(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    srand((int)args->car->number);
+
+    return pool_new_info(m->pool, "RNG was seeded");
+}
+
+static value* prim_rand(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    int upper = (int)args->car->number;
+    int result = rand() % upper;
+
+    return pool_new_number(m->pool, result);
+}
+
+static value* prim_time(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 0);
+
+    return pool_new_number(m->pool, time(NULL));
+}
+
 static void add_primitive(eval* e, value* env, char* name, builtin fn) {
     pool* p = e->machine->pool;
     env_add_value(env, name, pool_new_builtin(p, fn, name), p);
@@ -1293,6 +1320,9 @@ static value* make_global_environment(eval* e) {
     add_primitive(e, env, "display", prim_display);
     add_primitive(e, env, "newline", prim_newline);
     add_primitive(e, env, "collect", prim_collect);
+    add_primitive(e, env, "srand", prim_srand);
+    add_primitive(e, env, "rand", prim_rand);
+    add_primitive(e, env, "time", prim_time);
 
     return env;
 }
