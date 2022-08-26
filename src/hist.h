@@ -9,8 +9,8 @@ struct hist {
     FILE* file;
 };
 
-void hist_new(hist** h, char* path_to_file);
-void hist_dispose(hist** h);
+hist* hist_new(char* path_to_file);
+void hist_dispose(hist* h);
 
 void hist_add(hist* h, char* input);
 

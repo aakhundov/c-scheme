@@ -9,14 +9,14 @@
 #include "map.h"
 #include "str.h"
 
-void value_init_number(value* v, double number) {
+static void value_init_number(value* v, double number) {
     assert(v != NULL);
 
     v->type = VALUE_NUMBER;
     v->number = number;
 }
 
-void value_init_symbol(value* v, char* symbol) {
+static void value_init_symbol(value* v, char* symbol) {
     assert(v != NULL);
 
     v->type = VALUE_SYMBOL;
@@ -24,7 +24,7 @@ void value_init_symbol(value* v, char* symbol) {
     strcpy(v->symbol, symbol);
 }
 
-void value_init_string(value* v, char* string) {
+static void value_init_string(value* v, char* string) {
     assert(v != NULL);
 
     v->type = VALUE_STRING;
@@ -32,14 +32,14 @@ void value_init_string(value* v, char* string) {
     strcpy(v->symbol, string);
 }
 
-void value_init_bool(value* v, int truth) {
+static void value_init_bool(value* v, int truth) {
     assert(v != NULL);
 
     v->type = VALUE_BOOL;
     v->number = truth;
 }
 
-void value_init_builtin(value* v, void* ptr, char* name) {
+static void value_init_builtin(value* v, void* ptr, char* name) {
     assert(v != NULL);
 
     v->type = VALUE_BUILTIN;
@@ -60,39 +60,21 @@ static void value_init_symbol_from_args(value* v, char* format, va_list args) {
     }
 }
 
-void value_init_error_from_args(value* v, char* error, va_list args) {
+static void value_init_error_from_args(value* v, char* error, va_list args) {
     assert(v != NULL);
 
     value_init_symbol_from_args(v, error, args);
     v->type = VALUE_ERROR;
 }
 
-void value_init_error(value* v, char* error, ...) {
-    assert(v != NULL);
-
-    va_list args;
-    va_start(args, error);
-    value_init_error_from_args(v, error, args);
-    va_end(args);
-}
-
-void value_init_info_from_args(value* v, char* info, va_list args) {
+static void value_init_info_from_args(value* v, char* info, va_list args) {
     assert(v != NULL);
 
     value_init_symbol_from_args(v, info, args);
     v->type = VALUE_INFO;
 }
 
-void value_init_info(value* v, char* info, ...) {
-    assert(v != NULL);
-
-    va_list args;
-    va_start(args, info);
-    value_init_info_from_args(v, info, args);
-    va_end(args);
-}
-
-void value_init_pair(value* v, value* car, value* cdr) {
+static void value_init_pair(value* v, value* car, value* cdr) {
     assert(v != NULL);
 
     v->type = VALUE_PAIR;
@@ -100,7 +82,7 @@ void value_init_pair(value* v, value* car, value* cdr) {
     v->cdr = cdr;
 }
 
-void value_init_lambda(value* v, value* car, value* cdr) {
+static void value_init_lambda(value* v, value* car, value* cdr) {
     assert(v != NULL);
 
     v->type = VALUE_LAMBDA;
@@ -108,7 +90,7 @@ void value_init_lambda(value* v, value* car, value* cdr) {
     v->cdr = cdr;
 }
 
-void value_init_code(value* v, value* car, value* cdr) {
+static void value_init_code(value* v, value* car, value* cdr) {
     assert(v != NULL);
 
     v->type = VALUE_CODE;
@@ -116,7 +98,7 @@ void value_init_code(value* v, value* car, value* cdr) {
     v->cdr = cdr;
 }
 
-void value_init_env(value* v) {
+static void value_init_env(value* v) {
     assert(v != NULL);
 
     v->type = VALUE_ENV;
@@ -485,7 +467,7 @@ int value_to_str(value* v, char* buffer) {
     }
 }
 
-void value_copy(value* dest, value* source) {
+static void value_copy(value* dest, value* source) {
     assert(dest != NULL);
     assert(source != NULL);
 

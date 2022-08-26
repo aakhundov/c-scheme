@@ -24,26 +24,27 @@ static void recover_history(char* path_to_file) {
     }
 }
 
-void hist_new(hist** h, char* path_to_file) {
-    *h = malloc(sizeof(hist));
+hist* hist_new(char* path_to_file) {
+    hist* h = malloc(sizeof(hist));
 
     recover_history(path_to_file);
 
     if (path_to_file != NULL) {
-        (*h)->file = fopen(path_to_file, "a");
+        h->file = fopen(path_to_file, "a");
     } else {
-        (*h)->file = NULL;
+        h->file = NULL;
     }
+
+    return h;
 }
 
-void hist_dispose(hist** h) {
-    if ((*h)->file) {
-        fclose((*h)->file);
-        (*h)->file = NULL;
+void hist_dispose(hist* h) {
+    if (h->file) {
+        fclose(h->file);
+        h->file = NULL;
     }
 
-    free(*h);
-    *h = NULL;
+    free(h);
 }
 
 void hist_add(hist* h, char* input) {
@@ -52,7 +53,7 @@ void hist_add(hist* h, char* input) {
         // add to history
         add_history(input);
 
-        if (h->file) {
+        if (h->file != NULL) {
             // write to the history file
             fprintf(h->file, "%s\n", input);
             fflush(h->file);

@@ -624,21 +624,22 @@ static void execute_next_instruction(machine* m) {
     }
 }
 
-void machine_new(machine** m, value* code, char* output_register_name) {
-    *m = malloc(sizeof(machine));
+machine* machine_new(value* code, char* output_register_name) {
+    machine* m = malloc(sizeof(machine));
 
-    pool_new(&((*m)->pool));
-    create_backbone(*m, output_register_name);
-    pool_register_root((*m)->pool, (*m)->root);
-    process_code(*m, code);
+    m->pool = pool_new();
+    create_backbone(m, output_register_name);
+    pool_register_root(m->pool, m->root);
+    process_code(m, code);
+
+    return m;
 }
 
-void machine_dispose(machine** m) {
-    pool_unregister_root((*m)->pool, (*m)->root);
-    pool_dispose(&((*m)->pool));
+void machine_dispose(machine* m) {
+    pool_unregister_root(m->pool, m->root);
+    pool_dispose(m->pool);
 
-    free(*m);
-    *m = NULL;
+    free(m);
 }
 
 void machine_set_trace(machine* m, int on) {

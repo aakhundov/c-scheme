@@ -157,10 +157,8 @@ void run_repl() {
     char input[65536];
     char output[65536];
 
-    eval* e;
-    hist* h;
-    eval_new(&e, evaluator_path);
-    hist_new(&h, history_path);
+    eval* e = eval_new(evaluator_path);
+    hist* h = hist_new(history_path);
 
     load_library(e);
 
@@ -191,8 +189,8 @@ void run_repl() {
         }
     }
 
-    hist_dispose(&h);
-    eval_dispose(&e);
+    hist_dispose(h);
+    eval_dispose(e);
 
     printf("\nbye!\n");
 }

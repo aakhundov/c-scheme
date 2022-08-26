@@ -1264,25 +1264,26 @@ static value* make_global_environment(eval* e) {
     return env;
 }
 
-void eval_new(eval** e, char* path_to_code) {
-    *e = malloc(sizeof(eval));
+eval* eval_new(char* path_to_code) {
+    eval* e = malloc(sizeof(eval));
 
     value* code = parse_from_file(path_to_code);
     assert(code->type != VALUE_ERROR);
-    machine_new(&((*e)->machine), code, "val");
+    e->machine = machine_new(code, "val");
     value_dispose(code);
 
-    bind_machine_ops(*e);
+    bind_machine_ops(e);
 
-    (*e)->env = make_global_environment(*e);
-    machine_get_register((*e)->machine, "env")->car = (*e)->env;
+    e->env = make_global_environment(e);
+    machine_get_register(e->machine, "env")->car = e->env;
+
+    return e;
 }
 
-void eval_dispose(eval** e) {
-    machine_dispose(&((*e)->machine));
+void eval_dispose(eval* e) {
+    machine_dispose(e->machine);
 
-    free(*e);
-    *e = NULL;
+    free(e);
 }
 
 value* eval_evaluate(eval* e, value* v) {

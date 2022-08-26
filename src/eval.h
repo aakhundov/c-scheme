@@ -11,8 +11,8 @@ struct eval {
     value* env;
 };
 
-void eval_new(eval** e, char* path_to_code);
-void eval_dispose(eval** e);
+eval* eval_new(char* path_to_code);
+void eval_dispose(eval* e);
 
 value* eval_evaluate(eval* e, value* v);
 void eval_reset_env(eval* e);

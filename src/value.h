@@ -34,22 +34,6 @@ struct value {
     size_t gen;
 };
 
-// without malloc
-void value_init_number(value* v, double number);
-void value_init_symbol(value* v, char* symbol);
-void value_init_string(value* v, char* string);
-void value_init_bool(value* v, int truth);
-void value_init_builtin(value* v, void* ptr, char* name);
-void value_init_error(value* v, char* error, ...);
-void value_init_error_from_args(value* v, char* error, va_list args);
-void value_init_info(value* v, char* info, ...);
-void value_init_info_from_args(value* v, char* info, va_list args);
-void value_init_pair(value* v, value* car, value* cdr);
-void value_init_lambda(value* v, value* car, value* cdr);
-void value_init_code(value* v, value* car, value* cdr);
-void value_init_env(value* v);
-
-// with malloc
 value* value_new_number(double number);
 value* value_new_symbol(char* symbol);
 value* value_new_string(char* string);
@@ -64,10 +48,9 @@ value* value_new_lambda(value* car, value* cdr);
 value* value_new_code(value* car, value* cdr);
 value* value_new_env();
 
-void value_update_gen(value* v, size_t gen);
-
 void value_cleanup(value* v);  // without free
 void value_dispose(value* v);  // with free
+void value_update_gen(value* v, size_t gen);
 
 int is_compound_type(value_type t);
 char* get_type_name(value_type t);
@@ -75,7 +58,6 @@ char* get_type_name(value_type t);
 int value_is_true(value* v);
 int value_equal(value* v1, value* v2);
 int value_to_str(value* v, char* buffer);
-void value_copy(value* dest, value* source);  // shallow copy (without malloc)
-value* value_clone(value* source);            // deep copy (with malloc)
+value* value_clone(value* source);
 
 #endif  // VALUE_H_

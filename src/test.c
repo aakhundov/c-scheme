@@ -36,6 +36,8 @@
         printf("%s = %s\n", name, buffer); \
     }
 
+static char* evaluator_path = "./lib/machines/evaluator.scm";
+
 static int test_counter = 0;
 
 static void report_test(char* output, ...) {
@@ -320,8 +322,7 @@ static void test_pool() {
 
     // init
     report_test("init");
-    pool* p;
-    pool_new(&p);
+    pool* p = pool_new();
     assert(p->size == 0);
 
     // singleton values
@@ -498,7 +499,7 @@ static void test_pool() {
     pool_new_symbol(p, "hello");
     pool_new_string(p, "world");
     assert(p->size == 3);
-    pool_dispose(&p);
+    pool_dispose(p);
 
     // teardown
     r1->car = NULL;
@@ -555,8 +556,8 @@ static void test_gcd_machine() {
         {5, 125, 5},
     };
 
-    machine* m;
-    machine_new(&m, code, "a");
+    machine* m = machine_new(code, "a");
+
     machine_bind_op(m, "rem", op_rem);
     machine_bind_op(m, "=", op_eq);
 
@@ -579,7 +580,7 @@ static void test_gcd_machine() {
     }
 
     value_dispose(code);
-    machine_dispose(&m);
+    machine_dispose(m);
 }
 
 static void test_fact_machine() {
@@ -595,8 +596,8 @@ static void test_fact_machine() {
         {10, 3628800},
     };
 
-    machine* m;
-    machine_new(&m, code, "val");
+    machine* m = machine_new(code, "val");
+
     machine_bind_op(m, "-", op_minus);
     machine_bind_op(m, "*", op_mult);
     machine_bind_op(m, "=", op_eq);
@@ -618,7 +619,7 @@ static void test_fact_machine() {
     }
 
     value_dispose(code);
-    machine_dispose(&m);
+    machine_dispose(m);
 }
 
 static void test_fib_machine() {
@@ -634,8 +635,8 @@ static void test_fib_machine() {
         {10, 55},
     };
 
-    machine* m;
-    machine_new(&m, code, "val");
+    machine* m = machine_new(code, "val");
+
     machine_bind_op(m, "<", op_lt);
     machine_bind_op(m, "+", op_plus);
     machine_bind_op(m, "-", op_minus);
@@ -657,7 +658,7 @@ static void test_fib_machine() {
     }
 
     value_dispose(code);
-    machine_dispose(&m);
+    machine_dispose(m);
 }
 
 static void test_machine() {
@@ -1763,8 +1764,7 @@ void test_other(eval* e) {
 }
 
 void run_test() {
-    eval* e;
-    eval_new(&e, "./lib/machines/evaluator.scm");
+    eval* e = eval_new(evaluator_path);
 
     RUN_TEST_FN(test_parse);
     // RUN_TEST_FN(test_cycle_to_str);
@@ -1781,5 +1781,5 @@ void run_test() {
 
     printf("all tests have been passed!\n");
 
-    eval_dispose(&e);
+    eval_dispose(e);
 }
