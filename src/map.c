@@ -3,9 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "common.h"
 #include "value.h"
-
-#define INITIAL_NUM_BUCKETS 5
 
 static size_t get_bucket_id(map* m, char* key) {
     // http://www.cse.yorku.ca/~oz/hash.html

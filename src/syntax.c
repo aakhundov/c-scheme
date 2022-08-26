@@ -3,14 +3,13 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "common.h"
 #include "pool.h"
 #include "value.h"
 
-#define MAX_ERROR_ARGS 5
-
 #define MAKE_ERROR(p, text, tag, exp)                \
     {                                                \
-        static char buffer[16384];                   \
+        static char buffer[BUFFER_SIZE];             \
         value_to_str(exp, buffer);                   \
         return pool_new_error(p, text, tag, buffer); \
     }
@@ -684,7 +683,7 @@ value* make_compound_procedure(pool* p, value* params, value* body, value* env) 
 }
 
 int format_args(value* message, value* args, char* buffer) {
-    static char bufs[MAX_ERROR_ARGS][16384];
+    static char bufs[MAX_ERROR_ARGS][BUFFER_SIZE];
     char* fmt = message->symbol;
 
     // convert available args to string buffers,

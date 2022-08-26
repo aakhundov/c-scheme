@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "common.h"
 #include "pool.h"
 #include "value.h"
 
@@ -15,9 +16,6 @@ typedef enum {
     INST_SAVE = 4,
     INST_RESTORE = 5,
 } instruction_type;
-
-static const size_t MAX_STACK_VALUES = 100000;
-static const size_t MAX_GARBAGE_VALUES = 1000000;
 
 static value* get_or_create_record(machine* m, value* table, char* name) {
     value* pair = table->cdr;
@@ -537,14 +535,14 @@ static void (*execution_fns[])(machine*, value*) = {
 };
 
 static void trace_before(machine* m, value* line, value* instruction) {
-    static char message[16348];
+    static char message[BUFFER_SIZE];
     // print the instrumented line
     value_to_str(line, message);
     printf("\x1B[34m%05zu\x1B[0m %s", m->stats.num_inst, message);
 }
 
 static void trace_after(machine* m, value* line, value* instruction) {
-    static char message[16348];
+    static char message[BUFFER_SIZE];
     switch ((int)instruction->car->number) {
         case INST_ASSIGN:
             // print the destination register's content

@@ -4,13 +4,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "common.h"
 #include "edit.h"
 
 static void recover_history(char* path_to_file) {
     FILE* fp = fopen(path_to_file, "r");
 
     if (fp != NULL) {
-        static char buffer[16384];
+        static char buffer[BUFFER_SIZE];
         while (fgets(buffer, sizeof(buffer), fp) != NULL) {
             int len = strlen(buffer);
             if (len > 1) {

@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "common.h"
 #include "map.h"
 #include "str.h"
 
@@ -52,7 +53,7 @@ static void value_init_symbol_from_args(value* v, char* format, va_list args) {
     assert(v != NULL);
 
     if (args != NULL) {
-        static char buffer[16384];
+        static char buffer[BUFFER_SIZE];
         vsnprintf(buffer, sizeof(buffer), format, args);
         value_init_symbol(v, buffer);
     } else {
@@ -426,8 +427,8 @@ static int pair_to_str(value* v, char* buffer) {
 }
 
 static int lambda_to_str(value* v, char* buffer) {
-    static char params[16384];
-    static char body[16384];
+    static char params[BUFFER_SIZE];
+    static char body[BUFFER_SIZE];
 
     value_to_str(v->car->car, params);
     value_to_str(v->car->cdr, body);

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "common.h"
 #include "eval.h"
 #include "machine.h"
 #include "parse.h"
@@ -31,17 +32,15 @@
 
 #define PRINT_VALUE(name, v)               \
     {                                      \
-        char buffer[16384];                \
+        static char buffer[BUFFER_SIZE];   \
         value_to_str(v, buffer);           \
         printf("%s = %s\n", name, buffer); \
     }
 
-static char* evaluator_path = "./lib/machines/evaluator.scm";
-
 static int test_counter = 0;
 
 static void report_test(char* output, ...) {
-    static char buffer[16384];
+    static char buffer[BUFFER_SIZE];
 
     va_list args;
     va_start(args, output);
@@ -63,10 +62,10 @@ static value* get_evaluated(eval* ev, char* input) {
         v = e;
     }
 
-    static char output[16384];
+    static char output[BUFFER_SIZE];
     value_to_str(v, output);
 
-    static char formatted[16384];
+    static char formatted[BUFFER_SIZE];
     sprintf(
         formatted,
         "\x1B[34m[\x1B[0m%s\x1B[34m] --> [\x1B[0m%s\x1B[34m]\x1B[0m",
@@ -79,7 +78,7 @@ static value* get_evaluated(eval* ev, char* input) {
 static void test_parse_output(char* input, char* expected) {
     value* p = get_evaluated(NULL, input);
 
-    static char buffer[16384];
+    static char buffer[BUFFER_SIZE];
     value_to_str(p, buffer);
     if (strcmp(buffer, expected) != 0) {
         printf("expected output: \"%s\"\n", expected);
@@ -103,7 +102,7 @@ static void test_parse_error(char* input, char* expected) {
 static void test_eval_output(eval* ev, char* input, char* expected) {
     value* e = get_evaluated(ev, input);
 
-    static char buffer[16384];
+    static char buffer[BUFFER_SIZE];
     value_to_str(e, buffer);
     if (strcmp(buffer, expected) != 0) {
         printf("expected output: \"%s\"\n", expected);
@@ -261,7 +260,7 @@ static void test_parse() {
 /*
 void test_cycle_to_str() {
     value* v = NULL;
-    static char buffer[16384];
+    static char buffer[BUFFER_SIZE];
 
     v = value_new_pair(
         value_new_number(1),
@@ -572,7 +571,7 @@ static void test_gcd_machine() {
 
         value* result = machine_export_output(m);
 
-        char buffer[1024];
+        static char buffer[BUFFER_SIZE];
         value_to_str(result, buffer);
         report_test("gcd(%d, %d) --> %s", a, b, buffer);
         assert(result->number == val);
@@ -611,7 +610,7 @@ static void test_fact_machine() {
 
         value* result = machine_export_output(m);
 
-        char buffer[1024];
+        static char buffer[BUFFER_SIZE];
         value_to_str(result, buffer);
         report_test("factorial(%d) --> %s", n, buffer);
         assert(result->number == val);
@@ -650,7 +649,7 @@ static void test_fib_machine() {
 
         value* result = machine_export_output(m);
 
-        char buffer[1024];
+        static char buffer[BUFFER_SIZE];
         value_to_str(result, buffer);
         report_test("fibonacci(%d) --> %s", n, buffer);
         assert(result->number == val);
@@ -1764,7 +1763,7 @@ void test_other(eval* e) {
 }
 
 void run_test() {
-    eval* e = eval_new(evaluator_path);
+    eval* e = eval_new(EVALUATOR_PATH);
 
     RUN_TEST_FN(test_parse);
     // RUN_TEST_FN(test_cycle_to_str);

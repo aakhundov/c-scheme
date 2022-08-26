@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "common.h"
 #include "str.h"
 #include "value.h"
 
@@ -324,7 +325,7 @@ value* parse_from_file(char* path) {
 }
 
 static value* recover_str_rec(value* v) {
-    static char buffer[16384];
+    static char buffer[BUFFER_SIZE];
 
     if (v != NULL) {
         if (is_compound_type(v->type)) {

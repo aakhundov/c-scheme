@@ -4,13 +4,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "common.h"
+
 #ifdef _WIN32
 
-static char buffer[2048];
+static char buffer[BUFFER_SIZE];
 
 char* readline(char* prompt) {
     fputs(prompt, stdout);
-    fgets(buffer, 2048, stdin);
+    fgets(buffer, sizeof(buffer), stdin);
 
     char* result = malloc(strlen(buffer) + 1);
     strcpy(result, buffer);

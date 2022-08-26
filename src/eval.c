@@ -7,6 +7,7 @@
 #include <string.h>
 #include <time.h>
 
+#include "common.h"
 #include "env.h"
 #include "machine.h"
 #include "map.h"
@@ -66,7 +67,7 @@
                 p, "arg #%d must be %s, but got ()",     \
                 ordinal, get_type_name(expected_type));  \
         } else if (arg->car->type != expected_type) {    \
-            static char buffer[16384];                   \
+            static char buffer[BUFFER_SIZE];             \
             value_to_str(arg->car, buffer);              \
             return pool_new_error(                       \
                 p, "arg #%d must be %s, but is %s %s",   \
@@ -88,7 +89,7 @@
                         p, "arg #%d must be %s, but got ()",   \
                         i, get_type_name(expected_type));      \
                 } else if (arg->car->type != expected_type) {  \
-                    static char buffer[16384];                 \
+                    static char buffer[BUFFER_SIZE];           \
                     value_to_str(arg->car, buffer);            \
                     return pool_new_error(                     \
                         p, "arg #%d must be %s, but is %s %s", \
@@ -434,7 +435,7 @@ static value* op_signal_error(machine* m, value* args) {
         rest = rest->cdr;
     }
 
-    static char buffer[16384];
+    static char buffer[BUFFER_SIZE];
     format_args(error_message, error_args, buffer);
 
     return pool_new_error(m->pool, buffer);
@@ -516,8 +517,8 @@ static value* op_extend_environment(machine* m, value* args) {
     }
 
     if (n != NULL || v != NULL) {
-        static char names_buffer[16384];
-        static char values_buffer[16384];
+        static char names_buffer[BUFFER_SIZE];
+        static char values_buffer[BUFFER_SIZE];
 
         value_to_str(names, names_buffer);
         value_to_str(values, values_buffer);
@@ -1163,7 +1164,7 @@ static value* prim_error(machine* m, value* args) {
     value* error_message = args->car;
     value* error_args = args->cdr;
 
-    static char buffer[16384];
+    static char buffer[BUFFER_SIZE];
     format_args(error_message, error_args, buffer);
 
     return pool_new_error(m->pool, buffer);
@@ -1176,7 +1177,7 @@ static value* prim_info(machine* m, value* args) {
     value* info_message = args->car;
     value* info_args = args->cdr;
 
-    static char buffer[16384];
+    static char buffer[BUFFER_SIZE];
     format_args(info_message, info_args, buffer);
 
     return pool_new_info(m->pool, buffer);
@@ -1186,7 +1187,7 @@ static value* prim_display(machine* m, value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
 
     while (args != NULL) {
-        static char buffer[16384];
+        static char buffer[BUFFER_SIZE];
         value_to_str(args->car, buffer);
         printf("%s", buffer);
 

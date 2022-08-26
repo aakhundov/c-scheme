@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "common.h"
 #include "edit.h"
 #include "eval.h"
 #include "hist.h"
@@ -42,10 +43,6 @@ static const size_t command_counts[] = {
     sizeof(trace_off_commands) / sizeof(char*),
     sizeof(reset_commands) / sizeof(char*),
 };
-
-static char* history_path = "./.history";
-static char* evaluator_path = "./lib/machines/evaluator.scm";
-static char* library_path = "./lib/scheme/library.scm";
 
 static eval* e = NULL;
 static hist* h = NULL;
@@ -88,7 +85,7 @@ static void process_repl_command(eval* e, hist* h, char* input, char* output) {
     value* parsed = parse_from_str(input);
 
     if (parsed == NULL || parsed->type != VALUE_ERROR) {
-        static char tidy[16384];
+        static char tidy[BUFFER_SIZE];
         size_t tidy_len = recover_str(parsed, tidy);
         if (tidy_len > 2) {
             // skip the outermost braces
@@ -141,9 +138,9 @@ value* load_from_path(eval* e, char* path) {
 }
 
 void load_library(eval* e) {
-    value* result = load_from_path(e, library_path);
+    value* result = load_from_path(e, LIBRARY_PAATH);
 
-    static char buffer[16384];
+    static char buffer[BUFFER_SIZE];
     value_to_str(result, buffer);
     if (result->type == VALUE_ERROR) {
         printf("error occurred while loading the library:\n");
@@ -166,11 +163,11 @@ void run_repl() {
     printf("type in \"quit\" to quit\n\n");
 
     int stop = 0;
-    char input[65536];
-    char output[65536];
+    static char input[BUFFER_SIZE];
+    static char output[BUFFER_SIZE];
 
-    e = eval_new(evaluator_path);
-    h = hist_new(history_path);
+    e = eval_new(EVALUATOR_PATH);
+    h = hist_new(HISTORY_PATH);
 
     load_library(e);
 
