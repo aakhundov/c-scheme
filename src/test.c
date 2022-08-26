@@ -703,6 +703,14 @@ static void test_syntax(eval* e) {
     test_eval_number(e, "b", 20);
     test_eval_info(e, "(set! b 30)", "b is updated");
     test_eval_number(e, "b", 30);
+    test_eval_error(e, "s1", "s1 is unbound");
+    test_eval_info(e, "(define (sf1) (set! s1 10) s1)", "sf1 is defined");
+    test_eval_error(e, "(sf1)", "s1 is unbound");
+    test_eval_error(e, "s1", "s1 is unbound");
+    test_eval_info(e, "(define s1 20)", "s1 is defined");
+    test_eval_number(e, "s1", 20);
+    test_eval_number(e, "(sf1)", 10);
+    test_eval_number(e, "s1", 10);
 
     // set! errors
     test_eval_error(e, "(set!)", "no variable");
@@ -723,6 +731,14 @@ static void test_syntax(eval* e) {
     test_eval_output(e, "f", "(lambda (x y) x y)");
     test_eval_info(e, "(define (g) 1)", "g is defined");
     test_eval_output(e, "g", "(lambda () 1)");
+    test_eval_error(e, "d1", "d1 is unbound");
+    test_eval_info(e, "(define (df1) (define d1 10) d1)", "df1 is defined");
+    test_eval_number(e, "(df1)", 10);
+    test_eval_error(e, "d1", "d1 is unbound");
+    test_eval_info(e, "(define d1 20)", "d1 is defined");
+    test_eval_number(e, "d1", 20);
+    test_eval_number(e, "(df1)", 10);
+    test_eval_number(e, "d1", 20);
 
     // define errors
     test_eval_error(e, "(define)", "no variable");

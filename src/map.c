@@ -28,7 +28,8 @@ static void expand_buckets(map* m) {
     size_t old_num_buckets = m->num_buckets;
     map_record** old_buckets = m->buckets;
 
-    initialize_map(m, old_num_buckets * 2 + 1);
+    size_t new_num_buckets = old_num_buckets * 2 + 1;
+    initialize_map(m, new_num_buckets);
 
     for (size_t i = 0; i < old_num_buckets; i++) {
         // iterate over the old buckets
