@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "common.h"
+#include "const.h"
 #include "eval.h"
 #include "machine.h"
 #include "parse.h"

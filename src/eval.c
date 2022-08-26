@@ -7,7 +7,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "common.h"
+#include "const.h"
 #include "env.h"
 #include "machine.h"
 #include "map.h"

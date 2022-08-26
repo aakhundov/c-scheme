@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "common.h"
+#include "const.h"
 #include "pool.h"
 #include "value.h"
 

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "common.h"
+#include "const.h"
 #include "edit.h"
 #include "eval.h"
 #include "hist.h"

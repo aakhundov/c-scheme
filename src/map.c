@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "common.h"
+#include "const.h"
 #include "value.h"
 
 static size_t get_bucket_id(map* m, char* key) {
