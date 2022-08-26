@@ -219,10 +219,12 @@ static void test_parse() {
     test_parse_output(".", "(.)");
     test_parse_output("1 . 2 . 3", "(1 . 2 . 3)");
     test_parse_output("(1 . 2)", "((1 . 2))");
+    test_parse_output("(. 2)", "(2)");
     test_parse_output("(.1 . 2.)", "((0.1 . 2))");
     test_parse_output("(1.2 . 3.4)", "((1.2 . 3.4))");
     test_parse_output("(1 2 3 . 4)", "((1 2 3 . 4))");
     test_parse_output("'(1 . 2)", "((quote (1 . 2)))");
+    test_parse_output("'(. 2)", "((quote 2))");
 
     // comment
     test_parse_output("(1 2 3); comment", "((1 2 3))");
@@ -250,7 +252,7 @@ static void test_parse() {
     test_parse_error("(1 .)", "unfollowed .");
     test_parse_error("(1 . 2 3)", ". followed by 2+ items");
     test_parse_error("(1 . .)", ". followed by .");
-    test_parse_error("(. 2)", "nothing before .");
+    test_parse_error("(. 2 3)", ". followed by 2+ items");
     test_parse_error("\"", "unterminated string");
     test_parse_error("\"xyz", "unterminated string");
     test_parse_error(" \" xyz ", "unterminated string");
@@ -775,6 +777,7 @@ static void test_syntax(eval* e) {
 
     // lambda
     test_eval_output(e, "(lambda x x)", "(lambda x x)");
+    test_eval_output(e, "(lambda (. x) x)", "(lambda x x)");
     test_eval_output(e, "(lambda () 1)", "(lambda () 1)");
     test_eval_output(e, "(lambda (x) x)", "(lambda (x) x)");
     test_eval_output(e, "(lambda (x) x x)", "(lambda (x) x x)");

@@ -146,41 +146,50 @@ static value** add_child(value** parent, value* child) {
     }
 }
 
-static void replace_dot_in_list(value* v) {
+static value* replace_dot_in_list(value* v) {
     value* prev = NULL;
-    while (v != NULL) {
-        if (v->car != NULL && v->car->type == VALUE_SYMBOL && strstr(v->car->symbol, DOT_SYMBOL)) {
+    value* running = v;
+    while (running != NULL) {
+        if (running->car != NULL &&
+            running->car->type == VALUE_SYMBOL &&
+            strstr(running->car->symbol, DOT_SYMBOL)) {
             value* error = NULL;
-            if (prev == NULL) {
-                error = value_new_error("nothing before %s", DOT_SYMBOL);
-            } else if (v->cdr == NULL) {
+            if (running->cdr == NULL) {
                 error = value_new_error("unfollowed %s", DOT_SYMBOL);
-            } else if (v->cdr->cdr != NULL) {
+            } else if (running->cdr->cdr != NULL) {
                 error = value_new_error("%s followed by 2+ items", DOT_SYMBOL);
-            } else if (v->cdr->car != NULL &&
-                       v->cdr->car->type == VALUE_SYMBOL &&
-                       strstr(v->cdr->car->symbol, DOT_SYMBOL)) {
+            } else if (running->cdr->car != NULL &&
+                       running->cdr->car->type == VALUE_SYMBOL &&
+                       strstr(running->cdr->car->symbol, DOT_SYMBOL)) {
                 error = value_new_error("%s followed by %s", DOT_SYMBOL, DOT_SYMBOL);
+            } else if (prev == NULL) {
+                value* next = running->cdr->car;
+                running->cdr->car = NULL;
+                value_dispose(running);
+
+                return next;
             }
 
             if (error == NULL) {
-                value* new_cdr = v->cdr->car;
-                v->cdr->car = NULL;
-                value_dispose(v);
+                value* new_cdr = running->cdr->car;
+                running->cdr->car = NULL;
+                value_dispose(running);
                 prev->cdr = new_cdr;
             } else {
-                while (v->cdr != NULL) {
-                    v = v->cdr;
+                while (running->cdr != NULL) {
+                    running = running->cdr;
                 }
-                add_child(&v, error);
+                add_child(&running, error);
             }
 
             break;
         } else {
-            prev = v;
-            v = v->cdr;
+            prev = running;
+            running = running->cdr;
         }
     }
+
+    return v;
 }
 
 static int parse_list(char* input, value** v, char terminal) {
@@ -219,7 +228,7 @@ static int parse_list(char* input, value** v, char terminal) {
 
     // ignore dots in the outermost list
     if (terminal != '\0') {
-        replace_dot_in_list(*v);
+        *v = replace_dot_in_list(*v);
     }
 
     return running - input;
