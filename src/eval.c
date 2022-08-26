@@ -459,7 +459,7 @@ static value* op_lookup_variable_value(machine* m, value* args) {
     if (record == NULL) {
         return pool_new_error(m->pool, "%s is unbound", name->symbol);
     } else {
-        return record->val;
+        return env_get_value(record);
     }
 }
 
@@ -473,7 +473,7 @@ static value* op_set_variable_value(machine* m, value* args) {
     if (record == NULL) {
         return pool_new_error(m->pool, "%s is unbound", name->symbol);
     } else {
-        record->val = val;
+        env_update_value(record, val);
         return pool_new_info(m->pool, "%s is updated", name->symbol);
     }
 }
@@ -486,10 +486,10 @@ static value* op_define_variable(machine* m, value* args) {
     map_record* record = env_lookup(env, name->symbol, 0);
 
     if (record == NULL) {
-        env_add(env, name->symbol, val, m->pool);
+        env_add_value(env, name->symbol, val, m->pool);
         return pool_new_info(m->pool, "%s is defined", name->symbol);
     } else {
-        record->val = val;
+        env_update_value(record, val);
         return pool_new_info(m->pool, "%s is updated", name->symbol);
     }
 }
@@ -530,10 +530,10 @@ static value* op_extend_environment(machine* m, value* args) {
             if (names->type == VALUE_SYMBOL) {
                 // the rest of the values are bound
                 // to the parameter y in (x . y)
-                env_add(env, names->symbol, values, m->pool);
+                env_add_value(env, names->symbol, values, m->pool);
                 break;
             } else {
-                env_add(env, names->car->symbol, values->car, m->pool);
+                env_add_value(env, names->car->symbol, values->car, m->pool);
             }
             names = names->cdr;
             values = values->cdr;
@@ -558,7 +558,7 @@ static value* op_add_dispatch_record(machine* m, value* args) {
     value* name = args->cdr->car->car;
     value* label = args->cdr->cdr->car;
 
-    env_add(dispatch, name->symbol, label, m->pool);
+    env_add_value(dispatch, name->symbol, label, m->pool);
 
     return dispatch;
 }
@@ -584,7 +584,7 @@ static value* op_dispatch_on_type(machine* m, value* args) {
         record = env_lookup(dispatch, "default", 0);
     }
 
-    return record->val->car;
+    return env_get_value(record)->car;
 }
 
 static void bind_machine_ops(eval* e) {
@@ -1224,7 +1224,7 @@ static value* prim_collect(machine* m, value* args) {
 
 static void add_primitive(eval* e, value* env, char* name, builtin fn) {
     pool* p = e->machine->pool;
-    env_add(env, name, pool_new_builtin(p, fn, name), p);
+    env_add_value(env, name, pool_new_builtin(p, fn, name), p);
 }
 
 static value* make_global_environment(eval* e) {
@@ -1232,11 +1232,11 @@ static value* make_global_environment(eval* e) {
     value* env = pool_new_env(e->machine->pool);
 
     // constants
-    env_add(env, "nil", NULL, p);
-    env_add(env, "true", pool_new_bool(p, 1), p);
-    env_add(env, "false", pool_new_bool(p, 0), p);
-    env_add(env, "PI", pool_new_number(p, 3.1415926536), p);
-    env_add(env, "E", pool_new_number(p, 2.7182818285), p);
+    env_add_value(env, "nil", NULL, p);
+    env_add_value(env, "true", pool_new_bool(p, 1), p);
+    env_add_value(env, "false", pool_new_bool(p, 0), p);
+    env_add_value(env, "PI", pool_new_number(p, 3.1415926536), p);
+    env_add_value(env, "E", pool_new_number(p, 2.7182818285), p);
 
     // structural
     add_primitive(e, env, "car", prim_car);
