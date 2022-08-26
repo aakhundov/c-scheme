@@ -4,57 +4,57 @@
 #include "pool.h"
 #include "value.h"
 
-value* is_self_evaluating(pool* p, value* exp);
+int is_self_evaluating(value* exp);
+int is_variable(value* exp);
+int starts_with_symbol(value* exp);
 
-value* is_variable(pool* p, value* exp);
-
-value* is_quoted(pool* p, value* exp);
+value* check_quoted(pool* p, value* exp);
 value* get_text_of_quotation(pool* p, value* exp);
 
-value* is_assignment(pool* p, value* exp);
+value* check_assignment(pool* p, value* exp);
 value* get_assignment_variable(pool* p, value* exp);
 value* get_assignment_value(pool* p, value* exp);
 
-value* is_definition(pool* p, value* exp);
+value* check_definition(pool* p, value* exp);
 value* get_definition_variable(pool* p, value* exp);
 value* get_definition_value(pool* p, value* exp);
 
-value* is_if(pool* p, value* exp);
+value* check_if(pool* p, value* exp);
 value* get_if_predicate(pool* p, value* exp);
 value* get_if_consequent(pool* p, value* exp);
 value* get_if_alternative(pool* p, value* exp);
 value* make_if(pool* p, value* predicate, value* consequent, value* alternative);
 
-value* is_lambda(pool* p, value* exp);
+value* check_lambda(pool* p, value* exp);
 value* get_lambda_parameters(pool* p, value* exp);
 value* get_lambda_body(pool* p, value* exp);
 value* make_lambda(pool* p, value* params, value* body);
 
-value* is_let(pool* p, value* exp);
+value* check_let(pool* p, value* exp);
 value* transform_let(pool* p, value* exp);
 
-value* is_begin(pool* p, value* exp);
+value* check_begin(pool* p, value* exp);
 value* get_begin_actions(pool* p, value* exp);
 value* transform_sequence(pool* p, value* seq);
 
-value* is_cond(pool* p, value* exp);
+value* check_cond(pool* p, value* exp);
 value* transform_cond(pool* p, value* exp);
 
-value* is_and(pool* p, value* exp);
+value* check_and(pool* p, value* exp);
 value* get_and_expressions(pool* p, value* exp);
 
-value* is_or(pool* p, value* exp);
+value* check_or(pool* p, value* exp);
 value* get_or_expressions(pool* p, value* exp);
 
-value* is_eval(pool* p, value* exp);
+value* check_eval(pool* p, value* exp);
 value* get_eval_expression(pool* p, value* exp);
 
-value* is_apply(pool* p, value* exp);
+value* check_apply(pool* p, value* exp);
 value* get_apply_operator(pool* p, value* exp);
 value* get_apply_arguments(pool* p, value* exp);
-value* verify_apply_arguments(pool* p, value* args);
+value* check_apply_arguments(pool* p, value* args);
 
-value* is_application(pool* p, value* exp);
+value* check_application(pool* p, value* exp);
 
 value* is_true(pool* p, value* exp);
 value* is_false(pool* p, value* exp);

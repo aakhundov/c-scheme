@@ -15,16 +15,6 @@
         return pool_new_error(p, text, tag, buffer); \
     }
 
-static int is_tagged_list(value* v, const char* tag) {
-    // (tag ...)
-    return (
-        v != NULL &&
-        v->type == VALUE_PAIR &&
-        v->car != NULL &&
-        v->car->type == VALUE_SYMBOL &&
-        strcmp(v->car->symbol, tag) == 0);
-}
-
 static int is_null_terminated_list(value* v) {
     value* running = v;
     while (running != NULL) {
@@ -37,39 +27,39 @@ static int is_null_terminated_list(value* v) {
     return 1;
 }
 
-value* is_self_evaluating(pool* p, value* exp) {
-    return pool_new_bool(
-        p,
-        (exp == NULL ||
-         exp->type == VALUE_NUMBER ||   // 10
-         exp->type == VALUE_STRING ||   // "abc"
-         exp->type == VALUE_BOOL ||     // true or false
-         exp->type == VALUE_BUILTIN));  // true or false
+int is_self_evaluating(value* exp) {
+    return (exp == NULL ||
+            exp->type == VALUE_NUMBER ||  // 10
+            exp->type == VALUE_STRING ||  // "abc"
+            exp->type == VALUE_BOOL ||    // true or false
+            exp->type == VALUE_BUILTIN);  // true or false
 }
 
-value* is_variable(pool* p, value* exp) {
-    // x, y, etc.
-    return pool_new_bool(
-        p,
-        (exp != NULL && exp->type == VALUE_SYMBOL));
+int is_variable(value* exp) {
+    // x, car, etc.
+    return (exp != NULL && exp->type == VALUE_SYMBOL);
 }
 
-value* is_quoted(pool* p, value* exp) {
+int starts_with_symbol(value* exp) {
+    // (symbol ...)
+    return (exp != NULL &&
+            exp->type == VALUE_PAIR &&
+            exp->car != NULL &&
+            exp->car->type == VALUE_SYMBOL);
+}
+
+value* check_quoted(pool* p, value* exp) {
     // (quote text)
     static const char* tag = "quote";
-    if (is_tagged_list(exp, tag)) {
-        if (!is_null_terminated_list(exp)) {
-            MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
-        } else if (exp->cdr == NULL) {
-            MAKE_ERROR(p, "%s: no expression in %s", tag, exp);
-        } else if (exp->cdr->cdr != NULL) {
-            MAKE_ERROR(p, "%s: more than one item in %s", tag, exp);
-        }
-
-        return pool_new_bool(p, 1);
-    } else {
-        return pool_new_bool(p, 0);
+    if (!is_null_terminated_list(exp)) {
+        MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
+    } else if (exp->cdr == NULL) {
+        MAKE_ERROR(p, "%s: no expression in %s", tag, exp);
+    } else if (exp->cdr->cdr != NULL) {
+        MAKE_ERROR(p, "%s: more than one item in %s", tag, exp);
     }
+
+    return NULL;
 }
 
 value* get_text_of_quotation(pool* p, value* exp) {
@@ -77,26 +67,22 @@ value* get_text_of_quotation(pool* p, value* exp) {
     return exp->cdr->car;
 }
 
-value* is_assignment(pool* p, value* exp) {
+value* check_assignment(pool* p, value* exp) {
     // (!set variable value)
     static const char* tag = "set!";
-    if (is_tagged_list(exp, tag)) {
-        if (!is_null_terminated_list(exp)) {
-            MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
-        } else if (exp->cdr == NULL) {
-            MAKE_ERROR(p, "%s: no variable in %s", tag, exp);
-        } else if (exp->cdr->car == NULL || exp->cdr->car->type != VALUE_SYMBOL) {
-            MAKE_ERROR(p, "%s: variable is not a symbol in %s", tag, exp);
-        } else if (exp->cdr->cdr == NULL) {
-            MAKE_ERROR(p, "%s: no value in %s", tag, exp);
-        } else if (exp->cdr->cdr->cdr != NULL) {
-            MAKE_ERROR(p, "%s: more than two items in %s", tag, exp);
-        }
-
-        return pool_new_bool(p, 1);
-    } else {
-        return pool_new_bool(p, 0);
+    if (!is_null_terminated_list(exp)) {
+        MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
+    } else if (exp->cdr == NULL) {
+        MAKE_ERROR(p, "%s: no variable in %s", tag, exp);
+    } else if (exp->cdr->car == NULL || exp->cdr->car->type != VALUE_SYMBOL) {
+        MAKE_ERROR(p, "%s: variable is not a symbol in %s", tag, exp);
+    } else if (exp->cdr->cdr == NULL) {
+        MAKE_ERROR(p, "%s: no value in %s", tag, exp);
+    } else if (exp->cdr->cdr->cdr != NULL) {
+        MAKE_ERROR(p, "%s: more than two items in %s", tag, exp);
     }
+
+    return NULL;
 }
 
 value* get_assignment_variable(pool* p, value* exp) {
@@ -109,43 +95,39 @@ value* get_assignment_value(pool* p, value* exp) {
     return exp->cdr->cdr->car;
 }
 
-value* is_definition(pool* p, value* exp) {
+value* check_definition(pool* p, value* exp) {
     // (define variable value)
     // (define (function p1 p2 ...) body)
     static const char* tag = "define";
-    if (is_tagged_list(exp, tag)) {
-        if (!is_null_terminated_list(exp)) {
-            MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
-        } else if (exp->cdr == NULL) {
-            MAKE_ERROR(p, "%s: no variable in %s", tag, exp);
-        } else if (exp->cdr->car == NULL) {
-            MAKE_ERROR(p, "%s: can't define () in %s", tag, exp);
-        } else if (exp->cdr->car->type == VALUE_PAIR) {
-            if (exp->cdr->cdr == NULL) {
-                MAKE_ERROR(p, "%s: no body in %s", tag, exp);
-            } else if (exp->cdr->car->car == NULL || exp->cdr->car->car->type != VALUE_SYMBOL) {
-                MAKE_ERROR(
-                    p, "%s: the function name is not a symbol in %s",
-                    tag, exp);
-            }
-        } else if (exp->cdr->car->type == VALUE_SYMBOL) {
-            if (exp->cdr->cdr == NULL) {
-                MAKE_ERROR(p, "%s: no value in %s", tag, exp);
-            } else if (exp->cdr->cdr->cdr != NULL) {
-                MAKE_ERROR(
-                    p, "%s: the value can't be more than one item in %s",
-                    tag, exp);
-            }
-        } else {
+    if (!is_null_terminated_list(exp)) {
+        MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
+    } else if (exp->cdr == NULL) {
+        MAKE_ERROR(p, "%s: no variable in %s", tag, exp);
+    } else if (exp->cdr->car == NULL) {
+        MAKE_ERROR(p, "%s: can't define () in %s", tag, exp);
+    } else if (exp->cdr->car->type == VALUE_PAIR) {
+        if (exp->cdr->cdr == NULL) {
+            MAKE_ERROR(p, "%s: no body in %s", tag, exp);
+        } else if (exp->cdr->car->car == NULL || exp->cdr->car->car->type != VALUE_SYMBOL) {
             MAKE_ERROR(
-                p, "%s: either variable or function must be defined in %s",
+                p, "%s: the function name is not a symbol in %s",
                 tag, exp);
         }
-
-        return pool_new_bool(p, 1);
+    } else if (exp->cdr->car->type == VALUE_SYMBOL) {
+        if (exp->cdr->cdr == NULL) {
+            MAKE_ERROR(p, "%s: no value in %s", tag, exp);
+        } else if (exp->cdr->cdr->cdr != NULL) {
+            MAKE_ERROR(
+                p, "%s: the value can't be more than one item in %s",
+                tag, exp);
+        }
     } else {
-        return pool_new_bool(p, 0);
+        MAKE_ERROR(
+            p, "%s: either variable or function must be defined in %s",
+            tag, exp);
     }
+
+    return NULL;
 }
 
 value* get_definition_variable(pool* p, value* exp) {
@@ -168,25 +150,21 @@ value* get_definition_value(pool* p, value* exp) {
     }
 }
 
-value* is_if(pool* p, value* exp) {
+value* check_if(pool* p, value* exp) {
     // (if pred cons)
     // (if pred cons alt)
     static const char* tag = "if";
-    if (is_tagged_list(exp, tag)) {
-        if (!is_null_terminated_list(exp)) {
-            MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
-        } else if (exp->cdr == NULL) {
-            MAKE_ERROR(p, "%s: no predicate in %s", tag, exp);
-        } else if (exp->cdr->cdr == NULL) {
-            MAKE_ERROR(p, "%s: no consequent in %s", tag, exp);
-        } else if (exp->cdr->cdr->cdr != NULL && exp->cdr->cdr->cdr->cdr != NULL) {
-            MAKE_ERROR(p, "%s: too many items in %s", tag, exp);
-        }
-
-        return pool_new_bool(p, 1);
-    } else {
-        return pool_new_bool(p, 0);
+    if (!is_null_terminated_list(exp)) {
+        MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
+    } else if (exp->cdr == NULL) {
+        MAKE_ERROR(p, "%s: no predicate in %s", tag, exp);
+    } else if (exp->cdr->cdr == NULL) {
+        MAKE_ERROR(p, "%s: no consequent in %s", tag, exp);
+    } else if (exp->cdr->cdr->cdr != NULL && exp->cdr->cdr->cdr->cdr != NULL) {
+        MAKE_ERROR(p, "%s: too many items in %s", tag, exp);
     }
+
+    return pool_new_bool(p, 1);
 }
 
 value* get_if_predicate(pool* p, value* exp) {
@@ -227,65 +205,61 @@ value* make_if(pool* p, value* predicate, value* consequent, value* alternative)
                     NULL))));
 }
 
-value* is_lambda(pool* p, value* exp) {
+value* check_lambda(pool* p, value* exp) {
     // (lambda (p1 p2 ...) e1 e2 ...)
     static const char* tag = "lambda";
-    if (is_tagged_list(exp, tag)) {
-        if (!is_null_terminated_list(exp)) {
-            MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
-        } else if (exp->cdr == NULL) {
-            MAKE_ERROR(p, "%s: no parameters in %s", tag, exp);
-        } else if (exp->cdr->cdr == NULL) {
-            MAKE_ERROR(p, "%s: no body in %s", tag, exp);
-        } else {
-            value* p1;
-            value* p2;
+    if (!is_null_terminated_list(exp)) {
+        MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
+    } else if (exp->cdr == NULL) {
+        MAKE_ERROR(p, "%s: no parameters in %s", tag, exp);
+    } else if (exp->cdr->cdr == NULL) {
+        MAKE_ERROR(p, "%s: no body in %s", tag, exp);
+    } else {
+        value* p1;
+        value* p2;
 
-            p1 = exp->cdr->car;
-            while (p1 != NULL) {
-                if (p1->type == VALUE_SYMBOL) {
-                    break;
-                }
-                if (p1->type != VALUE_PAIR ||
-                    p1->car == NULL ||
-                    p1->car->type != VALUE_SYMBOL) {
-                    MAKE_ERROR(
-                        p, "%s: some parameters are not symbols in %s",
-                        tag, exp);
-                }
-                p1 = p1->cdr;
+        p1 = exp->cdr->car;
+        while (p1 != NULL) {
+            if (p1->type == VALUE_SYMBOL) {
+                break;
             }
+            if (p1->type != VALUE_PAIR ||
+                p1->car == NULL ||
+                p1->car->type != VALUE_SYMBOL) {
+                MAKE_ERROR(
+                    p, "%s: some parameters are not symbols in %s",
+                    tag, exp);
+            }
+            p1 = p1->cdr;
+        }
 
-            p1 = exp->cdr->car;
-            while (p1 != NULL) {
-                if (p1->type == VALUE_SYMBOL) {
-                    break;
-                }
-                p2 = p1->cdr;
-                while (p2 != NULL) {
-                    if (p2->type == VALUE_SYMBOL) {
-                        if (strcmp(p1->car->symbol, p2->symbol) == 0) {
-                            MAKE_ERROR(
-                                p, "%s: duplicate parameter names in %s",
-                                tag, exp);
-                        }
-                        break;
-                    }
-                    if (strcmp(p1->car->symbol, p2->car->symbol) == 0) {
+        p1 = exp->cdr->car;
+        while (p1 != NULL) {
+            if (p1->type == VALUE_SYMBOL) {
+                break;
+            }
+            p2 = p1->cdr;
+            while (p2 != NULL) {
+                if (p2->type == VALUE_SYMBOL) {
+                    if (strcmp(p1->car->symbol, p2->symbol) == 0) {
                         MAKE_ERROR(
                             p, "%s: duplicate parameter names in %s",
                             tag, exp);
                     }
-                    p2 = p2->cdr;
+                    break;
                 }
-                p1 = p1->cdr;
+                if (strcmp(p1->car->symbol, p2->car->symbol) == 0) {
+                    MAKE_ERROR(
+                        p, "%s: duplicate parameter names in %s",
+                        tag, exp);
+                }
+                p2 = p2->cdr;
             }
+            p1 = p1->cdr;
         }
-
-        return pool_new_bool(p, 1);
-    } else {
-        return pool_new_bool(p, 0);
     }
+
+    return NULL;
 }
 
 value* get_lambda_parameters(pool* p, value* exp) {
@@ -307,45 +281,41 @@ value* make_lambda(pool* p, value* params, value* body) {
         pool_new_pair(p, params, body));
 }
 
-value* is_let(pool* p, value* exp) {
+value* check_let(pool* p, value* exp) {
     static const char* tag = "let";
-    if (is_tagged_list(exp, tag)) {
-        if (!is_null_terminated_list(exp)) {
-            MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
-        } else if (exp->cdr == NULL) {
-            MAKE_ERROR(p, "%s: no variables in %s", tag, exp);
-        } else if (exp->cdr->cdr == NULL) {
-            MAKE_ERROR(p, "%s: no body in %s", tag, exp);
-        } else {
-            value* running = exp->cdr->car;
-            while (running != NULL) {
-                if (running->type != VALUE_PAIR) {
-                    MAKE_ERROR(p, "%s: non-list variables in %s", tag, exp);
-                }
-
-                value* pair = running->car;
-                if (pair == NULL) {
-                    MAKE_ERROR(p, "%s: no variable name in %s", tag, exp);
-                } else if (pair->type != VALUE_PAIR) {
-                    MAKE_ERROR(p, "%s: non-list variable pair in %s", tag, exp);
-                } else if (pair->car == NULL || pair->car->type != VALUE_SYMBOL) {
-                    MAKE_ERROR(p, "%s: variable name must be a symbol in %s", tag, exp);
-                } else if (pair->cdr == NULL) {
-                    MAKE_ERROR(p, "%s: no variable value in %s", tag, exp);
-                } else if (pair->cdr->type != VALUE_PAIR) {
-                    MAKE_ERROR(p, "%s: non-list variable pair in %s", tag, exp);
-                } else if (pair->cdr->cdr != NULL) {
-                    MAKE_ERROR(p, "%s: too many items in a variable pair in %s", tag, exp);
-                }
-
-                running = running->cdr;
-            }
-        }
-
-        return pool_new_bool(p, 1);
+    if (!is_null_terminated_list(exp)) {
+        MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
+    } else if (exp->cdr == NULL) {
+        MAKE_ERROR(p, "%s: no variables in %s", tag, exp);
+    } else if (exp->cdr->cdr == NULL) {
+        MAKE_ERROR(p, "%s: no body in %s", tag, exp);
     } else {
-        return pool_new_bool(p, 0);
+        value* running = exp->cdr->car;
+        while (running != NULL) {
+            if (running->type != VALUE_PAIR) {
+                MAKE_ERROR(p, "%s: non-list variables in %s", tag, exp);
+            }
+
+            value* pair = running->car;
+            if (pair == NULL) {
+                MAKE_ERROR(p, "%s: no variable name in %s", tag, exp);
+            } else if (pair->type != VALUE_PAIR) {
+                MAKE_ERROR(p, "%s: non-list variable pair in %s", tag, exp);
+            } else if (pair->car == NULL || pair->car->type != VALUE_SYMBOL) {
+                MAKE_ERROR(p, "%s: variable name must be a symbol in %s", tag, exp);
+            } else if (pair->cdr == NULL) {
+                MAKE_ERROR(p, "%s: no variable value in %s", tag, exp);
+            } else if (pair->cdr->type != VALUE_PAIR) {
+                MAKE_ERROR(p, "%s: non-list variable pair in %s", tag, exp);
+            } else if (pair->cdr->cdr != NULL) {
+                MAKE_ERROR(p, "%s: too many items in a variable pair in %s", tag, exp);
+            }
+
+            running = running->cdr;
+        }
     }
+
+    return NULL;
 }
 
 value* transform_let(pool* p, value* exp) {
@@ -385,20 +355,16 @@ value* transform_let(pool* p, value* exp) {
         args);
 }
 
-value* is_begin(pool* p, value* exp) {
+value* check_begin(pool* p, value* exp) {
     // (begin a1 a2 ...)
     static const char* tag = "begin";
-    if (is_tagged_list(exp, tag)) {
-        if (!is_null_terminated_list(exp)) {
-            MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
-        } else if (exp->cdr == NULL) {
-            MAKE_ERROR(p, "%s: no expressions in %s", tag, exp);
-        }
-
-        return pool_new_bool(p, 1);
-    } else {
-        return pool_new_bool(p, 0);
+    if (!is_null_terminated_list(exp)) {
+        MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
+    } else if (exp->cdr == NULL) {
+        MAKE_ERROR(p, "%s: no expressions in %s", tag, exp);
     }
+
+    return NULL;
 }
 
 value* get_begin_actions(pool* p, value* exp) {
@@ -422,45 +388,41 @@ value* transform_sequence(pool* p, value* seq) {
     }
 }
 
-value* is_cond(pool* p, value* exp) {
+value* check_cond(pool* p, value* exp) {
     // (cond (p1 a11 a12 ...) (p2 a21 a22 ...) ...)
     // (cond (p1 a11 a12 ...) (p2 a21 a22 ...) ... (else ae1 ae2 ...))
     static const char* tag = "cond";
-    if (is_tagged_list(exp, tag)) {
-        if (!is_null_terminated_list(exp)) {
-            MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
-        } else if (exp->cdr == NULL) {
-            MAKE_ERROR(p, "%s: no clauses in %s", tag, exp);
-        } else {
-            value* running = exp->cdr;
-            while (running != NULL) {
-                value* clause = running->car;
-                if (clause == NULL) {
-                    MAKE_ERROR(p, "%s: empty clause in %s", tag, exp);
-                } else {
-                    if (!is_null_terminated_list(clause)) {
-                        MAKE_ERROR(p, "%s: non-list clause in %s", tag, exp);
-                    }
-
-                    value* predicate = clause->car;
-                    value* actions = clause->cdr;
-                    if (predicate != NULL &&
-                        predicate->type == VALUE_SYMBOL &&
-                        strcmp(predicate->symbol, "else") == 0 &&
-                        running->cdr != NULL) {
-                        MAKE_ERROR(p, "%s: else clause must be the last in %s", tag, exp);
-                    } else if (actions == NULL) {
-                        MAKE_ERROR(p, "%s: actionless clause in %s", tag, exp);
-                    }
-                }
-                running = running->cdr;
-            }
-        }
-
-        return pool_new_bool(p, 1);
+    if (!is_null_terminated_list(exp)) {
+        MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
+    } else if (exp->cdr == NULL) {
+        MAKE_ERROR(p, "%s: no clauses in %s", tag, exp);
     } else {
-        return pool_new_bool(p, 0);
+        value* running = exp->cdr;
+        while (running != NULL) {
+            value* clause = running->car;
+            if (clause == NULL) {
+                MAKE_ERROR(p, "%s: empty clause in %s", tag, exp);
+            } else {
+                if (!is_null_terminated_list(clause)) {
+                    MAKE_ERROR(p, "%s: non-list clause in %s", tag, exp);
+                }
+
+                value* predicate = clause->car;
+                value* actions = clause->cdr;
+                if (predicate != NULL &&
+                    predicate->type == VALUE_SYMBOL &&
+                    strcmp(predicate->symbol, "else") == 0 &&
+                    running->cdr != NULL) {
+                    MAKE_ERROR(p, "%s: else clause must be the last in %s", tag, exp);
+                } else if (actions == NULL) {
+                    MAKE_ERROR(p, "%s: actionless clause in %s", tag, exp);
+                }
+            }
+            running = running->cdr;
+        }
     }
+
+    return NULL;
 }
 
 static value* transform_cond_rec(pool* p, value* clauses) {
@@ -497,18 +459,14 @@ value* transform_cond(pool* p, value* exp) {
     return transform_cond_rec(p, exp->cdr);
 }
 
-value* is_and(pool* p, value* exp) {
+value* check_and(pool* p, value* exp) {
     // (and) or (and e1 e2 ...)
     static const char* tag = "and";
-    if (is_tagged_list(exp, tag)) {
-        if (!is_null_terminated_list(exp)) {
-            MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
-        }
-
-        return pool_new_bool(p, 1);
-    } else {
-        return pool_new_bool(p, 0);
+    if (!is_null_terminated_list(exp)) {
+        MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
     }
+
+    return NULL;
 }
 
 value* get_and_expressions(pool* p, value* exp) {
@@ -517,18 +475,14 @@ value* get_and_expressions(pool* p, value* exp) {
     return exp->cdr;
 }
 
-value* is_or(pool* p, value* exp) {
+value* check_or(pool* p, value* exp) {
     // (or) or (or e1 e2 ...)
     static const char* tag = "or";
-    if (is_tagged_list(exp, tag)) {
-        if (!is_null_terminated_list(exp)) {
-            MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
-        }
-
-        return pool_new_bool(p, 1);
-    } else {
-        return pool_new_bool(p, 0);
+    if (!is_null_terminated_list(exp)) {
+        MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
     }
+
+    return NULL;
 }
 
 value* get_or_expressions(pool* p, value* exp) {
@@ -537,22 +491,18 @@ value* get_or_expressions(pool* p, value* exp) {
     return exp->cdr;
 }
 
-value* is_eval(pool* p, value* exp) {
+value* check_eval(pool* p, value* exp) {
     // (eval exp)
     static const char* tag = "eval";
-    if (is_tagged_list(exp, tag)) {
-        if (!is_null_terminated_list(exp)) {
-            MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
-        } else if (exp->cdr == NULL) {
-            MAKE_ERROR(p, "%s: no expression in %s", tag, exp);
-        } else if (exp->cdr->cdr != NULL) {
-            MAKE_ERROR(p, "%s: too many items in %s", tag, exp);
-        }
-
-        return pool_new_bool(p, 1);
-    } else {
-        return pool_new_bool(p, 0);
+    if (!is_null_terminated_list(exp)) {
+        MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
+    } else if (exp->cdr == NULL) {
+        MAKE_ERROR(p, "%s: no expression in %s", tag, exp);
+    } else if (exp->cdr->cdr != NULL) {
+        MAKE_ERROR(p, "%s: too many items in %s", tag, exp);
     }
+
+    return NULL;
 }
 
 value* get_eval_expression(pool* p, value* exp) {
@@ -560,24 +510,20 @@ value* get_eval_expression(pool* p, value* exp) {
     return exp->cdr->car;
 }
 
-value* is_apply(pool* p, value* exp) {
+value* check_apply(pool* p, value* exp) {
     // (apply f (a1 a2 ...))
     static const char* tag = "apply";
-    if (is_tagged_list(exp, tag)) {
-        if (!is_null_terminated_list(exp)) {
-            MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
-        } else if (exp->cdr == NULL) {
-            MAKE_ERROR(p, "%s: no operator in %s", tag, exp);
-        } else if (exp->cdr->cdr == NULL) {
-            MAKE_ERROR(p, "%s: no arguments in %s", tag, exp);
-        } else if (exp->cdr->cdr->cdr != NULL) {
-            MAKE_ERROR(p, "%s: too many items in in %s", tag, exp);
-        }
-
-        return pool_new_bool(p, 1);
-    } else {
-        return pool_new_bool(p, 0);
+    if (!is_null_terminated_list(exp)) {
+        MAKE_ERROR(p, "%s: non-list structure in %s", tag, exp);
+    } else if (exp->cdr == NULL) {
+        MAKE_ERROR(p, "%s: no operator in %s", tag, exp);
+    } else if (exp->cdr->cdr == NULL) {
+        MAKE_ERROR(p, "%s: no arguments in %s", tag, exp);
+    } else if (exp->cdr->cdr->cdr != NULL) {
+        MAKE_ERROR(p, "%s: too many items in in %s", tag, exp);
     }
+
+    return NULL;
 }
 
 value* get_apply_operator(pool* p, value* exp) {
@@ -590,26 +536,24 @@ value* get_apply_arguments(pool* p, value* exp) {
     return exp->cdr->cdr->car;
 }
 
-value* verify_apply_arguments(pool* p, value* args) {
+value* check_apply_arguments(pool* p, value* args) {
     // make sure (a1 a2 ...) is a NULL-terminated list
     if (!is_null_terminated_list(args)) {
         MAKE_ERROR(p, "%s: can't apply to %s", "apply", args);
     }
 
-    return pool_new_bool(p, 1);
+    return NULL;
 }
 
-value* is_application(pool* p, value* exp) {
+value* check_application(pool* p, value* exp) {
     // (f ...) with any f
-    if (exp != NULL && exp->type == VALUE_PAIR) {
-        if (!is_null_terminated_list(exp)) {
-            MAKE_ERROR(p, "%s: can't apply to %s", "apply", exp->cdr);
-        }
-
-        return pool_new_bool(p, 1);
-    } else {
-        return pool_new_bool(p, 0);
+    if (exp == NULL) {
+        MAKE_ERROR(p, "%s: bad application %s", "apply", exp);
+    } else if (!is_null_terminated_list(exp)) {
+        MAKE_ERROR(p, "%s: can't apply to %s", "apply", exp->cdr);
     }
+
+    return NULL;
 }
 
 value* is_true(pool* p, value* exp) {

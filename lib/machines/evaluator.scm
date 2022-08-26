@@ -1,23 +1,28 @@
 start
     (assign continue (label end))
+    (branch (label eval-dispatch) (op dispatch-table-ready?) (reg dispatch))
+
+init-dispatch
+    (assign dispatch (op make-dispatch-table))
+    (assign dispatch (op add-dispatch-record) (reg dispatch) (const "self") (label ev-self-eval))
+    (assign dispatch (op add-dispatch-record) (reg dispatch) (const "var") (label ev-variable))
+    (assign dispatch (op add-dispatch-record) (reg dispatch) (const "quote") (label ev-quoted))
+    (assign dispatch (op add-dispatch-record) (reg dispatch) (const "set!") (label ev-assignment))
+    (assign dispatch (op add-dispatch-record) (reg dispatch) (const "define") (label ev-definition))
+    (assign dispatch (op add-dispatch-record) (reg dispatch) (const "if") (label ev-if))
+    (assign dispatch (op add-dispatch-record) (reg dispatch) (const "lambda") (label ev-lambda))
+    (assign dispatch (op add-dispatch-record) (reg dispatch) (const "let") (label ev-let))
+    (assign dispatch (op add-dispatch-record) (reg dispatch) (const "begin") (label ev-begin))
+    (assign dispatch (op add-dispatch-record) (reg dispatch) (const "cond") (label ev-cond))
+    (assign dispatch (op add-dispatch-record) (reg dispatch) (const "and") (label ev-and))
+    (assign dispatch (op add-dispatch-record) (reg dispatch) (const "or") (label ev-or))
+    (assign dispatch (op add-dispatch-record) (reg dispatch) (const "eval") (label ev-eval))
+    (assign dispatch (op add-dispatch-record) (reg dispatch) (const "apply") (label ev-apply))
+    (assign dispatch (op add-dispatch-record) (reg dispatch) (const "default") (label ev-application))
 
 eval-dispatch
-    (branch (label ev-self-eval) (op self-evaluating?) (reg exp))
-    (branch (label ev-variable) (op variable?) (reg exp))
-    (branch (label ev-quoted) (op quoted?) (reg exp))
-    (branch (label ev-assignment) (op assignment?) (reg exp))
-    (branch (label ev-definition) (op definition?) (reg exp))
-    (branch (label ev-if) (op if?) (reg exp))
-    (branch (label ev-lambda) (op lambda?) (reg exp))
-    (branch (label ev-let) (op let?) (reg exp))
-    (branch (label ev-begin) (op begin?) (reg exp))
-    (branch (label ev-cond) (op cond?) (reg exp))
-    (branch (label ev-and) (op and?) (reg exp))
-    (branch (label ev-or) (op or?) (reg exp))
-    (branch (label ev-eval) (op eval?) (reg exp))
-    (branch (label ev-apply) (op apply?) (reg exp))
-    (branch (label ev-application) (op application?) (reg exp))
-    (perform (op signal-error) (const "can't evaluate %s") (reg exp))
+    (assign type (op dispatch-on-type) (reg exp) (reg dispatch))
+    (goto (reg type))
 
 ev-self-eval
     (assign val (reg exp))
@@ -28,10 +33,12 @@ ev-variable
     (goto (reg continue))
 
 ev-quoted
+    (perform (op check-quoted) (reg exp))
     (assign val (op text-of-quotation) (reg exp))
     (goto (reg continue))
 
 ev-assignment
+    (perform (op check-assignment) (reg exp))
     (assign unev (op assignment-variable) (reg exp))
     (save unev)
     (assign exp (op assignment-value) (reg exp))
@@ -47,6 +54,7 @@ ev-assignment-did-value
     (goto (reg continue))
 
 ev-definition
+    (perform (op check-definition) (reg exp))
     (assign unev (op definition-variable) (reg exp))
     (save unev)
     (assign exp (op definition-value) (reg exp))
@@ -62,6 +70,7 @@ ev-definition-did-value
     (goto (reg continue))
 
 ev-if
+    (perform (op check-if) (reg exp))
     (save exp)
     (save env)
     (save continue)
@@ -81,25 +90,30 @@ ev-if-consequent
     (goto (label eval-dispatch))
 
 ev-lambda
+    (perform (op check-lambda) (reg exp))
     (assign unev (op lambda-parameters) (reg exp))
     (assign exp (op lambda-body) (reg exp))
     (assign val (op make-compound-procedure) (reg unev) (reg exp) (reg env))
     (goto (reg continue))
 
 ev-let
+    (perform (op check-let) (reg exp))
     (assign exp (op transform-let) (reg exp))
     (goto (label eval-dispatch))
 
 ev-begin
+    (perform (op check-begin) (reg exp))
     (assign unev (op begin-actions) (reg exp))
     (save continue)
     (goto (label ev-sequence))
 
 ev-cond
+    (perform (op check-cond) (reg exp))
     (assign exp (op transform-cond) (reg exp))
     (goto (label eval-dispatch))
 
 ev-and
+    (perform (op check-and) (reg exp))
     (assign unev (op and-expressions) (reg exp))
     (branch (label ev-and-return-true) (op no-exps?) (reg unev))
     (save continue)
@@ -127,6 +141,7 @@ ev-and-return-true
     (goto (reg continue))
 
 ev-or
+    (perform (op check-or) (reg exp))
     (assign unev (op or-expressions) (reg exp))
     (branch (label ev-or-return-false) (op no-exps?) (reg unev))
     (save continue)
@@ -154,6 +169,7 @@ ev-or-return-false
     (goto (reg continue))
 
 ev-eval
+    (perform (op check-eval) (reg exp))
     (save continue)
     (assign exp (op eval-expression) (reg exp))
     (assign continue (label ev-eval-did-once))
@@ -164,6 +180,7 @@ ev-eval-did-once
     (goto (label eval-dispatch))
 
 ev-apply
+    (perform (op check-apply) (reg exp))
     (save continue)
     (save env)
     (assign unev (op apply-arguments) (reg exp))
@@ -182,10 +199,11 @@ ev-apply-did-operator
 ev-apply-did-arguments
     (assign argl (reg val))
     (restore proc)
-    (perform (op apply-verify) (reg argl))
+    (perform (op check-apply-args) (reg argl))
     (goto (label apply-dispatch))
 
 ev-application
+    (perform (op check-application) (reg exp))
     (save continue)
     (save env)
     (assign unev (op operands) (reg exp))

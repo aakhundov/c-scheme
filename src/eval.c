@@ -101,22 +101,10 @@
         }                                                      \
     }
 
-static value* op_is_self_evaluating(machine* m, value* args) {
+static value* op_check_quoted(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return is_self_evaluating(m->pool, exp);
-}
-
-static value* op_is_variable(machine* m, value* args) {
-    value* exp = args->car->car;
-
-    return is_variable(m->pool, exp);
-}
-
-static value* op_is_quoted(machine* m, value* args) {
-    value* exp = args->car->car;
-
-    return is_quoted(m->pool, exp);
+    return check_quoted(m->pool, exp);
 }
 
 static value* op_get_text_of_quotation(machine* m, value* args) {
@@ -125,10 +113,10 @@ static value* op_get_text_of_quotation(machine* m, value* args) {
     return get_text_of_quotation(m->pool, exp);
 }
 
-static value* op_is_assignment(machine* m, value* args) {
+static value* op_check_assignment(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return is_assignment(m->pool, exp);
+    return check_assignment(m->pool, exp);
 }
 
 static value* op_get_assignment_variable(machine* m, value* args) {
@@ -143,10 +131,10 @@ static value* op_get_assignment_value(machine* m, value* args) {
     return get_assignment_value(m->pool, exp);
 }
 
-static value* op_is_definition(machine* m, value* args) {
+static value* op_check_definition(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return is_definition(m->pool, exp);
+    return check_definition(m->pool, exp);
 }
 
 static value* op_get_definition_variable(machine* m, value* args) {
@@ -161,10 +149,10 @@ static value* op_get_definition_value(machine* m, value* args) {
     return get_definition_value(m->pool, exp);
 }
 
-static value* op_is_if(machine* m, value* args) {
+static value* op_check_if(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return is_if(m->pool, exp);
+    return check_if(m->pool, exp);
 }
 
 static value* op_get_if_predicate(machine* m, value* args) {
@@ -185,10 +173,10 @@ static value* op_get_if_alternative(machine* m, value* args) {
     return get_if_alternative(m->pool, exp);
 }
 
-static value* op_is_lambda(machine* m, value* args) {
+static value* op_check_lambda(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return is_lambda(m->pool, exp);
+    return check_lambda(m->pool, exp);
 }
 
 static value* op_get_lambda_parameters(machine* m, value* args) {
@@ -203,10 +191,10 @@ static value* op_get_lambda_body(machine* m, value* args) {
     return get_lambda_body(m->pool, exp);
 }
 
-static value* op_is_let(machine* m, value* args) {
+static value* op_check_let(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return is_let(m->pool, exp);
+    return check_let(m->pool, exp);
 }
 
 static value* op_transform_let(machine* m, value* args) {
@@ -215,10 +203,10 @@ static value* op_transform_let(machine* m, value* args) {
     return transform_let(m->pool, exp);
 }
 
-static value* op_is_begin(machine* m, value* args) {
+static value* op_check_begin(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return is_begin(m->pool, exp);
+    return check_begin(m->pool, exp);
 }
 
 static value* op_get_begin_actions(machine* m, value* args) {
@@ -227,10 +215,10 @@ static value* op_get_begin_actions(machine* m, value* args) {
     return get_begin_actions(m->pool, exp);
 }
 
-static value* op_is_cond(machine* m, value* args) {
+static value* op_check_cond(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return is_cond(m->pool, exp);
+    return check_cond(m->pool, exp);
 }
 
 static value* op_transform_cond(machine* m, value* args) {
@@ -239,10 +227,10 @@ static value* op_transform_cond(machine* m, value* args) {
     return transform_cond(m->pool, exp);
 }
 
-static value* op_is_and(machine* m, value* args) {
+static value* op_check_and(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return is_and(m->pool, exp);
+    return check_and(m->pool, exp);
 }
 
 static value* op_get_and_expressions(machine* m, value* args) {
@@ -251,10 +239,10 @@ static value* op_get_and_expressions(machine* m, value* args) {
     return get_and_expressions(m->pool, exp);
 }
 
-static value* op_is_or(machine* m, value* args) {
+static value* op_check_or(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return is_or(m->pool, exp);
+    return check_or(m->pool, exp);
 }
 
 static value* op_get_or_expressions(machine* m, value* args) {
@@ -263,10 +251,10 @@ static value* op_get_or_expressions(machine* m, value* args) {
     return get_or_expressions(m->pool, exp);
 }
 
-static value* op_is_eval(machine* m, value* args) {
+static value* op_check_eval(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return is_eval(m->pool, exp);
+    return check_eval(m->pool, exp);
 }
 
 static value* op_get_eval_expression(machine* m, value* args) {
@@ -275,10 +263,10 @@ static value* op_get_eval_expression(machine* m, value* args) {
     return get_eval_expression(m->pool, exp);
 }
 
-static value* op_is_apply(machine* m, value* args) {
+static value* op_check_apply(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return is_apply(m->pool, exp);
+    return check_apply(m->pool, exp);
 }
 
 static value* op_get_apply_operator(machine* m, value* args) {
@@ -293,16 +281,16 @@ static value* op_get_apply_arguments(machine* m, value* args) {
     return get_apply_arguments(m->pool, exp);
 }
 
-static value* op_verify_apply_arguments(machine* m, value* args) {
+static value* op_check_apply_arguments(machine* m, value* args) {
     value* apply_args = args->car->car;
 
-    return verify_apply_arguments(m->pool, apply_args);
+    return check_apply_arguments(m->pool, apply_args);
 }
 
-static value* op_is_application(machine* m, value* args) {
-    value* exp = args->car->car;
+static value* op_check_application(machine* m, value* args) {
+    value* apply_args = args->car->car;
 
-    return is_application(m->pool, exp);
+    return check_application(m->pool, apply_args);
 }
 
 static value* op_is_true(machine* m, value* args) {
@@ -555,57 +543,97 @@ static value* op_extend_environment(machine* m, value* args) {
     }
 }
 
+static value* op_is_dispatch_table_ready(machine* m, value* args) {
+    value* dispatch_reg = args->car;
+
+    return pool_new_bool(m->pool, dispatch_reg->car != NULL);
+}
+
+static value* op_make_dispatch_table(machine* m, value* args) {
+    return pool_new_env(m->pool);
+}
+
+static value* op_add_dispatch_record(machine* m, value* args) {
+    value* dispatch = args->car->car;
+    value* name = args->cdr->car->car;
+    value* label = args->cdr->cdr->car;
+
+    env_add(dispatch, name->symbol, label, m->pool);
+
+    return dispatch;
+}
+
+static value* op_dispatch_on_type(machine* m, value* args) {
+    value* exp = args->car->car;
+    value* dispatch = args->cdr->car->car;
+
+    map_record* record = NULL;
+    if (is_self_evaluating(exp)) {
+        // self-evaluating expression
+        record = env_lookup(dispatch, "self", 0);
+    } else if (is_variable(exp)) {
+        // named variable
+        record = env_lookup(dispatch, "var", 0);
+    } else if (starts_with_symbol(exp)) {
+        // maybe special form (list starting with a symbol)
+        record = env_lookup(dispatch, exp->car->symbol, 0);
+    }
+
+    if (record == NULL) {
+        // default dispatch (application)
+        record = env_lookup(dispatch, "default", 0);
+    }
+
+    return record->val->car;
+}
+
 static void bind_machine_ops(eval* e) {
     machine* m = e->machine;
 
-    machine_bind_op(m, "self-evaluating?", op_is_self_evaluating);
-
-    machine_bind_op(m, "variable?", op_is_variable);
-
-    machine_bind_op(m, "quoted?", op_is_quoted);
+    machine_bind_op(m, "check-quoted", op_check_quoted);
     machine_bind_op(m, "text-of-quotation", op_get_text_of_quotation);
 
-    machine_bind_op(m, "assignment?", op_is_assignment);
+    machine_bind_op(m, "check-assignment", op_check_assignment);
     machine_bind_op(m, "assignment-variable", op_get_assignment_variable);
     machine_bind_op(m, "assignment-value", op_get_assignment_value);
 
-    machine_bind_op(m, "definition?", op_is_definition);
+    machine_bind_op(m, "check-definition", op_check_definition);
     machine_bind_op(m, "definition-variable", op_get_definition_variable);
     machine_bind_op(m, "definition-value", op_get_definition_value);
 
-    machine_bind_op(m, "if?", op_is_if);
+    machine_bind_op(m, "check-if", op_check_if);
     machine_bind_op(m, "if-predicate", op_get_if_predicate);
     machine_bind_op(m, "if-consequent", op_get_if_consequent);
     machine_bind_op(m, "if-alternative", op_get_if_alternative);
 
-    machine_bind_op(m, "lambda?", op_is_lambda);
+    machine_bind_op(m, "check-lambda", op_check_lambda);
     machine_bind_op(m, "lambda-parameters", op_get_lambda_parameters);
     machine_bind_op(m, "lambda-body", op_get_lambda_body);
 
-    machine_bind_op(m, "let?", op_is_let);
+    machine_bind_op(m, "check-let", op_check_let);
     machine_bind_op(m, "transform-let", op_transform_let);
 
-    machine_bind_op(m, "begin?", op_is_begin);
+    machine_bind_op(m, "check-begin", op_check_begin);
     machine_bind_op(m, "begin-actions", op_get_begin_actions);
 
-    machine_bind_op(m, "cond?", op_is_cond);
+    machine_bind_op(m, "check-cond", op_check_cond);
     machine_bind_op(m, "transform-cond", op_transform_cond);
 
-    machine_bind_op(m, "and?", op_is_and);
+    machine_bind_op(m, "check-and", op_check_and);
     machine_bind_op(m, "and-expressions", op_get_and_expressions);
 
-    machine_bind_op(m, "or?", op_is_or);
+    machine_bind_op(m, "check-or", op_check_or);
     machine_bind_op(m, "or-expressions", op_get_or_expressions);
 
-    machine_bind_op(m, "eval?", op_is_eval);
+    machine_bind_op(m, "check-eval", op_check_eval);
     machine_bind_op(m, "eval-expression", op_get_eval_expression);
 
-    machine_bind_op(m, "apply?", op_is_apply);
+    machine_bind_op(m, "check-apply", op_check_apply);
     machine_bind_op(m, "apply-operator", op_get_apply_operator);
     machine_bind_op(m, "apply-arguments", op_get_apply_arguments);
-    machine_bind_op(m, "apply-verify", op_verify_apply_arguments);
+    machine_bind_op(m, "check-apply-args", op_check_apply_arguments);
 
-    machine_bind_op(m, "application?", op_is_application);
+    machine_bind_op(m, "check-application", op_check_application);
 
     machine_bind_op(m, "true?", op_is_true);
     machine_bind_op(m, "false?", op_is_false);
@@ -641,6 +669,11 @@ static void bind_machine_ops(eval* e) {
     machine_bind_op(m, "set-variable-value!", op_set_variable_value);
     machine_bind_op(m, "define-variable!", op_define_variable);
     machine_bind_op(m, "extend-environment", op_extend_environment);
+
+    machine_bind_op(m, "dispatch-table-ready?", op_is_dispatch_table_ready);
+    machine_bind_op(m, "make-dispatch-table", op_make_dispatch_table);
+    machine_bind_op(m, "add-dispatch-record", op_add_dispatch_record);
+    machine_bind_op(m, "dispatch-on-type", op_dispatch_on_type);
 }
 
 static value* prim_car(machine* m, value* args) {

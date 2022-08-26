@@ -903,6 +903,10 @@ static void test_syntax(eval* e) {
     test_eval_bool(e, "(and (= and1 1) (= and1 2) (= and1 3))", 0);
     test_eval_bool(e, "(and (> and1 0) (> and1 1) (> and1 2))", 1);
 
+    // and errors
+    test_eval_error(e, "(and 1 . 2)", "non-list structure");
+    test_eval_error(e, "(and . 1)", "non-list structure");
+
     // or
     test_eval_bool(e, "(or)", 0);
     test_eval_number(e, "(or 1)", 1);
@@ -929,10 +933,6 @@ static void test_syntax(eval* e) {
     test_eval_number(e, "or1", 1);
     test_eval_bool(e, "(or (= or1 1) (= or1 2) (= or1 3))", 1);
     test_eval_bool(e, "(or (> or1 1) (> or1 2) (> or1 3))", 0);
-
-    // and errors
-    test_eval_error(e, "(and 1 . 2)", "non-list structure");
-    test_eval_error(e, "(and . 1)", "non-list structure");
 
     // or errors
     test_eval_error(e, "(or 1 . 2)", "non-list structure");
