@@ -155,6 +155,10 @@ static value* make_args(machine* m, value* arg_list) {
             // the arg comes from the (reg name)
             assert(arg_value->type == VALUE_SYMBOL);
             src = get_register(m, arg_value->symbol);
+        } else if (strcmp(arg_type->symbol, "label") == 0) {
+            // the arg comes from the (label value)
+            assert(arg_value->type == VALUE_SYMBOL);
+            src = get_label(m, arg_value->symbol);
         } else if (strcmp(arg_type->symbol, "const") == 0) {
             // the arg comes from the (const value)
             src = make_constant(m, arg_value);
@@ -664,6 +668,10 @@ value* machine_copy_from_register(machine* m, char* name) {
 
 value* machine_get_register(machine* m, char* name) {
     return get_register(m, name);
+}
+
+value* machine_get_label(machine* m, char* name) {
+    return get_label(m, name);
 }
 
 value* machine_export_output(machine* m) {
