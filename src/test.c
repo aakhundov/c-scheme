@@ -403,14 +403,14 @@ void test_to_str() {
     v = value_new_error("some text");
     test_to_str_output("error", v, "\x1B[31msome text\x1B[0m");
 
-    v = value_new_error("(%d %g %s %p)", 1, 3.14, "hello", NULL);
-    test_to_str_output("error with args", v, "\x1B[31m(1 3.14 hello 0x0)\x1B[0m");
+    v = value_new_error("(%d %g %s)", 1, 3.14, "hello");
+    test_to_str_output("error with args", v, "\x1B[31m(1 3.14 hello)\x1B[0m");
 
     v = value_new_info("some text");
     test_to_str_output("info", v, "\x1B[32msome text\x1B[0m");
 
-    v = value_new_info("(%d %g %s %p)", 1, 3.14, "hello", NULL);
-    test_to_str_output("info with args", v, "\x1B[32m(1 3.14 hello 0x0)\x1B[0m");
+    v = value_new_info("(%d %g %s)", 1, 3.14, "hello");
+    test_to_str_output("info with args", v, "\x1B[32m(1 3.14 hello)\x1B[0m");
 
     v = value_new_lambda(
         value_new_pair(
