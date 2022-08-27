@@ -1,3 +1,5 @@
+; library functions
+
 (define (caar x) (car (car x)))
 (define (cadr x) (car (cdr x)))
 (define (cdar x) (cdr (car x)))
@@ -51,16 +53,24 @@
       (cons (f (car lst))
             (map f (cdr lst)))))
 
+; diagnostics tools
+
+(define (assert-equal expression expected)
+  (let ((result (eval expression)))
+    (cond ((equal? result expected)
+           (info "%s == %s" expression result))  ; exactly equals
+          ((and (number? expected)
+                (number? result)
+                (< (abs (- result expected)) 1e-4))
+           (info "%s ~= %s" expression result))  ; approximately equals
+          (else (error "%s != %s, but %s" expression expected result)))))
+
 (define (measure expression)
   (let ((start (time)))
     (begin (eval expression)
            (info "%s took %s seconds" expression (- (time) start)))))
 
-(define (assert-equal expression expected)
-  (let ((result (eval expression)))
-    (if (equal? result expected)
-        (info "ok")
-        (error "%s != %s, but %s" expression expected result))))
+; unit test
 
 (assert-equal '(caar '((1 2) 3 4)) 1)
 (assert-equal '(cadr '((1 2) 3 4)) 3)
