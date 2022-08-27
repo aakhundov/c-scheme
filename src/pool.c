@@ -199,11 +199,6 @@ value* pool_new_info_from_args(pool* p, char* info, va_list args) {
 }
 
 value* pool_new_pair(pool* p, value* car, value* cdr) {
-    // make sure the car and cdr are from
-    // the pool: i.e., their gen is set
-    assert(car == NULL || car->gen > 0);
-    assert(cdr == NULL || cdr->gen > 0);
-
     value* v = value_new_pair(car, cdr);
 
     add_to_chain(p, v);
@@ -212,11 +207,6 @@ value* pool_new_pair(pool* p, value* car, value* cdr) {
 }
 
 value* pool_new_lambda(pool* p, value* car, value* cdr) {
-    // make sure the car and cdr are from
-    // the pool: i.e., their gen is set
-    assert(car == NULL || car->gen > 0);
-    assert(cdr == NULL || cdr->gen > 0);
-
     value* v = value_new_lambda(car, cdr);
 
     add_to_chain(p, v);
@@ -225,11 +215,6 @@ value* pool_new_lambda(pool* p, value* car, value* cdr) {
 }
 
 value* pool_new_code(pool* p, value* car, value* cdr) {
-    // make sure the car and cdr are from
-    // the pool: i.e., their gen is set
-    assert(car == NULL || car->gen > 0);
-    assert(cdr == NULL || cdr->gen > 0);
-
     value* v = value_new_code(car, cdr);
 
     add_to_chain(p, v);

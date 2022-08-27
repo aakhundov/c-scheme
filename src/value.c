@@ -286,22 +286,22 @@ void value_cleanup(value* v) {
     }
 }
 
-static void break_cycles(value* v) {
+static void break_value_cycles(value* v) {
     if (v != NULL) {
-        v->gen = -1;
+        v->gen = -2;
         if (is_compound_type(v->type)) {
-            if (v->car != NULL && v->car->gen == -1) {
+            if (v->car != NULL && v->car->gen == -2) {
                 // break the cycle
                 v->car = NULL;
             } else {
-                break_cycles(v->car);
+                break_value_cycles(v->car);
             }
 
-            if (v->cdr != NULL && v->cdr->gen == -1) {
+            if (v->cdr != NULL && v->cdr->gen == -2) {
                 // break the cycle
                 v->cdr = NULL;
             } else {
-                break_cycles(v->cdr);
+                break_value_cycles(v->cdr);
             }
         }
     }
@@ -321,8 +321,8 @@ static void value_dispose_rec(value* v) {
 }
 
 void value_dispose(value* v) {
-    value_update_gen(v, 0);
-    break_cycles(v);
+    value_update_gen(v, -1);
+    break_value_cycles(v);
     value_dispose_rec(v);
 }
 
@@ -405,23 +405,43 @@ static int builtin_to_str(value* v, char* buffer) {
     return sprintf(buffer, "<builtin '%s'>", v->symbol);
 }
 
+static int value_to_str_rec(value* v, char* buffer);
+
 static int pair_to_str(value* v, char* buffer) {
     char* running = buffer;
 
+    size_t depth = 0;
+    value* v_running = v;
     running += sprintf(running, "(");
-    running += value_to_str(v->car, running);
-    while ((v = v->cdr) != NULL) {
-        if (v->type == VALUE_PAIR) {
-            running += sprintf(running, " ");
-            running += value_to_str(v->car, running);
+    running += value_to_str_rec(v->car, running);
+    while ((v_running = v_running->cdr) != NULL) {
+        if (v_running->type == VALUE_PAIR) {
+            if (v_running->gen == -2) {
+                // marked value: cycle
+                running += sprintf(running, " . <cycle>");
+                break;
+            } else {
+                v_running->gen = -2;  // mark the value
+                running += sprintf(running, " ");
+                running += value_to_str_rec(v_running->car, running);
+                depth += 1;  // increment the depth
+            }
         } else {
             running += sprintf(running, " . ");
-            running += value_to_str(v, running);
+            running += value_to_str_rec(v_running, running);
             break;
         }
     }
     running += sprintf(running, ")");
     *running = '\0';
+
+    // unmark the values marked in this call
+    // as far as the depth incremented above
+    v_running = v->cdr;
+    for (size_t i = 0; i < depth; i++) {
+        v_running->gen = -1;
+        v_running = v_running->cdr;
+    }
 
     return running - buffer;
 }
@@ -430,8 +450,8 @@ static int lambda_to_str(value* v, char* buffer) {
     static char params[BUFFER_SIZE];
     static char body[BUFFER_SIZE];
 
-    value_to_str(v->car->car, params);
-    value_to_str(v->car->cdr, body);
+    value_to_str_rec(v->car->car, params);
+    value_to_str_rec(v->car->cdr, body);
 
     // drop outmost braces
     body[strlen(body) - 1] = '\0';
@@ -439,33 +459,58 @@ static int lambda_to_str(value* v, char* buffer) {
     return sprintf(buffer, "(lambda %s %s)", params, body + 1);
 }
 
-int value_to_str(value* v, char* buffer) {
+static int value_to_str_rec(value* v, char* buffer) {
     if (v == NULL) {
         return sprintf(buffer, "()");
+    } else if (v->gen == -2) {
+        // marked value: cycle
+        return sprintf(buffer, "<cycle>");
     } else {
+        int result = 0;
         switch (v->type) {
             case VALUE_NUMBER:
-                return number_to_str(v, buffer);
+                result = number_to_str(v, buffer);
+                break;
             case VALUE_SYMBOL:
-                return sprintf(buffer, "%s", v->symbol);
+                result = sprintf(buffer, "%s", v->symbol);
+                break;
             case VALUE_STRING:
-                return string_to_str(v, buffer);
+                result = string_to_str(v, buffer);
+                break;
             case VALUE_BOOL:
-                return bool_to_str(v, buffer);
+                result = bool_to_str(v, buffer);
+                break;
             case VALUE_BUILTIN:
-                return builtin_to_str(v, buffer);
+                result = builtin_to_str(v, buffer);
+                break;
             case VALUE_ERROR:
-                return sprintf(buffer, "\x1B[31m%s\x1B[0m", v->symbol);
+                result = sprintf(buffer, "\x1B[31m%s\x1B[0m", v->symbol);
+                break;
             case VALUE_INFO:
-                return sprintf(buffer, "\x1B[32m%s\x1B[0m", v->symbol);
+                result = sprintf(buffer, "\x1B[32m%s\x1B[0m", v->symbol);
+                break;
             case VALUE_PAIR:
-                return pair_to_str(v, buffer);
+                v->gen = -2;  // mark the value
+                result = pair_to_str(v, buffer);
+                v->gen = -1;  // unmark the value
+                break;
             case VALUE_LAMBDA:
-                return lambda_to_str(v, buffer);
+                result = lambda_to_str(v, buffer);
+                break;
             default:
-                return sprintf(buffer, "<%s>", get_type_name(v->type));
+                result = sprintf(buffer, "<%s>", get_type_name(v->type));
+                break;
         }
+        return result;
     }
+}
+
+int value_to_str(value* v, char* buffer) {
+    value_update_gen(v, -1);  // prepare
+    int result = value_to_str_rec(v, buffer);
+    value_update_gen(v, 0);  // reset
+
+    return result;
 }
 
 static void value_copy(value* dest, value* source) {
@@ -515,7 +560,7 @@ static value* value_clone_rec(value* source) {
         // envs and code are not allowed to be cloned
         // (maybe should be allowed in the future)
         return NULL;
-    } else if (source->gen != 0) {
+    } else if (source->gen != -1) {
         // "broken heart": already cloned
         return (value*)source->gen;
     } else {
@@ -540,11 +585,9 @@ static value* value_clone_rec(value* source) {
 }
 
 value* value_clone(value* source) {
-    size_t old_gen = (source != NULL ? source->gen : 0);
-
-    value_update_gen(source, 0);
+    value_update_gen(source, -1);  // prepare
     value* dest = value_clone_rec(source);
-    value_update_gen(source, old_gen);
+    value_update_gen(source, 0);  // restore
 
     return dest;
 }
