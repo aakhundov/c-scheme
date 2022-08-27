@@ -18,7 +18,7 @@ static const char* SYMBOL_CHARS =
     "0123456789"
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "abcdefghijklmnopqrstuvwxyz"
-    "_+-*/%^\\=<>!&|?.";
+    "_+-*/%^\\=<>!&|?.#";
 
 static char LIST_OPEN_CHAR = '(';
 static char LIST_CLOSE_CHAR = ')';
