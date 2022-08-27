@@ -183,6 +183,21 @@ static void test_eval_info(eval* ev, char* input, char* expected) {
     value_dispose(e);
 }
 
+static void test_to_str_output(char* name, value* v, char* expected) {
+    static char buffer[BUFFER_SIZE];
+
+    value_to_str(v, buffer);
+    report_test("%s \x1B[34m--> [\x1B[0m%s\x1B[34m]\x1B[0m", name, buffer);
+    if (strcmp(buffer, expected) != 0) {
+        printf("expected string: \"%s\"\n", expected);
+        exit(EXIT_FAILURE);
+    }
+
+    if (v != NULL) {
+        value_dispose(v);
+    }
+}
+
 static void test_parse() {
     // brackets
     test_parse_output("", "()");
@@ -259,10 +274,95 @@ static void test_parse() {
     test_parse_error("\"xyz\" \"a", "unterminated string");
 }
 
-/*
-void test_cycle_to_str() {
+void test_to_str() {
     value* v = NULL;
-    static char buffer[BUFFER_SIZE];
+
+    test_to_str_output("integer", value_new_number(1), "1");
+    test_to_str_output("negative", value_new_number(-1), "-1");
+    test_to_str_output("decimal", value_new_number(3.14), "3.14");
+    test_to_str_output("symbol", value_new_symbol("abc"), "abc");
+    test_to_str_output("empty symbol", value_new_symbol(""), "");
+    test_to_str_output("empty symbol", value_new_string("abc"), "\"abc\"");
+    test_to_str_output("empty string", value_new_string(""), "\"\"");
+    test_to_str_output("true", value_new_bool(1), "true");
+    test_to_str_output("false", value_new_bool(0), "false");
+    test_to_str_output("nil", NULL, "()");
+
+    v = value_new_pair(
+        value_new_number(1),
+        value_new_number(2));
+    test_to_str_output("singleton pair", v, "(1 . 2)");
+
+    v = value_new_pair(
+        value_new_number(1),
+        value_new_pair(
+            value_new_number(2),
+            value_new_number(3)));
+    test_to_str_output("multiple pair", v, "(1 2 . 3)");
+
+    v = value_new_pair(
+        value_new_pair(
+            value_new_number(1),
+            value_new_pair(
+                value_new_number(2),
+                NULL)),
+        value_new_number(3));
+    test_to_str_output("nested pair", v, "((1 2) . 3)");
+
+    v = value_new_pair(
+        value_new_number(1),
+        NULL);
+    test_to_str_output("singleton list", v, "(1)");
+
+    v = value_new_pair(
+        value_new_number(1),
+        value_new_pair(
+            value_new_number(2),
+            value_new_pair(
+                value_new_number(3),
+                NULL)));
+    test_to_str_output("multiple list", v, "(1 2 3)");
+
+    v = value_new_pair(
+        value_new_number(1),
+        value_new_pair(
+            value_new_number(2),
+            value_new_pair(
+                value_new_number(3),
+                NULL)));
+    test_to_str_output("multiple list", v, "(1 2 3)");
+
+    v = value_new_pair(
+        value_new_pair(
+            value_new_number(1),
+            value_new_pair(
+                value_new_number(2),
+                NULL)),
+        value_new_pair(
+            value_new_number(3),
+            value_new_pair(
+                value_new_number(4),
+                value_new_pair(
+                    value_new_number(5),
+                    NULL))));
+    test_to_str_output("nested list 1", v, "((1 2) 3 4 5)");
+
+    v = value_new_pair(
+        value_new_pair(
+            value_new_number(1),
+            value_new_pair(
+                value_new_number(2),
+                NULL)),
+        value_new_pair(
+            value_new_pair(
+                value_new_number(3),
+                value_new_pair(
+                    value_new_number(4),
+                    value_new_pair(
+                        value_new_number(5),
+                        NULL))),
+            NULL));
+    test_to_str_output("nested list 2", v, "((1 2) (3 4 5))");
 
     v = value_new_pair(
         value_new_number(1),
@@ -272,10 +372,7 @@ void test_cycle_to_str() {
                 NULL,
                 NULL)));
     v->cdr->cdr->car = v;
-    value_to_str(v, buffer);
-    report_test("car cycle: %s", buffer);
-    assert(strcmp(buffer, "(1 2 <...>)") == 0);
-    value_dispose(v);
+    test_to_str_output("car cycle", v, "(1 2 <cycle>)");
 
     v = value_new_pair(
         value_new_number(1),
@@ -285,10 +382,7 @@ void test_cycle_to_str() {
                 value_new_number(3),
                 NULL)));
     v->cdr->cdr->cdr = v;
-    value_to_str(v, buffer);
-    report_test("cdr cycle: %s", buffer);
-    assert(strcmp(buffer, "(1 2 3)") == 0);
-    value_dispose(v);
+    test_to_str_output("cdr cycle", v, "(1 2 3 . <cycle>)");
 
     v = value_new_pair(
         value_new_number(1),
@@ -299,20 +393,47 @@ void test_cycle_to_str() {
                 NULL)));
     v->cdr->car = v;
     v->cdr->cdr->cdr = v;
-    value_to_str(v, buffer);
-    report_test("car and cdr cycle: %s", buffer);
-    assert(strcmp(buffer, "(1 <...> 3)") == 0);
-    value_dispose(v);
+    test_to_str_output("car and cdr cycle", v, "(1 <cycle> 3 . <cycle>)");
 
     v = value_new_pair(NULL, NULL);
     v->car = v;
     v->cdr = v;
-    value_to_str(v, buffer);
-    report_test("self cycle: %s", buffer);
-    assert(strcmp(buffer, "(<...>)") == 0);
-    value_dispose(v);
+    test_to_str_output("self cycle", v, "(<cycle> . <cycle>)");
+
+    v = value_new_error("some text");
+    test_to_str_output("error", v, "\x1B[31msome text\x1B[0m");
+
+    v = value_new_error("(%d %g %s %p)", 1, 3.14, "hello", NULL);
+    test_to_str_output("error with args", v, "\x1B[31m(1 3.14 hello 0x0)\x1B[0m");
+
+    v = value_new_info("some text");
+    test_to_str_output("info", v, "\x1B[32msome text\x1B[0m");
+
+    v = value_new_info("(%d %g %s %p)", 1, 3.14, "hello", NULL);
+    test_to_str_output("info with args", v, "\x1B[32m(1 3.14 hello 0x0)\x1B[0m");
+
+    v = value_new_lambda(
+        value_new_pair(
+            value_new_pair(
+                value_new_symbol("x"),
+                value_new_pair(
+                    value_new_symbol("y"),
+                    NULL)),
+            value_new_pair(
+                value_new_pair(
+                    value_new_symbol("+"),
+                    value_new_pair(
+                        value_new_symbol("x"),
+                        value_new_pair(
+                            value_new_symbol("y"),
+                            NULL))),
+                NULL)),
+        value_new_env());
+    test_to_str_output("lambda", v, "(lambda (x y) (+ x y))");
+
+    test_to_str_output("code", value_new_code(NULL, NULL), "<code>");
+    test_to_str_output("env", value_new_env(), "<env>");
 }
-*/
 
 static void test_pool() {
     // setup
@@ -1769,7 +1890,8 @@ void run_test() {
     eval* e = eval_new(EVALUATOR_PATH);
 
     RUN_TEST_FN(test_parse);
-    // RUN_TEST_FN(test_cycle_to_str);
+    RUN_TEST_FN(test_to_str);
+
     RUN_TEST_FN(test_pool);
     RUN_TEST_FN(test_machine);
 
