@@ -996,8 +996,8 @@ static void test_syntax(eval* e) {
     test_eval_error(e, "(cond (1 2) ())", "empty clause");
     test_eval_error(e, "(cond 1)", "non-list clause");
     test_eval_error(e, "(cond (1 2) 1)", "non-list clause");
-    test_eval_error(e, "(cond (1))", "actionless clause");
-    test_eval_error(e, "(cond (1 2) (1))", "actionless clause");
+    test_eval_error(e, "(cond (1))", "clause without consequent");
+    test_eval_error(e, "(cond (1 2) (1))", "clause without consequent");
     test_eval_error(e, "(cond (else 2) (1))", "else clause must be the last");
     test_eval_error(e, "(cond 1 . 2)", "non-list structure");
     test_eval_error(e, "(cond . 1)", "non-list structure");

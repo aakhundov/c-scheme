@@ -414,7 +414,7 @@ value* check_cond(pool* p, value* exp) {
                     running->cdr != NULL) {
                     MAKE_ERROR(p, "%s: else clause must be the last in %s", tag, exp);
                 } else if (actions == NULL) {
-                    MAKE_ERROR(p, "%s: actionless clause in %s", tag, exp);
+                    MAKE_ERROR(p, "%s: clause without consequent in %s", tag, exp);
                 }
             }
             running = running->cdr;

@@ -19,6 +19,7 @@ typedef enum {
     COMMAND_TRACE_ON = 2,
     COMMAND_TRACE_OFF = 3,
     COMMAND_RESET = 4,
+    COMMAND_LOAD = 5,
     COMMAND_OTHER = -1
 } command_type;
 
@@ -27,6 +28,7 @@ static const char* clear_commands[] = {"clear", "clr", "clrscr"};
 static const char* trace_on_commands[] = {"trace", "trace on"};
 static const char* trace_off_commands[] = {"untrace", "trace off"};
 static const char* reset_commands[] = {"reset", "reset env"};
+static const char* load_commands[] = {"load "};
 
 static const char** commands[] = {
     exit_commands,
@@ -34,6 +36,7 @@ static const char** commands[] = {
     trace_on_commands,
     trace_off_commands,
     reset_commands,
+    load_commands,
 };
 
 static const size_t command_counts[] = {
@@ -42,6 +45,7 @@ static const size_t command_counts[] = {
     sizeof(trace_on_commands) / sizeof(char*),
     sizeof(trace_off_commands) / sizeof(char*),
     sizeof(reset_commands) / sizeof(char*),
+    sizeof(load_commands) / sizeof(char*),
 };
 
 static eval* e = NULL;
@@ -72,7 +76,8 @@ static command_type get_command_type(char* line) {
     size_t num_command_types = sizeof(commands) / sizeof(char**);
     for (size_t i = 0; i < num_command_types; i++) {
         for (size_t j = 0; j < command_counts[i]; j++) {
-            if (strcmp(line, commands[i][j]) == 0) {
+            const char* cmd = commands[i][j];
+            if (strncmp(line, cmd, strlen(cmd)) == 0) {
                 return i;
             }
         }
@@ -115,9 +120,10 @@ static void process_repl_command(eval* e, hist* h, char* input, char* output) {
     value_dispose(parsed);
 }
 
-value* load_from_path(eval* e, char* path) {
+value* load_from_path(eval* e, char* path, int verbose) {
+    static char buffer[BUFFER_SIZE];
     value* content = parse_from_file(path);
-    if (content->type == VALUE_ERROR) {
+    if (content != NULL && content->type == VALUE_ERROR) {
         return content;
     }
 
@@ -128,6 +134,10 @@ value* load_from_path(eval* e, char* path) {
             value_dispose(content);
             return result;
         }
+        if (verbose) {
+            value_to_str(result, buffer);
+            printf("%s\n", buffer);
+        }
         value_dispose(result);
         running = running->cdr;
     }
@@ -137,15 +147,18 @@ value* load_from_path(eval* e, char* path) {
     return value_new_info("loaded from '%s'", path);
 }
 
-void load_library(eval* e) {
-    value* result = load_from_path(e, LIBRARY_PAATH);
+void load_external(eval* e, char* path, int verbose) {
+    value* result = load_from_path(e, path, verbose);
 
     static char buffer[BUFFER_SIZE];
     value_to_str(result, buffer);
-    if (result->type == VALUE_ERROR) {
-        printf("error occurred while loading the library:\n");
+    if (verbose) {
+        printf("\n");
     }
-    printf("%s\n\n", buffer);
+    if (result->type == VALUE_ERROR) {
+        printf("error while loading from %s:\n", path);
+    }
+    printf("%s\n", buffer);
 
     value_dispose(result);
 }
@@ -169,7 +182,8 @@ void run_repl() {
     e = eval_new(EVALUATOR_PATH);
     h = hist_new(HISTORY_PATH);
 
-    load_library(e);
+    load_external(e, LIBRARY_PAATH, 0);
+    printf("\n");
 
     while (!stop) {
         get_input(input);
@@ -191,6 +205,11 @@ void run_repl() {
             case COMMAND_RESET:
                 eval_reset_env(e);
                 printf("\x1B[32menv was reset\x1B[0m\n");
+                break;
+            case COMMAND_LOAD:
+                // load "x" from "load x"
+                hist_add(h, input);
+                load_external(e, input + 5, 1);
                 break;
             default:
                 signal(SIGINT, signal_handler);
