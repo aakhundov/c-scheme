@@ -345,35 +345,56 @@ int value_is_true(value* v) {
     }
 }
 
-int value_equal(value* v1, value* v2) {
-    if (v1 == NULL && v2 == NULL) {
+static int value_equal_rec(value* v1, value* v2) {
+    if (v1 == v2) {
         return 1;
     } else if (v1 == NULL || v2 == NULL) {
+        return 0;
+    } else if (v1->gen == -2 || v2->gen == -2) {
         return 0;
     } else if (v1->type != v2->type) {
         return 0;
     } else {
+        int result;
         switch (v1->type) {
             case VALUE_NUMBER:
             case VALUE_BOOL:
-                return v1->number == v2->number;
+                result = v1->number == v2->number;
+                break;
             case VALUE_BUILTIN:
-                return v1->ptr == v2->ptr;
+                result = v1->ptr == v2->ptr;
+                break;
             case VALUE_SYMBOL:
             case VALUE_STRING:
             case VALUE_ERROR:
             case VALUE_INFO:
-                return strcmp(v1->symbol, v2->symbol) == 0;
+                result = strcmp(v1->symbol, v2->symbol) == 0;
+                break;
             case VALUE_PAIR:
             case VALUE_LAMBDA:
-                // may run into cycles
-                return (
-                    value_equal(v1->car, v2->car) &&
-                    value_equal(v1->cdr, v2->cdr));
+                v1->gen = -2;
+                v2->gen = -2;
+                result = (value_equal_rec(v1->car, v2->car) &&
+                          value_equal_rec(v1->cdr, v2->cdr));
+                v1->gen = -1;
+                v2->gen = -1;
+                break;
             default:
-                return v1 == v2;
+                result = 0;
+                break;
         }
+        return result;
     }
+}
+
+int value_equal(value* v1, value* v2) {
+    value_update_gen(v1, -1);  // prepare
+    value_update_gen(v2, -1);  // prepare
+    int result = value_equal_rec(v1, v2);
+    value_update_gen(v1, 0);  // clear
+    value_update_gen(v2, 0);  // clear
+
+    return result;
 }
 
 static int number_to_str(value* v, char* buffer) {
@@ -466,7 +487,7 @@ static int value_to_str_rec(value* v, char* buffer) {
         // marked value: cycle
         return sprintf(buffer, "<cycle>");
     } else {
-        int result = 0;
+        int result;
         switch (v->type) {
             case VALUE_NUMBER:
                 result = number_to_str(v, buffer);
@@ -508,7 +529,7 @@ static int value_to_str_rec(value* v, char* buffer) {
 int value_to_str(value* v, char* buffer) {
     value_update_gen(v, -1);  // prepare
     int result = value_to_str_rec(v, buffer);
-    value_update_gen(v, 0);  // reset
+    value_update_gen(v, 0);  // clear
 
     return result;
 }
@@ -587,7 +608,7 @@ static value* value_clone_rec(value* source) {
 value* value_clone(value* source) {
     value_update_gen(source, -1);  // prepare
     value* dest = value_clone_rec(source);
-    value_update_gen(source, 0);  // restore
+    value_update_gen(source, 0);  // clear
 
     return dest;
 }
