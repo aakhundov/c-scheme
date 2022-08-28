@@ -960,6 +960,33 @@ static value* prim_atan2(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
+static value* prim_round(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    double result = round(args->car->number);
+
+    return pool_new_number(m->pool, result);
+}
+
+static value* prim_floor(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    double result = floor(args->car->number);
+
+    return pool_new_number(m->pool, result);
+}
+
+static value* prim_ceiling(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    double result = ceil(args->car->number);
+
+    return pool_new_number(m->pool, result);
+}
+
 static value* prim_eq(machine* m, value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 2);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
@@ -1325,6 +1352,9 @@ static value* make_global_environment(eval* e) {
     add_primitive(e, env, "tan", prim_tan);
     add_primitive(e, env, "atan", prim_atan);
     add_primitive(e, env, "atan2", prim_atan2);
+    add_primitive(e, env, "round", prim_round);
+    add_primitive(e, env, "floor", prim_floor);
+    add_primitive(e, env, "ceiling", prim_ceiling);
 
     // relational
     add_primitive(e, env, "=", prim_eq);

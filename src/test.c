@@ -1593,6 +1593,84 @@ void test_math(eval* e) {
     test_eval_error(e, "(atan2 1 2 3)", "expects 2 args, but got 3");
     test_eval_error(e, "(atan2 1 \"a\")", "must be number, but is string");
     test_eval_error(e, "(atan2 1 '())", "must be number, but got ()");
+
+    // round
+    test_eval_number(e, "(round 1)", 1);
+    test_eval_number(e, "(round 0.99999999)", 1);
+    test_eval_number(e, "(round 0.7)", 1);
+    test_eval_number(e, "(round 0.5)", 1);
+    test_eval_number(e, "(round 0.50000001)", 1);
+    test_eval_number(e, "(round 0.49999999)", 0);
+    test_eval_number(e, "(round 0.3)", 0);
+    test_eval_number(e, "(round 0.00000001)", 0);
+    test_eval_number(e, "(round 0)", 0);
+    test_eval_number(e, "(round -0)", 0);
+    test_eval_number(e, "(round -0.00000001)", 0);
+    test_eval_number(e, "(round -0.3)", 0);
+    test_eval_number(e, "(round -0.49999999)", 0);
+    test_eval_number(e, "(round -0.50000001)", -1);
+    test_eval_number(e, "(round -0.5)", -1);
+    test_eval_number(e, "(round -0.7)", -1);
+    test_eval_number(e, "(round -0.99999999)", -1);
+    test_eval_number(e, "(round -1)", -1);
+
+    // round errors
+    test_eval_error(e, "(round)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(round 1 2)", "expects 1 arg, but got 2");
+    test_eval_error(e, "(round \"a\")", "must be number, but is string");
+    test_eval_error(e, "(round '())", "must be number, but got ()");
+
+    // floor
+    test_eval_number(e, "(floor 1)", 1);
+    test_eval_number(e, "(floor 0.99999999)", 0);
+    test_eval_number(e, "(floor 0.7)", 0);
+    test_eval_number(e, "(floor 0.5)", 0);
+    test_eval_number(e, "(floor 0.50000001)", 0);
+    test_eval_number(e, "(floor 0.49999999)", 0);
+    test_eval_number(e, "(floor 0.3)", 0);
+    test_eval_number(e, "(floor 0.00000001)", 0);
+    test_eval_number(e, "(floor 0)", 0);
+    test_eval_number(e, "(floor -0)", 0);
+    test_eval_number(e, "(floor -0.00000001)", -1);
+    test_eval_number(e, "(floor -0.3)", -1);
+    test_eval_number(e, "(floor -0.49999999)", -1);
+    test_eval_number(e, "(floor -0.50000001)", -1);
+    test_eval_number(e, "(floor -0.5)", -1);
+    test_eval_number(e, "(floor -0.7)", -1);
+    test_eval_number(e, "(floor -0.99999999)", -1);
+    test_eval_number(e, "(floor -1)", -1);
+
+    // floor errors
+    test_eval_error(e, "(floor)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(floor 1 2)", "expects 1 arg, but got 2");
+    test_eval_error(e, "(floor \"a\")", "must be number, but is string");
+    test_eval_error(e, "(floor '())", "must be number, but got ()");
+
+    // ceiling
+    test_eval_number(e, "(ceiling 1)", 1);
+    test_eval_number(e, "(ceiling 0.99999999)", 1);
+    test_eval_number(e, "(ceiling 0.7)", 1);
+    test_eval_number(e, "(ceiling 0.5)", 1);
+    test_eval_number(e, "(ceiling 0.50000001)", 1);
+    test_eval_number(e, "(ceiling 0.49999999)", 1);
+    test_eval_number(e, "(ceiling 0.3)", 1);
+    test_eval_number(e, "(ceiling 0.00000001)", 1);
+    test_eval_number(e, "(ceiling 0)", 0);
+    test_eval_number(e, "(ceiling -0)", 0);
+    test_eval_number(e, "(ceiling -0.00000001)", 0);
+    test_eval_number(e, "(ceiling -0.3)", 0);
+    test_eval_number(e, "(ceiling -0.49999999)", 0);
+    test_eval_number(e, "(ceiling -0.50000001)", 0);
+    test_eval_number(e, "(ceiling -0.5)", 0);
+    test_eval_number(e, "(ceiling -0.7)", 0);
+    test_eval_number(e, "(ceiling -0.99999999)", 0);
+    test_eval_number(e, "(ceiling -1)", -1);
+
+    // ceiling errors
+    test_eval_error(e, "(ceiling)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(ceiling 1 2)", "expects 1 arg, but got 2");
+    test_eval_error(e, "(ceiling \"a\")", "must be number, but is string");
+    test_eval_error(e, "(ceiling '())", "must be number, but got ()");
 }
 
 void test_relational(eval* e) {
