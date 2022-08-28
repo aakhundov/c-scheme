@@ -1,21 +1,21 @@
 ; Exercise 1.8
 
 (define (cube-root-iter guess x)
-  (let ((improved (improve guess x)))
-    (if (good-enough? guess improved)
-         guess
-         (cube-root-iter improved x))))
+    (let ((improved (improve guess x)))
+        (if (good-enough? guess improved)
+            guess
+            (cube-root-iter improved x))))
 
 (define (improve guess x)
-  (/ (+ (/ x (* guess guess))
-        (* 2 guess))
-     3))
+    (/ (+ (/ x (* guess guess))
+          (* 2 guess))
+       3))
 
 (define (good-enough? guess improved)
-  (< (abs (- guess improved)) 1e-8))
+    (< (abs (- guess improved)) 1e-8))
 
 (define (cube-root x)
-  (cube-root-iter 1.0 x))
+    (cube-root-iter 1.0 x))
 
 (assert-equal '(cube-root 1e9) 1000.0000)
 (assert-equal '(cube-root 1e8) 464.15888)

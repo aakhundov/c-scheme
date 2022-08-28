@@ -7,11 +7,11 @@
 (assert-equal '(square (square 3)) 81)
 
 (define (sum-of-squares x y)
-  (+ (square x) (square y)))
+    (+ (square x) (square y)))
 
 (assert-equal '(sum-of-squares 3 4) 25)
 
 (define (f a)
-  (sum-of-squares (+ a 1) (* a 2)))
+    (sum-of-squares (+ a 1) (* a 2)))
 
 (assert-equal '(f 5) 136)

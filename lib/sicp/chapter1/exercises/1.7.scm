@@ -1,22 +1,22 @@
 ; Exercise 1.7
 
 (define (sqrt-iter guess x)
-  (let ((improved (improve guess x)))
-    (if (good-enough? guess improved)
-         guess
-         (sqrt-iter improved x))))
+    (let ((improved (improve guess x)))
+        (if (good-enough? guess improved)
+             guess
+             (sqrt-iter improved x))))
 
 (define (improve guess x)
-  (average guess (/ x guess)))
+    (average guess (/ x guess)))
 
 (define (average x y)
-  (/ (+ x y) 2))
+    (/ (+ x y) 2))
 
 (define (good-enough? guess improved)
-  (< (abs (- guess improved)) 1e-8))
+    (< (abs (- guess improved)) 1e-8))
 
 (define (sqrt x)
-  (sqrt-iter 1.0 x))
+    (sqrt-iter 1.0 x))
 
 (assert-equal '(sqrt 1e9) 31622.7766)
 (assert-equal '(sqrt 1e8) 10000.0000)

@@ -12,25 +12,25 @@
 (assert-equal '(+ a b (* a b)) 19)
 (assert-equal '(= a b) false)
 
-(assert-equal
-  '(if (and (> b a) (< b (* a b)))
-       b
-       a)
-  4)
+(assert-equal '
+    (if (and (> b a) (< b (* a b)))
+        b
+        a)
+    4)
 
-(assert-equal
-  '(cond ((= a 4) 6)
-         ((= b 4) (+ 6 7 a))
-         (else 25))
-  16)
+(assert-equal '
+    (cond ((= a 4) 6)
+          ((= b 4) (+ 6 7 a))
+          (else 25))
+    16)
 
-(assert-equal
-  '(+ 2 (if (> b a) b a))
-  6)
+(assert-equal '
+    (+ 2 (if (> b a) b a))
+    6)
 
-(assert-equal
-  '(* (cond ((> a b) a)
+(assert-equal '
+    (* (cond ((> a b) a)
            ((< a b) b)
            (else -1))
-      (+ a 1))
-  16)
+       (+ a 1))
+    16)
