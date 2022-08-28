@@ -1260,7 +1260,7 @@ static value* prim_srand(machine* m, value* args) {
     return pool_new_info(m->pool, "RNG was seeded");
 }
 
-static value* prim_rand(machine* m, value* args) {
+static value* prim_random(machine* m, value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
     ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -1352,7 +1352,7 @@ static value* make_global_environment(eval* e) {
     add_primitive(e, env, "newline", prim_newline);
     add_primitive(e, env, "collect", prim_collect);
     add_primitive(e, env, "srand", prim_srand);
-    add_primitive(e, env, "rand", prim_rand);
+    add_primitive(e, env, "random", prim_random);
     add_primitive(e, env, "time", prim_time);
 
     return env;

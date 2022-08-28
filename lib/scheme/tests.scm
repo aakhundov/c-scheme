@@ -25,6 +25,12 @@
 (assert-equal '(ninth '(1 2 3 4 5 6 7 8 9 10)) 9)
 (assert-equal '(tenth '(1 2 3 4 5 6 7 8 9 10)) 10)
 
+(assert-equal '(square 0) 0)
+(assert-equal '(square 1) 1)
+(assert-equal '(square -1) 1)
+(assert-equal '(square 2) 4)
+(assert-equal '(square -2) 4)
+
 (assert-equal '(list-ref 0 '(1 2 3 4 5)) 1)
 (assert-equal '(list-ref 4 '(1 2 3 4 5)) 5)
 (assert-equal '(list-ref 5 '(1 2 3 4 5)) '())

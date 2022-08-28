@@ -42,30 +42,33 @@
 (define (ninth x) (car (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr x))))))))))
 (define (tenth x) (car (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr x)))))))))))
 
+(define (square x)
+    (* x x))
+
 (define (list-ref n lst)
-  (cond ((null? lst) '())
-        ((= n 0) (car lst))
-        (else (list-ref (- n 1) (cdr lst)))))
+    (cond ((null? lst) '())
+          ((= n 0) (car lst))
+          (else (list-ref (- n 1) (cdr lst)))))
 
 (define (map f lst)
-  (if (null? lst)
-      '()
-      (cons (f (car lst))
-            (map f (cdr lst)))))
+    (if (null? lst)
+        '()
+        (cons (f (car lst))
+              (map f (cdr lst)))))
 
 ; diagnostics tools
 
 (define (assert-equal expression expected)
-  (let ((result (eval expression)))
-    (cond ((equal? result expected)
-           (info "%s == %s" expression result))  ; exactly equals
-          ((and (number? expected)
-                (number? result)
-                (< (abs (- result expected)) 1e-4))
-           (info "%s ~= %s" expression result))  ; approximately equals
-          (else (error "%s != %s, but %s" expression expected result)))))
+    (let ((result (eval expression)))
+        (cond ((equal? result expected)
+               (info "%s == %s" expression result))  ; exactly equals
+              ((and (number? expected)
+                    (number? result)
+                    (< (abs (- result expected)) 1e-4))
+               (info "%s ~= %s" expression result))  ; approximately equals
+              (else (error "%s == %s, but %s was expected" expression result expected)))))
 
 (define (measure expression)
-  (let ((start (time)))
-    (begin (eval expression)
-           (info "%s took %s seconds" expression (- (time) start)))))
+    (let ((start (time)))
+        (begin (eval expression)
+               (info "%s took %s seconds" expression (- (time) start)))))
