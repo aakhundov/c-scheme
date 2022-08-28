@@ -1813,6 +1813,46 @@ void test_predicates(eval* e) {
     test_eval_error(e, "(null?)", "expects 1 arg, but got 0");
     test_eval_error(e, "(null? 1 2)", "expects 1 arg, but got 2");
 
+    // true?
+    test_eval_bool(e, "(true? 1)", 1);
+    test_eval_bool(e, "(true? 0)", 1);
+    test_eval_bool(e, "(true? -1)", 1);
+    test_eval_bool(e, "(true? 3.14)", 1);
+    test_eval_bool(e, "(true? -3.14)", 1);
+    test_eval_bool(e, "(true? 'a)", 1);
+    test_eval_bool(e, "(true? \"abc\")", 1);
+    test_eval_bool(e, "(true? \"\")", 1);
+    test_eval_bool(e, "(true? true)", 1);
+    test_eval_bool(e, "(true? false)", 0);
+    test_eval_bool(e, "(true? '())", 1);
+    test_eval_bool(e, "(true? '(1))", 1);
+    test_eval_bool(e, "(true? '(1 2 3))", 1);
+    test_eval_bool(e, "(true? '((1 2) 3))", 1);
+
+    // true? errors
+    test_eval_error(e, "(true?)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(true? 1 2)", "expects 1 arg, but got 2");
+
+    // false?
+    test_eval_bool(e, "(false? 1)", 0);
+    test_eval_bool(e, "(false? 0)", 0);
+    test_eval_bool(e, "(false? -1)", 0);
+    test_eval_bool(e, "(false? 3.14)", 0);
+    test_eval_bool(e, "(false? -3.14)", 0);
+    test_eval_bool(e, "(false? 'a)", 0);
+    test_eval_bool(e, "(false? \"abc\")", 0);
+    test_eval_bool(e, "(false? \"\")", 0);
+    test_eval_bool(e, "(false? true)", 0);
+    test_eval_bool(e, "(false? false)", 1);
+    test_eval_bool(e, "(false? '())", 0);
+    test_eval_bool(e, "(false? '(1))", 0);
+    test_eval_bool(e, "(false? '(1 2 3))", 0);
+    test_eval_bool(e, "(false? '((1 2) 3))", 0);
+
+    // false? errors
+    test_eval_error(e, "(false?)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(false? 1 2)", "expects 1 arg, but got 2");
+
     // equal?
     test_eval_bool(e, "(equal? 0 0)", 1);
     test_eval_bool(e, "(equal? 1 1)", 1);
@@ -1862,6 +1902,44 @@ void test_predicates(eval* e) {
     test_eval_error(e, "(eq?)", "expects 2 args, but got 0");
     test_eval_error(e, "(eq? 1)", "expects 2 args, but got 1");
     test_eval_error(e, "(eq? 1 2 3)", "expects 2 args, but got 3");
+
+    // even?
+    test_eval_bool(e, "(even? 2)", 1);
+    test_eval_bool(e, "(even? -2)", 1);
+    test_eval_bool(e, "(even? 0)", 1);
+    test_eval_bool(e, "(even? 1)", 0);
+    test_eval_bool(e, "(even? -1)", 0);
+    test_eval_bool(e, "(even? 2.1)", 0);
+    test_eval_bool(e, "(even? 1.5)", 0);
+    test_eval_bool(e, "(even? -2.1)", 0);
+    test_eval_bool(e, "(even? -1.5)", 0);
+
+    // even? errors
+    test_eval_error(e, "(even?)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(even? 1 2)", "expects 1 arg, but got 2");
+    test_eval_error(e, "(even? 'a)", "must be number, but is symbol");
+    test_eval_error(e, "(even? \"a\")", "must be number, but is string");
+    test_eval_error(e, "(even? '(1))", "must be number, but is pair");
+    test_eval_error(e, "(even? '())", "must be number, but got ()");
+
+    // odd?
+    test_eval_bool(e, "(odd? 2)", 0);
+    test_eval_bool(e, "(odd? -2)", 0);
+    test_eval_bool(e, "(odd? 0)", 0);
+    test_eval_bool(e, "(odd? 1)", 1);
+    test_eval_bool(e, "(odd? -1)", 1);
+    test_eval_bool(e, "(odd? 2.1)", 0);
+    test_eval_bool(e, "(odd? 1.5)", 0);
+    test_eval_bool(e, "(odd? -2.1)", 0);
+    test_eval_bool(e, "(odd? -1.5)", 0);
+
+    // odd? errors
+    test_eval_error(e, "(odd?)", "expects 1 arg, but got 0");
+    test_eval_error(e, "(odd? 1 2)", "expects 1 arg, but got 2");
+    test_eval_error(e, "(odd? 'a)", "must be number, but is symbol");
+    test_eval_error(e, "(odd? \"a\")", "must be number, but is string");
+    test_eval_error(e, "(odd? '(1))", "must be number, but is pair");
+    test_eval_error(e, "(odd? '())", "must be number, but got ()");
 }
 
 void test_other(eval* e) {

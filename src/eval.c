@@ -1157,6 +1157,32 @@ static value* prim_eq_q(machine* m, value* args) {
     return pool_new_bool(m->pool, v1 == v2);
 }
 
+static value* prim_even_q(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    double value = args->car->number;
+
+    if ((long)value != value) {
+        return pool_new_bool(m->pool, 0);
+    } else {
+        return pool_new_bool(m->pool, (long)value % 2 == 0);
+    }
+}
+
+static value* prim_odd_q(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+    ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_NUMBER);
+
+    double value = args->car->number;
+
+    if ((long)value != value) {
+        return pool_new_bool(m->pool, 0);
+    } else {
+        return pool_new_bool(m->pool, (long)value % 2 != 0);
+    }
+}
+
 static value* prim_error(machine* m, value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
     ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_STRING);
@@ -1316,6 +1342,8 @@ static value* make_global_environment(eval* e) {
     add_primitive(e, env, "false?", prim_false_q);
     add_primitive(e, env, "equal?", prim_equal_q);
     add_primitive(e, env, "eq?", prim_eq_q);
+    add_primitive(e, env, "even?", prim_even_q);
+    add_primitive(e, env, "odd?", prim_odd_q);
 
     // other
     add_primitive(e, env, "error", prim_error);
