@@ -42,8 +42,26 @@
 (define (ninth x) (car (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr x))))))))))
 (define (tenth x) (car (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr x)))))))))))
 
-(define (square x)
-    (* x x))
+(define (square x) (* x x))
+
+(define (sqrt x) (expt x 0.5))
+
+(define (cube x) (* x x x))
+
+(define (inc n) (+ 1 n))
+
+(define (identity x) x)
+
+(define (average x y) (/ (+ x y) 2))
+
+(define (positive? x) (> x 0))
+
+(define (negative? x) (< x 0))
+
+(define (gcd a b)
+    (if (= b 0)
+        a
+        (gcd b (remainder a b))))
 
 (define (list-ref n lst)
     (cond ((null? lst) '())
@@ -61,11 +79,11 @@
 (define (assert-equal expression expected)
     (let ((result (eval expression)))
         (cond ((equal? result expected)
-               (info "%s == %s" expression result))  ; exactly equals
+               (info "%s == %s" expression expected))  ; exactly equals
               ((and (number? expected)
                     (number? result)
                     (< (abs (- result expected)) 1e-4))
-               (info "%s ~= %s" expression result))  ; approximately equals
+               (info "%s ~= %s" expression expected))  ; approximately equals
               (else (error "%s == %s, but %s was expected" expression result expected)))))
 
 (define (measure expression)

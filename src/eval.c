@@ -1213,9 +1213,13 @@ static value* prim_display(machine* m, value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
 
     while (args != NULL) {
-        static char buffer[BUFFER_SIZE];
-        value_to_str(args->car, buffer);
-        printf("%s", buffer);
+        if (args->car->type == VALUE_SYMBOL || args->car->type == VALUE_STRING) {
+            printf("%s", args->car->symbol);
+        } else {
+            static char buffer[BUFFER_SIZE];
+            value_to_str(args->car, buffer);
+            printf("%s", buffer);
+        }
 
         if (args->cdr != NULL) {
             printf(" ");
