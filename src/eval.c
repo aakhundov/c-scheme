@@ -517,15 +517,16 @@ static value* op_extend_environment(machine* m, value* args) {
     }
 
     if (n != NULL || v != NULL) {
-        static char names_buffer[BUFFER_SIZE];
+        static char lambda_buffer[BUFFER_SIZE];
         static char values_buffer[BUFFER_SIZE];
 
-        value_to_str(names, names_buffer);
+        value* lambda = machine_get_register(m, "proc")->car;
+        value_to_str(lambda, lambda_buffer);
         value_to_str(values, values_buffer);
 
         return pool_new_error(
-            m->pool, "the arguments %s don't match the parameters %s",
-            values_buffer, names_buffer);
+            m->pool, "the arguments %s don't match %s",
+            values_buffer, lambda_buffer);
     } else {
         value* env = pool_new_env(m->pool);
 

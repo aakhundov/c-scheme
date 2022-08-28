@@ -1119,7 +1119,7 @@ static void test_syntax(eval* e) {
     // function without params
     test_eval_info(e, "(define (f0) 1)", "f0 is defined");
     test_eval_output(e, "(f0)", "1");
-    test_eval_error(e, "(f0 1)", "arguments (1) don't match the parameters ()");
+    test_eval_error(e, "(f0 1)", "arguments (1) don't match");
 
     // function with 1 param returning a constant
     test_eval_info(e, "(define (f1 x) 1)", "f1 is defined");
@@ -1127,8 +1127,8 @@ static void test_syntax(eval* e) {
     test_eval_output(e, "(f1 2)", "1");
     test_eval_output(e, "(f1 \"abc\")", "1");
     test_eval_output(e, "(f1 '())", "1");
-    test_eval_error(e, "(f1)", "arguments () don't match the parameters (x)");
-    test_eval_error(e, "(f1 1 2)", "arguments (1 2) don't match the parameters (x)");
+    test_eval_error(e, "(f1)", "arguments () don't match");
+    test_eval_error(e, "(f1 1 2)", "arguments (1 2) don't match");
 
     // function with 1 param returning the 1st param
     test_eval_info(e, "(define (f2 x) x)", "f2 is defined");
@@ -1136,8 +1136,8 @@ static void test_syntax(eval* e) {
     test_eval_output(e, "(f2 2)", "2");
     test_eval_output(e, "(f2 \"abc\")", "\"abc\"");
     test_eval_output(e, "(f2 '())", "()");
-    test_eval_error(e, "(f2)", "arguments () don't match the parameters (x)");
-    test_eval_error(e, "(f2 1 2)", "arguments (1 2) don't match the parameters (x)");
+    test_eval_error(e, "(f2)", "arguments () don't match");
+    test_eval_error(e, "(f2 1 2)", "arguments (1 2) don't match");
 
     // function with 2 param returning the 1st param
     test_eval_info(e, "(define (f3 x y) x)", "f3 is defined");
@@ -1145,9 +1145,9 @@ static void test_syntax(eval* e) {
     test_eval_output(e, "(f3 1 2)", "1");
     test_eval_output(e, "(f3 2 1)", "2");
     test_eval_output(e, "(f3 2 2)", "2");
-    test_eval_error(e, "(f3)", "arguments () don't match the parameters (x y)");
-    test_eval_error(e, "(f3 1)", "arguments (1) don't match the parameters (x y)");
-    test_eval_error(e, "(f3 1 2 3)", "arguments (1 2 3) don't match the parameters (x y)");
+    test_eval_error(e, "(f3)", "arguments () don't match");
+    test_eval_error(e, "(f3 1)", "arguments (1) don't match");
+    test_eval_error(e, "(f3 1 2 3)", "arguments (1 2 3) don't match");
 
     // function with 2 param returning the 2nd param
     test_eval_info(e, "(define (f4 x y) y)", "f4 is defined");
@@ -1155,9 +1155,9 @@ static void test_syntax(eval* e) {
     test_eval_output(e, "(f4 1 2)", "2");
     test_eval_output(e, "(f4 2 1)", "1");
     test_eval_output(e, "(f4 2 2)", "2");
-    test_eval_error(e, "(f4)", "arguments () don't match the parameters (x y)");
-    test_eval_error(e, "(f4 1)", "arguments (1) don't match the parameters (x y)");
-    test_eval_error(e, "(f4 1 2 3)", "arguments (1 2 3) don't match the parameters (x y)");
+    test_eval_error(e, "(f4)", "arguments () don't match");
+    test_eval_error(e, "(f4 1)", "arguments (1) don't match");
+    test_eval_error(e, "(f4 1 2 3)", "arguments (1 2 3) don't match");
 
     // function with 2 param returning the sum of 1st and 2nd params
     test_eval_info(e, "(define (f5 x y) (+ x y))", "f5 is defined");
@@ -1165,23 +1165,23 @@ static void test_syntax(eval* e) {
     test_eval_output(e, "(f5 1 2)", "3");
     test_eval_output(e, "(f5 2 1)", "3");
     test_eval_output(e, "(f5 2 2)", "4");
-    test_eval_error(e, "(f5)", "arguments () don't match the parameters (x y)");
-    test_eval_error(e, "(f5 1)", "arguments (1) don't match the parameters (x y)");
-    test_eval_error(e, "(f5 1 2 3)", "arguments (1 2 3) don't match the parameters (x y)");
+    test_eval_error(e, "(f5)", "arguments () don't match");
+    test_eval_error(e, "(f5 1)", "arguments (1) don't match");
+    test_eval_error(e, "(f5 1 2 3)", "arguments (1 2 3) don't match");
 
     // function with 1 param + the rest returning the 1st param
     test_eval_info(e, "(define (f6 x . y) x)", "f6 is defined");
     test_eval_output(e, "(f6 1)", "1");
     test_eval_output(e, "(f6 1 2)", "1");
     test_eval_output(e, "(f6 1 2 3)", "1");
-    test_eval_error(e, "(f6)", "arguments () don't match the parameters (x . y)");
+    test_eval_error(e, "(f6)", "arguments () don't match");
 
     // function with 1 param + the rest returning the rest
     test_eval_info(e, "(define (f7 x . y) y)", "f7 is defined");
     test_eval_output(e, "(f7 1)", "()");
     test_eval_output(e, "(f7 1 2)", "(2)");
     test_eval_output(e, "(f7 1 2 3)", "(2 3)");
-    test_eval_error(e, "(f7)", "arguments () don't match the parameters (x . y)");
+    test_eval_error(e, "(f7)", "arguments () don't match");
 
     // function with the rest returning the rest
     test_eval_info(e, "(define (f8 . x) x)", "f8 is defined");
