@@ -11,5 +11,6 @@
 #define HISTORY_PATH "./.history"
 #define EVALUATOR_PATH "./lib/machines/evaluator.scm"
 #define LIBRARY_PAATH "./lib/scheme/library.scm"
+#define TESTS_PATH "./lib/scheme/tests.scm"
 
 #endif  // COMMON_H_

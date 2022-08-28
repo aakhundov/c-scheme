@@ -183,6 +183,7 @@ void run_repl() {
     h = hist_new(HISTORY_PATH);
 
     load_external(e, LIBRARY_PAATH, 0);
+    load_external(e, TESTS_PATH, 0);
     printf("\n");
 
     while (!stop) {

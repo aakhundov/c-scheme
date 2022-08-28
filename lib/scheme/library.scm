@@ -69,39 +69,3 @@
   (let ((start (time)))
     (begin (eval expression)
            (info "%s took %s seconds" expression (- (time) start)))))
-
-; unit test
-
-(assert-equal '(caar '((1 2) 3 4)) 1)
-(assert-equal '(cadr '((1 2) 3 4)) 3)
-(assert-equal '(cdar '((1 2) 3 4)) '(2))
-(assert-equal '(cddr '((1 2) 3 4)) '(4))
-
-(assert-equal '(caaar '(((1 2) 3 4) (5 6) 7)) 1)
-(assert-equal '(caadr '(((1 2) 3 4) (5 6) 7)) 5)
-(assert-equal '(cadar '(((1 2) 3 4) (5 6) 7)) 3)
-(assert-equal '(caddr '(((1 2) 3 4) (5 6) 7)) 7)
-(assert-equal '(cdaar '(((1 2) 3 4) (5 6) 7)) '(2))
-(assert-equal '(cdadr '(((1 2) 3 4) (5 6) 7)) '(6))
-(assert-equal '(cddar '(((1 2) 3 4) (5 6) 7)) '(4))
-(assert-equal '(cdddr '(((1 2) 3 4) (5 6) 7)) '())
-
-(assert-equal '(first '(1 2 3 4 5 6 7 8 9 10)) 1)
-(assert-equal '(second '(1 2 3 4 5 6 7 8 9 10)) 2)
-(assert-equal '(third '(1 2 3 4 5 6 7 8 9 10)) 3)
-(assert-equal '(fourth '(1 2 3 4 5 6 7 8 9 10)) 4)
-(assert-equal '(fifth '(1 2 3 4 5 6 7 8 9 10)) 5)
-(assert-equal '(sixth '(1 2 3 4 5 6 7 8 9 10)) 6)
-(assert-equal '(seventh '(1 2 3 4 5 6 7 8 9 10)) 7)
-(assert-equal '(eighth '(1 2 3 4 5 6 7 8 9 10)) 8)
-(assert-equal '(ninth '(1 2 3 4 5 6 7 8 9 10)) 9)
-(assert-equal '(tenth '(1 2 3 4 5 6 7 8 9 10)) 10)
-
-(assert-equal '(list-ref 0 '(1 2 3 4 5)) 1)
-(assert-equal '(list-ref 4 '(1 2 3 4 5)) 5)
-(assert-equal '(list-ref 5 '(1 2 3 4 5)) '())
-
-(assert-equal '(map - '(1 2 3)) '(-1 -2 -3))
-(assert-equal '(map car '((1 1) (2 2) (3 3))) '(1 2 3))
-(assert-equal '(map cdr '((1 1) (2 2) (3 3))) '((1) (2) (3)))
-(assert-equal '(map + '()) '())
