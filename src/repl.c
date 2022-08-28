@@ -205,12 +205,16 @@ void run_repl() {
                 break;
             case COMMAND_RESET:
                 eval_reset_env(e);
+                load_external(e, LIBRARY_PAATH, 0);
+                load_external(e, TESTS_PATH, 0);
                 printf("\x1B[32menv was reset\x1B[0m\n");
                 break;
             case COMMAND_LOAD:
                 // load "x" from "load x"
                 hist_add(h, input);
+                signal(SIGINT, signal_handler);
                 load_external(e, input + 5, 1);
+                signal(SIGINT, NULL);
                 break;
             default:
                 signal(SIGINT, signal_handler);
