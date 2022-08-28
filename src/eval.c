@@ -814,7 +814,7 @@ static value* prim_div(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_mod(machine* m, value* args) {
+static value* prim_remainder(machine* m, value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 2);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -832,7 +832,7 @@ static value* prim_mod(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_pow(machine* m, value* args) {
+static value* prim_expt(machine* m, value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 2);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -1307,8 +1307,8 @@ static value* make_global_environment(eval* e) {
     add_primitive(e, env, "-", prim_sub);
     add_primitive(e, env, "*", prim_mul);
     add_primitive(e, env, "/", prim_div);
-    add_primitive(e, env, "%", prim_mod);
-    add_primitive(e, env, "^", prim_pow);
+    add_primitive(e, env, "remainder", prim_remainder);
+    add_primitive(e, env, "expt", prim_expt);
     add_primitive(e, env, "min", prim_min);
     add_primitive(e, env, "max", prim_max);
 

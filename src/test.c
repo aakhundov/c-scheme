@@ -1378,58 +1378,58 @@ static void test_arithmetic(eval* e) {
     test_eval_error(e, "(/ 1 0)", "division by zero");
     test_eval_error(e, "(/ 1 2 3 0)", "division by zero");
 
-    // %
-    test_eval_number(e, "(% 1 1)", 0);
-    test_eval_number(e, "(% 1 3)", 1);
-    test_eval_number(e, "(% 3 1)", 0);
-    test_eval_number(e, "(% 2 3)", 2);
-    test_eval_number(e, "(% 3 2)", 1);
-    test_eval_number(e, "(% 1 -1)", 0);
-    test_eval_number(e, "(% -1 2)", -1);
-    test_eval_number(e, "(% 3 2)", 1);
-    test_eval_number(e, "(% 3.14 2.71)", 0.43);
-    test_eval_number(e, "(% 2 3 4 5)", 2);
-    test_eval_number(e, "(% 5 4 3 2)", 1);
+    // remainder
+    test_eval_number(e, "(remainder 1 1)", 0);
+    test_eval_number(e, "(remainder 1 3)", 1);
+    test_eval_number(e, "(remainder 3 1)", 0);
+    test_eval_number(e, "(remainder 2 3)", 2);
+    test_eval_number(e, "(remainder 3 2)", 1);
+    test_eval_number(e, "(remainder 1 -1)", 0);
+    test_eval_number(e, "(remainder -1 2)", -1);
+    test_eval_number(e, "(remainder 3 2)", 1);
+    test_eval_number(e, "(remainder 3.14 2.71)", 0.43);
+    test_eval_number(e, "(remainder 2 3 4 5)", 2);
+    test_eval_number(e, "(remainder 5 4 3 2)", 1);
 
-    // % errors
-    test_eval_error(e, "(%)", "expects at least 2 args, but got 0");
-    test_eval_error(e, "(% 1)", "expects at least 2 args, but got 1");
-    test_eval_error(e, "(% 1 \"a\")", "must be number, but is string");
-    test_eval_error(e, "(% 1 -2 3 \"a\")", "must be number, but is string");
-    test_eval_error(e, "(% 1 '())", "must be number, but got ()");
-    test_eval_error(e, "(% 1 0)", "division by zero");
-    test_eval_error(e, "(% 1 2 3 0)", "division by zero");
+    // remainder errors
+    test_eval_error(e, "(remainder)", "expects at least 2 args, but got 0");
+    test_eval_error(e, "(remainder 1)", "expects at least 2 args, but got 1");
+    test_eval_error(e, "(remainder 1 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(remainder 1 -2 3 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(remainder 1 '())", "must be number, but got ()");
+    test_eval_error(e, "(remainder 1 0)", "division by zero");
+    test_eval_error(e, "(remainder 1 2 3 0)", "division by zero");
 
-    // ^
-    test_eval_number(e, "(^ 1 2)", 1);
-    test_eval_number(e, "(^ 2 1)", 2);
-    test_eval_number(e, "(^ 2 2)", 4);
-    test_eval_number(e, "(^ 2 0)", 1);
-    test_eval_number(e, "(^ 0 2)", 0);
-    test_eval_number(e, "(^ 1 -2)", 1);
-    test_eval_number(e, "(^ 2 -1)", 0.5);
-    test_eval_number(e, "(^ 2 -2)", 0.25);
-    test_eval_number(e, "(^ -2 -2)", 0.25);
-    test_eval_number(e, "(^ -2 -3)", -0.125);
-    test_eval_number(e, "(^ 2 0.5)", 1.41421);
-    test_eval_number(e, "(^ 2 1.5)", 2.82843);
-    test_eval_number(e, "(^ 3.14 2)", 9.8596);
-    test_eval_number(e, "(^ -3.14 3)", -30.9591);
-    test_eval_number(e, "(^ 3.14 2.71)", 22.2167);
-    test_eval_number(e, "(^ 2.71 3.14)", 22.8836);
-    test_eval_number(e, "(^ -1 0.5)", NAN);
-    test_eval_number(e, "(^ -1 1.5)", NAN);
-    test_eval_number(e, "(^ 2 2 2 2 2)", 65536);
-    test_eval_number(e, "(^ 1 2 3 4 5)", 1);
-    test_eval_number(e, "(^ 3 4 5)", 3486784401);
-    test_eval_number(e, "(^ -3 4 -5)", 2.86797e-10);
+    // expt
+    test_eval_number(e, "(expt 1 2)", 1);
+    test_eval_number(e, "(expt 2 1)", 2);
+    test_eval_number(e, "(expt 2 2)", 4);
+    test_eval_number(e, "(expt 2 0)", 1);
+    test_eval_number(e, "(expt 0 2)", 0);
+    test_eval_number(e, "(expt 1 -2)", 1);
+    test_eval_number(e, "(expt 2 -1)", 0.5);
+    test_eval_number(e, "(expt 2 -2)", 0.25);
+    test_eval_number(e, "(expt -2 -2)", 0.25);
+    test_eval_number(e, "(expt -2 -3)", -0.125);
+    test_eval_number(e, "(expt 2 0.5)", 1.41421);
+    test_eval_number(e, "(expt 2 1.5)", 2.82843);
+    test_eval_number(e, "(expt 3.14 2)", 9.8596);
+    test_eval_number(e, "(expt -3.14 3)", -30.9591);
+    test_eval_number(e, "(expt 3.14 2.71)", 22.2167);
+    test_eval_number(e, "(expt 2.71 3.14)", 22.8836);
+    test_eval_number(e, "(expt -1 0.5)", NAN);
+    test_eval_number(e, "(expt -1 1.5)", NAN);
+    test_eval_number(e, "(expt 2 2 2 2 2)", 65536);
+    test_eval_number(e, "(expt 1 2 3 4 5)", 1);
+    test_eval_number(e, "(expt 3 4 5)", 3486784401);
+    test_eval_number(e, "(expt -3 4 -5)", 2.86797e-10);
 
-    // ^ errors
-    test_eval_error(e, "(^)", "expects at least 2 args, but got 0");
-    test_eval_error(e, "(^ 1)", "expects at least 2 args, but got 1");
-    test_eval_error(e, "(^ 1 \"a\")", "must be number, but is string");
-    test_eval_error(e, "(^ 1 -2 3 \"a\")", "must be number, but is string");
-    test_eval_error(e, "(^ 1 '())", "must be number, but got ()");
+    // expt errors
+    test_eval_error(e, "(expt)", "expects at least 2 args, but got 0");
+    test_eval_error(e, "(expt 1)", "expects at least 2 args, but got 1");
+    test_eval_error(e, "(expt 1 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(expt 1 -2 3 \"a\")", "must be number, but is string");
+    test_eval_error(e, "(expt 1 '())", "must be number, but got ()");
 
     // min
     test_eval_number(e, "(min 1)", 1);
@@ -1464,13 +1464,13 @@ static void test_arithmetic(eval* e) {
     // compound arithmetics
     test_eval_number(e, "(+ 1 2 3 (- 4 5) 6)", 11);
     test_eval_number(e, "(min (max 1 3 5) (max 2 4 6))", 5);
-    test_eval_number(e, "(+ 1 (* (^ 2 3) 4) (/ 5 6) (- 7 (% 8 9)) 10)", 42.8333);
+    test_eval_number(e, "(+ 1 (* (expt 2 3) 4) (/ 5 6) (- 7 (remainder 8 9)) 10)", 42.8333);
 }
 
 void test_math(eval* e) {
     // constants
-    test_eval_number(e, "PI", 3.14159265358979323846264338327950288);
-    test_eval_number(e, "E", 2.71828182845904523536028747135266250);
+    test_eval_number(e, "PI", 3.1415926536);
+    test_eval_number(e, "E", 2.7182818285);
 
     // abs
     test_eval_number(e, "(abs 1)", 1);
