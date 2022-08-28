@@ -8,6 +8,12 @@ typedef struct machine machine;
 typedef struct machine_stats machine_stats;
 typedef value* (*builtin)(machine* m, value* args);
 
+typedef enum {
+    TRACE_OFF = 0,
+    TRACE_SUMMARY = 1,
+    TRACE_ALL = 10
+} machine_trace_level;
+
 struct machine_stats {
     size_t num_inst;
     size_t num_inst_stack;
@@ -16,6 +22,7 @@ struct machine_stats {
     size_t stack_depth_max;
     size_t garbage_before;
     size_t garbage_after;
+
     int flag;
 };
 
@@ -50,7 +57,7 @@ value* machine_get_label(machine* m, char* name);
 value* machine_export_output(machine* m);
 void machine_run(machine* m);
 
-void machine_set_trace(machine* m, int on);
+void machine_set_trace(machine* m, machine_trace_level level);
 void machine_interrupt(machine* m);
 
 #endif  // MACHINE_H_

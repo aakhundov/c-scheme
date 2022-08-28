@@ -607,14 +607,14 @@ static void execute_next_instruction(machine* m) {
 
     m->stats.num_inst += 1;
 
-    if (m->trace) {
+    if (m->trace >= TRACE_ALL) {
         trace_before(m, line, instruction);
     }
 
     instruction_type type = (int)instruction->car->number;
     execution_fns[type](m, instruction->cdr);
 
-    if (m->trace) {
+    if (m->trace >= TRACE_ALL) {
         trace_after(m, line, instruction);
     }
 
@@ -685,13 +685,13 @@ void machine_run(machine* m) {
         execute_next_instruction(m);
     }
 
-    if (m->trace) {
+    if (m->trace >= TRACE_SUMMARY) {
         report_stats(m);
     }
 }
 
-void machine_set_trace(machine* m, int on) {
-    m->trace = (on ? 1 : 0);
+void machine_set_trace(machine* m, machine_trace_level level) {
+    m->trace = level;
 }
 
 void machine_interrupt(machine* m) {

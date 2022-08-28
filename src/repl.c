@@ -16,25 +16,22 @@
 typedef enum {
     COMMAND_EXIT = 0,
     COMMAND_CLEAR = 1,
-    COMMAND_TRACE_ON = 2,
-    COMMAND_TRACE_OFF = 3,
-    COMMAND_RESET = 4,
-    COMMAND_LOAD = 5,
+    COMMAND_TRACE = 2,
+    COMMAND_RESET = 3,
+    COMMAND_LOAD = 4,
     COMMAND_OTHER = -1
 } command_type;
 
-static const char* exit_commands[] = {"exit", "quit", "q"};
+static const char* exit_commands[] = {"exit", "quit"};
 static const char* clear_commands[] = {"clear", "clr", "clrscr"};
-static const char* trace_on_commands[] = {"trace", "trace on"};
-static const char* trace_off_commands[] = {"untrace", "trace off"};
-static const char* reset_commands[] = {"reset", "reset env"};
+static const char* trace_commands[] = {"trace "};
+static const char* reset_commands[] = {"reset"};
 static const char* load_commands[] = {"load "};
 
 static const char** commands[] = {
     exit_commands,
     clear_commands,
-    trace_on_commands,
-    trace_off_commands,
+    trace_commands,
     reset_commands,
     load_commands,
 };
@@ -42,8 +39,7 @@ static const char** commands[] = {
 static const size_t command_counts[] = {
     sizeof(exit_commands) / sizeof(char*),
     sizeof(clear_commands) / sizeof(char*),
-    sizeof(trace_on_commands) / sizeof(char*),
-    sizeof(trace_off_commands) / sizeof(char*),
+    sizeof(trace_commands) / sizeof(char*),
     sizeof(reset_commands) / sizeof(char*),
     sizeof(load_commands) / sizeof(char*),
 };
@@ -163,6 +159,29 @@ void load_external(eval* e, char* path, int verbose) {
     value_dispose(result);
 }
 
+static machine_trace_level set_trace(eval* e, char* input) {
+    machine_trace_level result;
+    value* tokens = parse_from_str(input);
+
+    if (tokens == NULL ||
+        tokens->type != VALUE_PAIR ||
+        tokens->cdr == NULL ||
+        tokens->cdr->car == NULL ||
+        tokens->cdr->car->type != VALUE_NUMBER ||
+        tokens->cdr->car->number < 0 ||
+        tokens->cdr->car->number > TRACE_ALL ||
+        tokens->cdr->cdr != NULL) {
+        result = -1;
+    } else {
+        result = (int)tokens->cdr->car->number;
+        machine_set_trace(e->machine, result);
+    }
+
+    value_dispose(tokens);
+
+    return result;
+}
+
 static void signal_handler(int signal) {
     printf("\b\b");
     if (e != NULL) {
@@ -178,6 +197,7 @@ void run_repl() {
     int stop = 0;
     static char input[BUFFER_SIZE];
     static char output[BUFFER_SIZE];
+    machine_trace_level level;
 
     e = eval_new(EVALUATOR_PATH);
     h = hist_new(HISTORY_PATH);
@@ -195,26 +215,27 @@ void run_repl() {
             case COMMAND_CLEAR:
                 printf("\e[1;1H\e[2J");
                 break;
-            case COMMAND_TRACE_ON:
-                machine_set_trace(e->machine, 1);
-                printf("\x1B[32mtrace enabled\x1B[0m\n");
-                break;
-            case COMMAND_TRACE_OFF:
-                machine_set_trace(e->machine, 0);
-                printf("\x1B[32mtrace disabled\x1B[0m\n");
+            case COMMAND_TRACE:
+                if ((level = set_trace(e, input)) != -1) {
+                    printf("\x1B[32mtrace level was set to %d\x1B[0m\n", level);
+                } else {
+                    printf("\x1B[31merror setting trace level\x1B[0m\n");
+                }
+                hist_add(h, input);
                 break;
             case COMMAND_RESET:
                 eval_reset_env(e);
                 load_external(e, LIBRARY_PAATH, 0);
                 load_external(e, TESTS_PATH, 0);
-                printf("\x1B[32menv was reset\x1B[0m\n");
+                printf("\x1B[32menvironment was reset\x1B[0m\n");
+                hist_add(h, input);
                 break;
             case COMMAND_LOAD:
                 // load "x" from "load x"
-                hist_add(h, input);
                 signal(SIGINT, signal_handler);
                 load_external(e, input + 5, 1);
                 signal(SIGINT, NULL);
+                hist_add(h, input);
                 break;
             default:
                 signal(SIGINT, signal_handler);
