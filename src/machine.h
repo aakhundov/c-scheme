@@ -11,8 +11,8 @@ typedef value* (*builtin)(machine* m, value* args);
 typedef enum {
     TRACE_OFF = 0,
     TRACE_GENERAL = 1,
-    TRACE_DETAILS = 2,
-    TRACE_OP_CALLS = 3,
+    TRACE_SUMMARY = 2,
+    TRACE_COUNTS = 3,
     TRACE_INSTRUCTIONS = 4,
     TRACE_ALL = 10,
 } machine_trace_level;
@@ -39,7 +39,10 @@ struct machine_stats {
 
     int flag;
 
-    value* op_calls;
+    value* cnt_op_calls;
+    value* cnt_register_assigns;
+    value* cnt_register_saves;
+    value* cnt_label_jumps;
 };
 
 struct machine {

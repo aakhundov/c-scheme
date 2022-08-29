@@ -152,8 +152,10 @@ static void reset_count_env(value* env, value* table) {
 static void increment_count(value* env, char* name) {
     // increment the name's current count
     map_record* r = env_lookup(env, name, 0);
-    value* count = env_get_value(r);
-    count->number += 1;
+    if (r != NULL) {  // ignore if the name isn't there
+        value* count = env_get_value(r);
+        count->number += 1;
+    }
 }
 
 static void print_counts(value* env, value* table, const char* format) {
@@ -176,12 +178,22 @@ static void print_counts(value* env, value* table, const char* format) {
 }
 
 static void init_stats(machine* m) {
-    m->stats.op_calls = make_count_env(m, m->ops);
-    pool_register_root(m->pool, m->stats.op_calls);
+    m->stats.cnt_op_calls = make_count_env(m, m->ops);
+    m->stats.cnt_register_assigns = make_count_env(m, m->registers);
+    m->stats.cnt_register_saves = make_count_env(m, m->registers);
+    m->stats.cnt_label_jumps = make_count_env(m, m->labels);
+
+    pool_register_root(m->pool, m->stats.cnt_op_calls);
+    pool_register_root(m->pool, m->stats.cnt_register_assigns);
+    pool_register_root(m->pool, m->stats.cnt_register_saves);
+    pool_register_root(m->pool, m->stats.cnt_label_jumps);
 }
 
 static void cleanup_stats(machine* m) {
-    pool_unregister_root(m->pool, m->stats.op_calls);
+    pool_unregister_root(m->pool, m->stats.cnt_op_calls);
+    pool_unregister_root(m->pool, m->stats.cnt_register_assigns);
+    pool_unregister_root(m->pool, m->stats.cnt_register_saves);
+    pool_unregister_root(m->pool, m->stats.cnt_label_jumps);
 }
 
 static void reset_stats(machine* m) {
@@ -208,7 +220,10 @@ static void reset_stats(machine* m) {
 
     s->flag = 0;
 
-    reset_count_env(m->stats.op_calls, m->ops);
+    reset_count_env(m->stats.cnt_op_calls, m->ops);
+    reset_count_env(m->stats.cnt_register_assigns, m->registers);
+    reset_count_env(m->stats.cnt_register_saves, m->registers);
+    reset_count_env(m->stats.cnt_label_jumps, m->labels);
 }
 
 static value* make_args(machine* m, value* arg_list) {
@@ -528,13 +543,17 @@ static void execute_assign(machine* m, value* inst) {
     // advance the pc
     m->pc = m->pc->cdr;
 
-    if (m->trace >= TRACE_DETAILS) {
+    if (m->trace >= TRACE_SUMMARY) {
         m->stats.num_inst_assign += 1;
+
+        if (m->trace >= TRACE_COUNTS) {
+            increment_count(m->stats.cnt_register_assigns, dst_reg->cdr->symbol);
+        }
     }
 }
 
 static void execute_call(machine* m, value* inst) {
-    value* dst = inst->car;        // dst register (if any)
+    value* dst_reg = inst->car;    // dst register (if any)
     value* op = inst->cdr->car;    // op record (pointer . name)
     value* args = inst->cdr->cdr;  // op's args
 
@@ -546,19 +565,23 @@ static void execute_call(machine* m, value* inst) {
         m->val->car = result;
         m->pc = NULL;
     } else {
-        if (dst != NULL) {
+        if (dst_reg != NULL) {
             // set the register from the result
-            dst->car = result;
+            dst_reg->car = result;
         }
         // advance the pc
         m->pc = m->pc->cdr;
     }
 
-    if (m->trace >= TRACE_DETAILS) {
+    if (m->trace >= TRACE_SUMMARY) {
         m->stats.num_inst_call += 1;
 
-        if (m->trace >= TRACE_OP_CALLS) {
-            increment_count(m->stats.op_calls, op->cdr->symbol);
+        if (m->trace >= TRACE_COUNTS) {
+            increment_count(m->stats.cnt_op_calls, op->cdr->symbol);
+
+            if (dst_reg != NULL) {
+                increment_count(m->stats.cnt_register_assigns, dst_reg->cdr->symbol);
+            }
         }
     }
 }
@@ -583,20 +606,19 @@ static void execute_branch(machine* m, value* inst) {
         m->pc = m->pc->cdr;
     }
 
-    if (m->trace >= TRACE_DETAILS) {
+    if (m->trace >= TRACE_SUMMARY) {
         m->stats.num_inst_branch += 1;
 
-        if (m->trace >= TRACE_OP_CALLS) {
-            increment_count(m->stats.op_calls, op->cdr->symbol);
+        if (m->trace >= TRACE_COUNTS) {
+            increment_count(m->stats.cnt_op_calls, op->cdr->symbol);
 
-            if (m->trace >= TRACE_INSTRUCTIONS) {
-                if (m->pc == NULL) {
-                    m->stats.flag = -1;
-                } else if (value_is_true(result)) {
-                    m->stats.flag = 1;
-                } else {
-                    m->stats.flag = 0;
-                }
+            if (m->pc == NULL) {
+                m->stats.flag = -1;
+            } else if (value_is_true(result)) {
+                m->stats.flag = 1;
+                increment_count(m->stats.cnt_label_jumps, label->cdr->symbol);
+            } else {
+                m->stats.flag = 0;
             }
         }
     }
@@ -608,13 +630,18 @@ static void execute_goto(machine* m, value* inst) {
     // jump to the target register or label
     m->pc = target->car;
 
-    if (m->trace >= TRACE_DETAILS) {
+    if (m->trace >= TRACE_SUMMARY) {
         m->stats.num_inst_goto += 1;
+
+        if (m->trace >= TRACE_COUNTS) {
+            // the count will be incremented if the target is a label
+            increment_count(m->stats.cnt_label_jumps, target->cdr->symbol);
+        }
     }
 }
 
 static void execute_save(machine* m, value* inst) {
-    value* src = inst;
+    value* src_reg = inst;
 
     if (m->stats.stack_depth >= MAX_STACK_VALUES) {
         // return and error and halt the program
@@ -622,30 +649,34 @@ static void execute_save(machine* m, value* inst) {
         m->pc = NULL;
     } else {
         // push the src register to the stack
-        push_to_stack(m, src->car);
+        push_to_stack(m, src_reg->car);
         m->stats.stack_depth += 1;
         // advance the pc
         m->pc = m->pc->cdr;
     }
 
-    if (m->trace >= TRACE_DETAILS) {
+    if (m->trace >= TRACE_SUMMARY) {
         m->stats.num_inst_save += 1;
         if (m->stats.stack_depth > m->stats.stack_depth_max) {
             m->stats.stack_depth_max = m->stats.stack_depth;
+        }
+
+        if (m->trace >= TRACE_COUNTS) {
+            increment_count(m->stats.cnt_register_saves, src_reg->cdr->symbol);
         }
     }
 }
 
 static void execute_restore(machine* m, value* inst) {
-    value* dst = inst;
+    value* dst_reg = inst;
 
     // pop the src register from the stack
-    dst->car = pop_from_stack(m);
+    dst_reg->car = pop_from_stack(m);
     m->stats.stack_depth -= 1;
     // advance the pc
     m->pc = m->pc->cdr;
 
-    if (m->trace >= TRACE_DETAILS) {
+    if (m->trace >= TRACE_SUMMARY) {
         m->stats.num_inst_restore += 1;
     }
 }
@@ -728,8 +759,11 @@ static void trace_report(machine* m) {
         printf(row, "time, seconds", execution_time);
         printf(row, "memory, values", execution_memory);
         printf("%s", line);
+        printf("\n");
 
-        if (m->trace >= TRACE_DETAILS) {
+        if (m->trace >= TRACE_SUMMARY) {
+            printf("%s", line);
+
             printf(header, "INSTRUCTIONS");
             printf("%s", line);
             printf(row, "total", s->num_inst);
@@ -754,16 +788,35 @@ static void trace_report(machine* m) {
             printf(row, "before", s->garbage_before);
             printf(row, "after", s->garbage_after);
             printf("%s", line);
+
+            printf("\n");
         }
 
-        if (m->trace >= TRACE_OP_CALLS) {
+        if (m->trace >= TRACE_COUNTS) {
+            printf("%s", line);
+
             printf(header, "OP CALLS");
             printf("%s", line);
-            print_counts(m->stats.op_calls, m->ops, row);
+            print_counts(m->stats.cnt_op_calls, m->ops, row);
             printf("%s", line);
-        }
 
-        printf("\n");
+            printf(header, "REGISTER ASSIGNS");
+            printf("%s", line);
+            print_counts(m->stats.cnt_register_assigns, m->registers, row);
+            printf("%s", line);
+
+            printf(header, "REGISTER SAVES");
+            printf("%s", line);
+            print_counts(m->stats.cnt_register_saves, m->registers, row);
+            printf("%s", line);
+
+            printf(header, "LABEL JUMPS");
+            printf("%s", line);
+            print_counts(m->stats.cnt_label_jumps, m->labels, row);
+            printf("%s", line);
+
+            printf("\n");
+        }
     }
 }
 
