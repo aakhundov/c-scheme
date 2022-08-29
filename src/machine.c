@@ -129,7 +129,8 @@ static void stats_reset(machine_stats* s) {
 
     s->garbage_before = 0;
     s->garbage_after = 0;
-    s->garbage_collected = 0;
+    s->garbage_collected_times = 0;
+    s->garbage_collected_values = 0;
 
     s->flag = 0;
 }
@@ -629,7 +630,7 @@ static void trace_report(machine* m) {
 
     if (m->trace >= TRACE_BASIC) {
         int execution_time = (int)s.end_time - (int)s.start_time;
-        int execution_memory = (int)s.garbage_after - (int)s.garbage_before + (int)s.garbage_collected;
+        int execution_memory = (int)s.garbage_after - (int)s.garbage_before + (int)s.garbage_collected_values;
 
         printf("execution:\n");
         printf("  - time: %d seconds\n", execution_time);
@@ -653,7 +654,8 @@ static void trace_report(machine* m) {
             printf("\n");
 
             printf("garbage:\n");
-            printf("  - collected: %zu\n", s.garbage_collected);
+            printf("  - collected times: %zu\n", s.garbage_collected_times);
+            printf("  - collected values: %zu\n", s.garbage_collected_values);
             printf("  - before: %zu\n", s.garbage_before);
             printf("  - after: %zu\n", s.garbage_after);
             printf("\n");
@@ -699,7 +701,8 @@ static void execute_next_instruction(machine* m) {
         pool_collect_garbage(m->pool);
 
         if (m->trace >= TRACE_BASIC) {
-            m->stats.garbage_collected += (before - m->pool->size);
+            m->stats.garbage_collected_times += 1;
+            m->stats.garbage_collected_values += (before - m->pool->size);
         }
     }
 }

@@ -33,7 +33,8 @@ struct machine_stats {
 
     size_t garbage_before;
     size_t garbage_after;
-    size_t garbage_collected;
+    size_t garbage_collected_times;
+    size_t garbage_collected_values;
 
     int flag;
 };
