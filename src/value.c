@@ -289,7 +289,7 @@ void value_cleanup(value* v) {
 }
 
 static void break_value_cycles(value* v) {
-    if (v != NULL) {
+    while (v != NULL) {
         v->gen = -2;
         if (is_compound_type(v->type)) {
             if (v->car != NULL && v->car->gen == -2) {
@@ -303,8 +303,10 @@ static void break_value_cycles(value* v) {
                 // break the cycle
                 v->cdr = NULL;
             } else {
-                break_value_cycles(v->cdr);
+                v = v->cdr;
             }
+        } else {
+            break;
         }
     }
 }
