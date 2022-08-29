@@ -758,6 +758,7 @@ static void trace_report(machine* m) {
         printf("%s", line);
         printf(row, "time, seconds", execution_time);
         printf(row, "memory, values", execution_memory);
+        printf(row, "instructions", s->num_inst);
         printf("%s", line);
         printf("\n");
 
@@ -766,7 +767,6 @@ static void trace_report(machine* m) {
 
             printf(header, "INSTRUCTIONS");
             printf("%s", line);
-            printf(row, "total", s->num_inst);
             printf(row, "assign", s->num_inst_assign);
             printf(row, "call", s->num_inst_call);
             printf(row, "branch", s->num_inst_branch);
