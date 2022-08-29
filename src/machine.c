@@ -7,6 +7,7 @@
 #include <time.h>
 
 #include "const.h"
+#include "env.h"
 #include "pool.h"
 #include "value.h"
 
@@ -34,9 +35,17 @@ static value* get_or_create_record(machine* m, value* table, char* name) {
         pair = pair->cdr;
     }
 
-    key = pool_new_symbol(m->pool, name);                     // new key
-    record = pool_new_pair(m->pool, NULL, key);               // NULL value
-    table->cdr = pool_new_pair(m->pool, record, table->cdr);  // add to the table
+    // find the previous pair in the
+    // lexicographic order wrt. the name
+    value* prev = table;
+    while (prev->cdr != NULL && strcmp(prev->cdr->car->cdr->symbol, name) < 0) {
+        // the record's key is "less" than the name
+        prev = prev->cdr;
+    }
+
+    key = pool_new_symbol(m->pool, name);                   // new key
+    record = pool_new_pair(m->pool, NULL, key);             // NULL value
+    prev->cdr = pool_new_pair(m->pool, record, prev->cdr);  // add to the table
 
     return record;
 }
@@ -107,13 +116,77 @@ static value* call_op(machine* m, value* op, value* args) {
     return result;
 }
 
-static void stats_init(machine_stats* s) {
+static value* make_count_env(machine* m, value* table) {
+    value* env = pool_new_env(m->pool);
+
+    value* pair = table->cdr;
+    while (pair != NULL) {
+        value* record = pair->car;
+        value* name = record->cdr;
+
+        // initialize each name's count to zero
+        value* count = pool_new_number(m->pool, 0);
+        env_add_value(env, name->symbol, count, m->pool);
+
+        pair = pair->cdr;
+    }
+
+    return env;
 }
 
-static void stats_cleanup(machine_stats* s) {
+static void reset_count_env(value* env, value* table) {
+    value* pair = table->cdr;
+    while (pair != NULL) {
+        value* record = pair->car;
+        value* name = record->cdr;
+
+        // reset each name's count to zero
+        map_record* r = env_lookup(env, name->symbol, 0);
+        value* count = env_get_value(r);
+        count->number = 0;
+
+        pair = pair->cdr;
+    }
 }
 
-static void stats_reset(machine_stats* s) {
+static void increment_count(value* env, char* name) {
+    // increment the name's current count
+    map_record* r = env_lookup(env, name, 0);
+    value* count = env_get_value(r);
+    count->number += 1;
+}
+
+static void print_counts(value* env, value* table, const char* format) {
+    value* pair = table->cdr;
+    while (pair != NULL) {
+        value* record = pair->car;
+        value* name = record->cdr;
+
+        // retrieve the name's current count
+        map_record* r = env_lookup(env, name->symbol, 0);
+        value* count = env_get_value(r);
+
+        if (count->number > 0) {
+            // print only if the count is positive
+            printf(format, name->symbol, (long)count->number);
+        }
+
+        pair = pair->cdr;
+    }
+}
+
+static void init_stats(machine* m) {
+    m->stats.op_calls = make_count_env(m, m->ops);
+    pool_register_root(m->pool, m->stats.op_calls);
+}
+
+static void cleanup_stats(machine* m) {
+    pool_unregister_root(m->pool, m->stats.op_calls);
+}
+
+static void reset_stats(machine* m) {
+    machine_stats* s = &m->stats;
+
     s->start_time = 0;
     s->end_time = 0;
 
@@ -134,6 +207,8 @@ static void stats_reset(machine_stats* s) {
     s->garbage_collected_values = 0;
 
     s->flag = 0;
+
+    reset_count_env(m->stats.op_calls, m->ops);
 }
 
 static value* make_args(machine* m, value* arg_list) {
@@ -481,6 +556,10 @@ static void execute_call(machine* m, value* inst) {
 
     if (m->trace >= TRACE_DETAILS) {
         m->stats.num_inst_call += 1;
+
+        if (m->trace >= TRACE_OP_CALLS) {
+            increment_count(m->stats.op_calls, op->cdr->symbol);
+        }
     }
 }
 
@@ -507,13 +586,17 @@ static void execute_branch(machine* m, value* inst) {
     if (m->trace >= TRACE_DETAILS) {
         m->stats.num_inst_branch += 1;
 
-        if (m->trace >= TRACE_INSTRUCTIONS) {
-            if (m->pc == NULL) {
-                m->stats.flag = -1;
-            } else if (value_is_true(result)) {
-                m->stats.flag = 1;
-            } else {
-                m->stats.flag = 0;
+        if (m->trace >= TRACE_OP_CALLS) {
+            increment_count(m->stats.op_calls, op->cdr->symbol);
+
+            if (m->trace >= TRACE_INSTRUCTIONS) {
+                if (m->pc == NULL) {
+                    m->stats.flag = -1;
+                } else if (value_is_true(result)) {
+                    m->stats.flag = 1;
+                } else {
+                    m->stats.flag = 0;
+                }
             }
         }
     }
@@ -627,17 +710,17 @@ static void trace_after_inst(machine* m, value* line, value* instruction) {
 }
 
 static void trace_report(machine* m) {
-    machine_stats s = m->stats;
-
     if (m->trace >= TRACE_GENERAL) {
-        static const char* line = "\x1B[34m+----------------------+-----------------+\x1B[0m\n";
-        static const char* header = "\x1B[34m|\x1B[0m %-38s \x1B[34m|\x1B[0m\n";
-        static const char* row = "\x1B[34m|\x1B[0m %-20s \x1B[34m|\x1B[0m %'15ld \x1B[34m|\x1B[0m\n";
+        machine_stats* s = &m->stats;
+
+        static const char* line = "\x1B[34m+---------------------------+-----------------+\x1B[0m\n";
+        static const char* header = "\x1B[34m|\x1B[0m %-43s \x1B[34m|\x1B[0m\n";
+        static const char* row = "\x1B[34m|\x1B[0m %-25.25s \x1B[34m|\x1B[0m %'15ld \x1B[34m|\x1B[0m\n";
 
         setlocale(LC_ALL, "");
 
-        long execution_time = s.end_time - s.start_time;
-        long execution_memory = s.garbage_after - s.garbage_before + s.garbage_collected_values;
+        long execution_time = s->end_time - s->start_time;
+        long execution_memory = s->garbage_after - s->garbage_before + s->garbage_collected_values;
 
         printf("%s", line);
         printf(header, "GENERAL");
@@ -649,27 +732,34 @@ static void trace_report(machine* m) {
         if (m->trace >= TRACE_DETAILS) {
             printf(header, "INSTRUCTIONS");
             printf("%s", line);
-            printf(row, "total", s.num_inst);
-            printf(row, "assign", s.num_inst_assign);
-            printf(row, "call", s.num_inst_call);
-            printf(row, "branch", s.num_inst_branch);
-            printf(row, "goto", s.num_inst_goto);
-            printf(row, "save", s.num_inst_save);
-            printf(row, "restore", s.num_inst_restore);
+            printf(row, "total", s->num_inst);
+            printf(row, "assign", s->num_inst_assign);
+            printf(row, "call", s->num_inst_call);
+            printf(row, "branch", s->num_inst_branch);
+            printf(row, "goto", s->num_inst_goto);
+            printf(row, "save", s->num_inst_save);
+            printf(row, "restore", s->num_inst_restore);
             printf("%s", line);
 
             printf(header, "STACK");
             printf("%s", line);
-            printf(row, "final depth", s.stack_depth);
-            printf(row, "maximum depth", s.stack_depth_max);
+            printf(row, "final depth", s->stack_depth);
+            printf(row, "maximum depth", s->stack_depth_max);
             printf("%s", line);
 
             printf(header, "GARBAGE");
             printf("%s", line);
-            printf(row, "collected times", s.garbage_collected_times);
-            printf(row, "collected values", s.garbage_collected_values);
-            printf(row, "before", s.garbage_before);
-            printf(row, "after", s.garbage_after);
+            printf(row, "collected times", s->garbage_collected_times);
+            printf(row, "collected values", s->garbage_collected_values);
+            printf(row, "before", s->garbage_before);
+            printf(row, "after", s->garbage_after);
+            printf("%s", line);
+        }
+
+        if (m->trace >= TRACE_OP_CALLS) {
+            printf(header, "OP CALLS");
+            printf("%s", line);
+            print_counts(m->stats.op_calls, m->ops, row);
             printf("%s", line);
         }
 
@@ -729,7 +819,7 @@ machine* machine_new(value* code, char* output_register_name) {
     pool_register_root(m->pool, m->root);
     process_code(m, code);
 
-    stats_init(&m->stats);
+    init_stats(m);
 
     m->stop = 0;
     m->trace = 0;
@@ -738,7 +828,7 @@ machine* machine_new(value* code, char* output_register_name) {
 }
 
 void machine_dispose(machine* m) {
-    stats_cleanup(&m->stats);
+    cleanup_stats(m);
     pool_unregister_root(m->pool, m->root);
     pool_dispose(m->pool);
 
@@ -775,7 +865,7 @@ value* machine_export_output(machine* m) {
 
 void machine_run(machine* m) {
     clear_stack(m);
-    stats_reset(&m->stats);
+    reset_stats(m);
 
     if (m->trace >= TRACE_GENERAL) {
         m->stats.start_time = (size_t)time(NULL);

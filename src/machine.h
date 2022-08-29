@@ -12,7 +12,8 @@ typedef enum {
     TRACE_OFF = 0,
     TRACE_GENERAL = 1,
     TRACE_DETAILS = 2,
-    TRACE_INSTRUCTIONS = 3,
+    TRACE_OP_CALLS = 3,
+    TRACE_INSTRUCTIONS = 4,
     TRACE_ALL = 10,
 } machine_trace_level;
 
@@ -37,6 +38,8 @@ struct machine_stats {
     long garbage_collected_values;
 
     int flag;
+
+    value* op_calls;
 };
 
 struct machine {

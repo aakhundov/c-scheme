@@ -73,7 +73,7 @@ static command_type get_command_type(char* line) {
     for (size_t i = 0; i < num_command_types; i++) {
         for (size_t j = 0; j < command_counts[i]; j++) {
             const char* cmd = commands[i][j];
-            if (cmd[0] == '*' && strncmp(line, cmd + 1, strlen(cmd)) == 0) {
+            if (cmd[0] == '*' && strncmp(line, cmd + 1, strlen(cmd + 1)) == 0) {
                 return i;
             } else if (strcmp(line, cmd) == 0) {
                 return i;
