@@ -302,6 +302,7 @@ static void break_value_cycles(value* v) {
             if (v->cdr != NULL && v->cdr->gen == -2) {
                 // break the cycle
                 v->cdr = NULL;
+                break;
             } else {
                 v = v->cdr;
             }
