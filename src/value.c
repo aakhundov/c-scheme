@@ -254,11 +254,13 @@ char* get_type_name(value_type t) {
 }
 
 void value_update_gen(value* v, size_t gen) {
-    if (v != NULL && v->gen != gen) {
+    while (v != NULL && v->gen != gen) {
         v->gen = gen;
         if (is_compound_type(v->type)) {
             value_update_gen(v->car, gen);
-            value_update_gen(v->cdr, gen);
+            v = v->cdr;
+        } else {
+            break;
         }
     }
 }
