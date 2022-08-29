@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "const.h"
 #include "pool.h"
@@ -76,12 +77,6 @@ static void create_backbone(machine* m, char* output_register_name) {
 static void push_to_stack(machine* m, value* v) {
     // add a new record to the stack with the value as car
     m->stack->cdr = pool_new_pair(m->pool, v, m->stack->cdr);
-
-    m->stats.num_inst_stack += 1;
-    m->stats.stack_depth += 1;
-    if (m->stats.stack_depth > m->stats.stack_depth_max) {
-        m->stats.stack_depth_max = m->stats.stack_depth;
-    }
 }
 
 static value* pop_from_stack(machine* m) {
@@ -90,15 +85,11 @@ static value* pop_from_stack(machine* m) {
     value* v = m->stack->cdr->car;       // pop the value
     m->stack->cdr = m->stack->cdr->cdr;  // evict the record
 
-    m->stats.num_inst_stack += 1;
-    m->stats.stack_depth -= 1;
-
     return v;
 }
 
 static void clear_stack(machine* m) {
     m->stack->cdr = NULL;
-    m->stats.stack_depth = 0;
 }
 
 static value* call_op(machine* m, value* op, value* args) {
@@ -112,19 +103,35 @@ static value* call_op(machine* m, value* op, value* args) {
         result = ((builtin)op->car->ptr)(m, args);
     }
 
-    m->stats.num_inst_op_call += 1;
-
     return result;
 }
 
-static void reset_stats(machine* m) {
-    m->stats.num_inst = 0;
-    m->stats.num_inst_stack = 0;
-    m->stats.num_inst_op_call = 0;
-    m->stats.stack_depth = 0;
-    m->stats.stack_depth_max = 0;
-    m->stats.garbage_before = 0;
-    m->stats.garbage_after = 0;
+static void stats_init(machine_stats* s) {
+}
+
+static void stats_cleanup(machine_stats* s) {
+}
+
+static void stats_reset(machine_stats* s) {
+    s->start_time = 0;
+    s->end_time = 0;
+
+    s->num_inst = 0;
+    s->num_inst_assign = 0;
+    s->num_inst_call = 0;
+    s->num_inst_goto = 0;
+    s->num_inst_branch = 0;
+    s->num_inst_save = 0;
+    s->num_inst_restore = 0;
+
+    s->stack_depth = 0;
+    s->stack_depth_max = 0;
+
+    s->garbage_before = 0;
+    s->garbage_after = 0;
+    s->garbage_collected = 0;
+
+    s->flag = 0;
 }
 
 static value* make_args(machine* m, value* arg_list) {
@@ -443,6 +450,10 @@ static void execute_assign(machine* m, value* inst) {
     dst_reg->car = src->car;
     // advance the pc
     m->pc = m->pc->cdr;
+
+    if (m->trace >= TRACE_DETAILS) {
+        m->stats.num_inst_assign += 1;
+    }
 }
 
 static void execute_call(machine* m, value* inst) {
@@ -465,6 +476,10 @@ static void execute_call(machine* m, value* inst) {
         // advance the pc
         m->pc = m->pc->cdr;
     }
+
+    if (m->trace >= TRACE_DETAILS) {
+        m->stats.num_inst_call += 1;
+    }
 }
 
 static void execute_branch(machine* m, value* inst) {
@@ -477,17 +492,28 @@ static void execute_branch(machine* m, value* inst) {
     if (result != NULL && result->type == VALUE_ERROR) {
         // set the output register to the error
         // and halt immediately
-        m->stats.flag = -1;
         m->val->car = result;
         m->pc = NULL;
     } else if (value_is_true(result)) {
         // jump to the label
-        m->stats.flag = 1;
         m->pc = label->car;
     } else {
         // advance the pc
-        m->stats.flag = 0;
         m->pc = m->pc->cdr;
+    }
+
+    if (m->trace >= TRACE_DETAILS) {
+        m->stats.num_inst_branch += 1;
+
+        if (m->trace >= TRACE_INSTRUCTIONS) {
+            if (m->pc == NULL) {
+                m->stats.flag = -1;
+            } else if (value_is_true(result)) {
+                m->stats.flag = 1;
+            } else {
+                m->stats.flag = 0;
+            }
+        }
     }
 }
 
@@ -496,14 +522,16 @@ static void execute_goto(machine* m, value* inst) {
 
     // jump to the target register or label
     m->pc = target->car;
+
+    if (m->trace >= TRACE_DETAILS) {
+        m->stats.num_inst_goto += 1;
+    }
 }
 
 static void execute_save(machine* m, value* inst) {
     value* src = inst;
 
     if (m->stats.stack_depth >= MAX_STACK_VALUES) {
-        // clear the stack
-        clear_stack(m);
         // return and error and halt the program
         m->val->car = pool_new_error(m->pool, "stack limit exceeded");
         m->pc = NULL;
@@ -512,6 +540,14 @@ static void execute_save(machine* m, value* inst) {
         push_to_stack(m, src->car);
         // advance the pc
         m->pc = m->pc->cdr;
+    }
+
+    if (m->trace >= TRACE_DETAILS) {
+        m->stats.num_inst_save += 1;
+        m->stats.stack_depth += 1;
+        if (m->stats.stack_depth > m->stats.stack_depth_max) {
+            m->stats.stack_depth_max = m->stats.stack_depth;
+        }
     }
 }
 
@@ -522,6 +558,11 @@ static void execute_restore(machine* m, value* inst) {
     dst->car = pop_from_stack(m);
     // advance the pc
     m->pc = m->pc->cdr;
+
+    if (m->trace >= TRACE_DETAILS) {
+        m->stats.num_inst_restore += 1;
+        m->stats.stack_depth -= 1;
+    }
 }
 
 // array of execution functions for quick dispatch
@@ -534,15 +575,17 @@ static void (*execution_fns[])(machine*, value*) = {
     execute_restore,
 };
 
-static void trace_before(machine* m, value* line, value* instruction) {
+static void trace_before_inst(machine* m, value* line, value* instruction) {
     static char message[BUFFER_SIZE];
+
     // print the instrumented line
     value_to_str(line, message);
     printf("\x1B[34m%05zu\x1B[0m %s", m->stats.num_inst, message);
 }
 
-static void trace_after(machine* m, value* line, value* instruction) {
+static void trace_after_inst(machine* m, value* line, value* instruction) {
     static char message[BUFFER_SIZE];
+
     switch ((int)instruction->car->number) {
         case INST_ASSIGN:
             // print the destination register's content
@@ -552,6 +595,7 @@ static void trace_after(machine* m, value* line, value* instruction) {
                 // print the destination register's content
                 value_to_str(instruction->cdr->car->car, message);
             } else {
+                // print nothing
                 message[0] = '\0';
             }
             break;
@@ -569,6 +613,7 @@ static void trace_after(machine* m, value* line, value* instruction) {
             value_to_str(instruction->cdr->car, message);
             break;
         default:
+            // print nothing
             message[0] = '\0';
     }
 
@@ -579,25 +624,46 @@ static void trace_after(machine* m, value* line, value* instruction) {
     }
 }
 
-static void report_stats(machine* m) {
+static void trace_report(machine* m) {
     machine_stats s = m->stats;
 
-    printf("\n");
-    printf("instructions:\n");
-    printf("  - total: %zu\n", s.num_inst);
-    printf("  - op calls: %zu\n", s.num_inst_op_call);
-    printf("  - stack: %zu\n", s.num_inst_stack);
-    printf("stack:\n");
-    printf("  - final depth: %zu\n", s.stack_depth);
-    printf("  - maximum depth: %zu\n", s.stack_depth_max);
-    printf("garbage:\n");
-    printf("  - # of values: %zu\n", m->pool->size);
-    printf("\n");
+    if (m->trace >= TRACE_BASIC) {
+        int execution_time = (int)s.end_time - (int)s.start_time;
+        int execution_memory = (int)s.garbage_after - (int)s.garbage_before + (int)s.garbage_collected;
+
+        printf("execution:\n");
+        printf("  - time: %d seconds\n", execution_time);
+        printf("  - memory: %d values\n", execution_memory);
+        printf("\n");
+
+        if (m->trace >= TRACE_DETAILS) {
+            printf("instructions:\n");
+            printf("  - total: %zu\n", s.num_inst);
+            printf("  - assign: %zu\n", s.num_inst_assign);
+            printf("  - call: %zu\n", s.num_inst_call);
+            printf("  - branch: %zu\n", s.num_inst_branch);
+            printf("  - goto: %zu\n", s.num_inst_goto);
+            printf("  - save: %zu\n", s.num_inst_save);
+            printf("  - restore: %zu\n", s.num_inst_restore);
+            printf("\n");
+
+            printf("stack:\n");
+            printf("  - final depth: %zu\n", s.stack_depth);
+            printf("  - maximum depth: %zu\n", s.stack_depth_max);
+            printf("\n");
+
+            printf("garbage:\n");
+            printf("  - collected: %zu\n", s.garbage_collected);
+            printf("  - before: %zu\n", s.garbage_before);
+            printf("  - after: %zu\n", s.garbage_after);
+            printf("\n");
+        }
+    }
 }
 
 static void execute_next_instruction(machine* m) {
     value* instruction = m->pc->car->car;  // current instruction
-    value* line = m->pc->car->cdr;         // current line of code
+    value* line = NULL;
 
     if (m->stop) {
         m->val->car = pool_new_error(m->pool, "keyboard interrupt");
@@ -605,24 +671,36 @@ static void execute_next_instruction(machine* m) {
         return;
     }
 
-    m->stats.num_inst += 1;
+    if (m->trace >= TRACE_BASIC) {
+        m->stats.num_inst += 1;
 
-    if (m->trace >= TRACE_ALL) {
-        trace_before(m, line, instruction);
+        if (m->trace >= TRACE_INSTRUCTIONS) {
+            line = m->pc->car->cdr;
+            trace_before_inst(m, line, instruction);
+        }
     }
 
     instruction_type type = (int)instruction->car->number;
     execution_fns[type](m, instruction->cdr);
 
-    if (m->trace >= TRACE_ALL) {
-        trace_after(m, line, instruction);
+    if (m->trace >= TRACE_INSTRUCTIONS) {
+        trace_after_inst(m, line, instruction);
     }
 
     if (m->pool->size >= MAX_GARBAGE_VALUES) {
+        size_t before;
+        if (m->trace >= TRACE_BASIC) {
+            before = m->pool->size;
+        }
+
         // interim garbage collection:
-        // can be inefficient if much
-        // of the garbage is needed
+        // can be inefficient if many
+        // of the values are in use
         pool_collect_garbage(m->pool);
+
+        if (m->trace >= TRACE_BASIC) {
+            m->stats.garbage_collected += (before - m->pool->size);
+        }
     }
 }
 
@@ -634,6 +712,8 @@ machine* machine_new(value* code, char* output_register_name) {
     pool_register_root(m->pool, m->root);
     process_code(m, code);
 
+    stats_init(&m->stats);
+
     m->stop = 0;
     m->trace = 0;
 
@@ -641,6 +721,7 @@ machine* machine_new(value* code, char* output_register_name) {
 }
 
 void machine_dispose(machine* m) {
+    stats_cleanup(&m->stats);
     pool_unregister_root(m->pool, m->root);
     pool_dispose(m->pool);
 
@@ -676,8 +757,13 @@ value* machine_export_output(machine* m) {
 }
 
 void machine_run(machine* m) {
-    reset_stats(m);
     clear_stack(m);
+    stats_reset(&m->stats);
+
+    if (m->trace >= TRACE_BASIC) {
+        m->stats.start_time = (size_t)time(NULL);
+        m->stats.garbage_before = m->pool->size;
+    }
 
     m->stop = 0;
     m->pc = m->code->cdr;
@@ -685,8 +771,15 @@ void machine_run(machine* m) {
         execute_next_instruction(m);
     }
 
-    if (m->trace >= TRACE_SUMMARY) {
-        report_stats(m);
+    if (m->trace >= TRACE_BASIC) {
+        m->stats.end_time = (size_t)time(NULL);
+        m->stats.garbage_after = m->pool->size;
+
+        if (m->trace >= TRACE_INSTRUCTIONS) {
+            printf("\n");
+        }
+
+        trace_report(m);
     }
 }
 

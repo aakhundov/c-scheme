@@ -10,18 +10,30 @@ typedef value* (*builtin)(machine* m, value* args);
 
 typedef enum {
     TRACE_OFF = 0,
-    TRACE_SUMMARY = 1,
-    TRACE_ALL = 10
+    TRACE_BASIC = 1,
+    TRACE_DETAILS = 2,
+    TRACE_INSTRUCTIONS = 3,
+    TRACE_ALL = 10,
 } machine_trace_level;
 
 struct machine_stats {
+    size_t start_time;
+    size_t end_time;
+
     size_t num_inst;
-    size_t num_inst_stack;
-    size_t num_inst_op_call;
+    size_t num_inst_assign;
+    size_t num_inst_call;
+    size_t num_inst_goto;
+    size_t num_inst_branch;
+    size_t num_inst_save;
+    size_t num_inst_restore;
+
     size_t stack_depth;
     size_t stack_depth_max;
+
     size_t garbage_before;
     size_t garbage_after;
+    size_t garbage_collected;
 
     int flag;
 };
