@@ -538,13 +538,13 @@ static void execute_save(machine* m, value* inst) {
     } else {
         // push the src register to the stack
         push_to_stack(m, src->car);
+        m->stats.stack_depth += 1;
         // advance the pc
         m->pc = m->pc->cdr;
     }
 
     if (m->trace >= TRACE_DETAILS) {
         m->stats.num_inst_save += 1;
-        m->stats.stack_depth += 1;
         if (m->stats.stack_depth > m->stats.stack_depth_max) {
             m->stats.stack_depth_max = m->stats.stack_depth;
         }
@@ -556,12 +556,12 @@ static void execute_restore(machine* m, value* inst) {
 
     // pop the src register from the stack
     dst->car = pop_from_stack(m);
+    m->stats.stack_depth -= 1;
     // advance the pc
     m->pc = m->pc->cdr;
 
     if (m->trace >= TRACE_DETAILS) {
         m->stats.num_inst_restore += 1;
-        m->stats.stack_depth -= 1;
     }
 }
 
