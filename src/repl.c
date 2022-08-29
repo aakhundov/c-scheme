@@ -22,11 +22,11 @@ typedef enum {
     COMMAND_OTHER = -1
 } command_type;
 
-static const char* exit_commands[] = {"exit", "quit"};
+static const char* exit_commands[] = {"q", "exit", "quit"};
 static const char* clear_commands[] = {"clear", "clr", "clrscr"};
-static const char* trace_commands[] = {"trace "};
+static const char* trace_commands[] = {"*trace"};
 static const char* reset_commands[] = {"reset"};
-static const char* load_commands[] = {"load "};
+static const char* load_commands[] = {"*load"};
 
 static const char** commands[] = {
     exit_commands,
@@ -73,7 +73,9 @@ static command_type get_command_type(char* line) {
     for (size_t i = 0; i < num_command_types; i++) {
         for (size_t j = 0; j < command_counts[i]; j++) {
             const char* cmd = commands[i][j];
-            if (strncmp(line, cmd, strlen(cmd)) == 0) {
+            if (cmd[0] == '*' && strncmp(line, cmd + 1, strlen(cmd)) == 0) {
+                return i;
+            } else if (strcmp(line, cmd) == 0) {
                 return i;
             }
         }
