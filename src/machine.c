@@ -1,6 +1,7 @@
 #include "machine.h"
 
 #include <assert.h>
+#include <locale.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -628,38 +629,51 @@ static void trace_after_inst(machine* m, value* line, value* instruction) {
 static void trace_report(machine* m) {
     machine_stats s = m->stats;
 
-    if (m->trace >= TRACE_BASIC) {
-        int execution_time = (int)s.end_time - (int)s.start_time;
-        int execution_memory = (int)s.garbage_after - (int)s.garbage_before + (int)s.garbage_collected_values;
+    if (m->trace >= TRACE_GENERAL) {
+        static const char* line = "\x1B[34m+----------------------+-----------------+\x1B[0m\n";
+        static const char* header = "\x1B[34m|\x1B[0m %-38s \x1B[34m|\x1B[0m\n";
+        static const char* row = "\x1B[34m|\x1B[0m %-20s \x1B[34m|\x1B[0m %'15ld \x1B[34m|\x1B[0m\n";
 
-        printf("execution:\n");
-        printf("  - time: %d seconds\n", execution_time);
-        printf("  - memory: %d values\n", execution_memory);
-        printf("\n");
+        setlocale(LC_ALL, "");
+
+        long execution_time = s.end_time - s.start_time;
+        long execution_memory = s.garbage_after - s.garbage_before + s.garbage_collected_values;
+
+        printf("%s", line);
+        printf(header, "GENERAL");
+        printf("%s", line);
+        printf(row, "time, seconds", execution_time);
+        printf(row, "memory, values", execution_memory);
+        printf("%s", line);
 
         if (m->trace >= TRACE_DETAILS) {
-            printf("instructions:\n");
-            printf("  - total: %zu\n", s.num_inst);
-            printf("  - assign: %zu\n", s.num_inst_assign);
-            printf("  - call: %zu\n", s.num_inst_call);
-            printf("  - branch: %zu\n", s.num_inst_branch);
-            printf("  - goto: %zu\n", s.num_inst_goto);
-            printf("  - save: %zu\n", s.num_inst_save);
-            printf("  - restore: %zu\n", s.num_inst_restore);
-            printf("\n");
+            printf(header, "INSTRUCTIONS");
+            printf("%s", line);
+            printf(row, "total", s.num_inst);
+            printf(row, "assign", s.num_inst_assign);
+            printf(row, "call", s.num_inst_call);
+            printf(row, "branch", s.num_inst_branch);
+            printf(row, "goto", s.num_inst_goto);
+            printf(row, "save", s.num_inst_save);
+            printf(row, "restore", s.num_inst_restore);
+            printf("%s", line);
 
-            printf("stack:\n");
-            printf("  - final depth: %zu\n", s.stack_depth);
-            printf("  - maximum depth: %zu\n", s.stack_depth_max);
-            printf("\n");
+            printf(header, "STACK");
+            printf("%s", line);
+            printf(row, "final depth", s.stack_depth);
+            printf(row, "maximum depth", s.stack_depth_max);
+            printf("%s", line);
 
-            printf("garbage:\n");
-            printf("  - collected times: %zu\n", s.garbage_collected_times);
-            printf("  - collected values: %zu\n", s.garbage_collected_values);
-            printf("  - before: %zu\n", s.garbage_before);
-            printf("  - after: %zu\n", s.garbage_after);
-            printf("\n");
+            printf(header, "GARBAGE");
+            printf("%s", line);
+            printf(row, "collected times", s.garbage_collected_times);
+            printf(row, "collected values", s.garbage_collected_values);
+            printf(row, "before", s.garbage_before);
+            printf(row, "after", s.garbage_after);
+            printf("%s", line);
         }
+
+        printf("\n");
     }
 }
 
@@ -673,7 +687,7 @@ static void execute_next_instruction(machine* m) {
         return;
     }
 
-    if (m->trace >= TRACE_BASIC) {
+    if (m->trace >= TRACE_GENERAL) {
         m->stats.num_inst += 1;
 
         if (m->trace >= TRACE_INSTRUCTIONS) {
@@ -691,7 +705,7 @@ static void execute_next_instruction(machine* m) {
 
     if (m->pool->size >= MAX_GARBAGE_VALUES) {
         size_t before;
-        if (m->trace >= TRACE_BASIC) {
+        if (m->trace >= TRACE_GENERAL) {
             before = m->pool->size;
         }
 
@@ -700,7 +714,7 @@ static void execute_next_instruction(machine* m) {
         // of the values are in use
         pool_collect_garbage(m->pool);
 
-        if (m->trace >= TRACE_BASIC) {
+        if (m->trace >= TRACE_GENERAL) {
             m->stats.garbage_collected_times += 1;
             m->stats.garbage_collected_values += (before - m->pool->size);
         }
@@ -763,7 +777,7 @@ void machine_run(machine* m) {
     clear_stack(m);
     stats_reset(&m->stats);
 
-    if (m->trace >= TRACE_BASIC) {
+    if (m->trace >= TRACE_GENERAL) {
         m->stats.start_time = (size_t)time(NULL);
         m->stats.garbage_before = m->pool->size;
     }
@@ -774,7 +788,7 @@ void machine_run(machine* m) {
         execute_next_instruction(m);
     }
 
-    if (m->trace >= TRACE_BASIC) {
+    if (m->trace >= TRACE_GENERAL) {
         m->stats.end_time = (size_t)time(NULL);
         m->stats.garbage_after = m->pool->size;
 
