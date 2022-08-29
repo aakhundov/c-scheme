@@ -748,7 +748,7 @@ static void trace_report(machine* m) {
         static const char* header = "\x1B[34m|\x1B[0m %-43s \x1B[34m|\x1B[0m\n";
         static const char* row = "\x1B[34m|\x1B[0m %-25.25s \x1B[34m|\x1B[0m %'15ld \x1B[34m|\x1B[0m\n";
 
-        setlocale(LC_ALL, "");
+        setlocale(LC_ALL, "en_US.UTF-8");
 
         long execution_time = s->end_time - s->start_time;
         long execution_memory = s->garbage_after - s->garbage_before + s->garbage_collected_values;
