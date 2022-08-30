@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,7 +29,19 @@ static char QUOTE_CHAR = '\'';
 static char* QUOTE_SYMBOL = "quote";
 static char* DOT_SYMBOL = ".";
 
-static int parse_token(char* input, value** v);
+static int parse_token(char* input, value** v, size_t* line, size_t* col);
+
+static value* make_parsing_error(size_t* line, size_t* col, char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    value* error = value_new_error_from_args(format, args);
+    va_end(args);
+
+    value* result = value_new_error("%s at %zu:%zu", error->symbol, *line, *col);
+    value_dispose(error);
+
+    return result;
+}
 
 static int is_number(char* symbol) {
     char* running = symbol;
@@ -64,14 +77,14 @@ static int is_number(char* symbol) {
     return digit_seen;
 }
 
-static value* make_number(char* symbol) {
+static value* make_number(char* symbol, size_t* line, size_t* col) {
     errno = 0;
     double result = strtod(symbol, NULL);
 
     if (errno == 0) {
         return value_new_number(result);
     } else {
-        return value_new_error("malformed number: %s", symbol);
+        return make_parsing_error(line, col, "malformed number: %s", symbol);
     }
 }
 
@@ -90,10 +103,15 @@ static value* make_string(char* content) {
     return result;
 }
 
-static int parse_symbol(char* input, value** v) {
+static int parse_symbol(char* input, value** v, size_t* line, size_t* col) {
     char* running = input;
     while (*running != '\0' && strchr(SYMBOL_CHARS, *running)) {
+        if (*running == '\n') {
+            *line += 1;
+            *col = 0;
+        }
         running++;
+        *col += 1;
     }
 
     size_t length = running - input;
@@ -102,7 +120,7 @@ static int parse_symbol(char* input, value** v) {
     symbol[length] = '\0';
 
     if (is_number(symbol)) {
-        *v = make_number(symbol);
+        *v = make_number(symbol, line, col);
     } else {
         *v = value_new_symbol(symbol);
     }
@@ -112,16 +130,23 @@ static int parse_symbol(char* input, value** v) {
     return length;
 }
 
-static int parse_string(char* input, value** v) {
-    char* running = input + 1;
+static int parse_string(char* input, value** v, size_t* line, size_t* col) {
+    char* running = input + 1;  // skip the leading quote
+    *col += 1;                  // leading quote
     while (!(*running == STRING_CHAR && *(running - 1) != '\\')) {
         if (*running == '\0') {
-            *v = value_new_error("unterminated string");
+            *v = make_parsing_error(line, col, "unterminated string");
             return running - input;
         }
+        if (*running == '\n') {
+            *line += 1;
+            *col = 0;
+        }
         running++;
+        *col += 1;
     }
     running++;  // skip the trailing quote
+    *col += 1;  // trailing quote
 
     size_t length = running - input;
     char* string = malloc(length + 1);
@@ -147,6 +172,8 @@ static value** add_child(value** parent, value* child) {
 }
 
 static value* replace_dot_in_list(value* v) {
+    static char buffer[BUFFER_SIZE];
+
     value* prev = NULL;
     value* running = v;
     while (running != NULL) {
@@ -155,13 +182,16 @@ static value* replace_dot_in_list(value* v) {
             strstr(running->car->symbol, DOT_SYMBOL)) {
             value* error = NULL;
             if (running->cdr == NULL) {
-                error = value_new_error("unfollowed %s", DOT_SYMBOL);
+                value_to_str(v, buffer);
+                error = value_new_error("unfollowed %s in %s", DOT_SYMBOL, buffer);
             } else if (running->cdr->cdr != NULL) {
-                error = value_new_error("%s followed by 2+ items", DOT_SYMBOL);
+                value_to_str(v, buffer);
+                error = value_new_error("%s followed by 2+ items in %s", DOT_SYMBOL, buffer);
             } else if (running->cdr->car != NULL &&
                        running->cdr->car->type == VALUE_SYMBOL &&
                        strstr(running->cdr->car->symbol, DOT_SYMBOL)) {
-                error = value_new_error("%s followed by %s", DOT_SYMBOL, DOT_SYMBOL);
+                value_to_str(v, buffer);
+                error = value_new_error("%s followed by %s in %s", DOT_SYMBOL, DOT_SYMBOL, buffer);
             } else if (prev == NULL) {
                 value* next = running->cdr->car;
                 running->cdr->car = NULL;
@@ -192,7 +222,7 @@ static value* replace_dot_in_list(value* v) {
     return v;
 }
 
-static int parse_list(char* input, value** v, char terminal) {
+static int parse_list(char* input, value** v, char terminal, size_t* line, size_t* col) {
     *v = NULL;
 
     value** pair = v;
@@ -200,25 +230,31 @@ static int parse_list(char* input, value** v, char terminal) {
     while (*running != terminal) {
         if (*running == '\0') {
             // non-terminal end of the input
-            value* error = value_new_error("missing %c", terminal);
+            value* error = make_parsing_error(line, col, "missing %c", terminal);
             pair = add_child(pair, error);
             break;
         } else if (strchr(WHITESPACE_CHARS, *running)) {
             // skip all whitespace chars
+            if (*running == '\n') {
+                *line += 1;
+                *col = 0;
+            }
             running++;
+            *col += 1;
         } else if (*running == LIST_CLOSE_CHAR) {
             // non-terminal closing symbol
-            value* error = value_new_error("premature %c", *running);
+            value* error = make_parsing_error(line, col, "premature %c", *running);
             pair = add_child(pair, error);
             break;
         } else if (*running == COMMENT_CHAR) {
             // skip the comment till the end of the line
             while (!strchr("\r\n\0", *running)) {
                 running++;
+                *col += 1;
             }
         } else {
             value* child = NULL;
-            running += parse_token(running, &child);
+            running += parse_token(running, &child, line, col);
             pair = add_child(pair, child);
             if (child != NULL && child->type == VALUE_ERROR) {
                 break;
@@ -234,42 +270,50 @@ static int parse_list(char* input, value** v, char terminal) {
     return running - input;
 }
 
-static int parse_quoted(char* input, value** v) {
+static int parse_quoted(char* input, value** v, size_t* line, size_t* col) {
     char* running = input + 1;  // skip the '
+    *col += 1;                  // the '
     while (*running != '\0' && strchr(WHITESPACE_CHARS, *running)) {
         // skip all whitespaces
+        if (*running == '\n') {
+            *line += 1;
+            *col = 0;
+        }
         running++;
+        *col += 1;
     }
 
     if (*running != '\0') {
         *v = NULL;
 
         value* quoted = NULL;
-        running += parse_token(running, &quoted);
+        running += parse_token(running, &quoted, line, col);
         value* quote = value_new_symbol(QUOTE_SYMBOL);
 
         value** pair = v;
         pair = add_child(pair, quote);
         pair = add_child(pair, quoted);
     } else {
-        *v = value_new_error("unfollowed %c", QUOTE_CHAR);
+        *v = make_parsing_error(line, col, "unfollowed %c", QUOTE_CHAR);
     }
 
     return running - input;
 }
 
-static int parse_token(char* input, value** v) {
+static int parse_token(char* input, value** v, size_t* line, size_t* col) {
     char* running = input;
     if (*input == LIST_OPEN_CHAR) {
-        running += parse_list(running + 1, v, LIST_CLOSE_CHAR) + 2;
+        *col += 1;  // LIST_OPEN_CHAR
+        running += parse_list(running + 1, v, LIST_CLOSE_CHAR, line, col) + 2;
+        *col += 1;  // LIST_CLOSE_CHAR
     } else if (*input == QUOTE_CHAR) {
-        running += parse_quoted(running, v);
+        running += parse_quoted(running, v, line, col);
     } else if (*input == STRING_CHAR) {
-        running += parse_string(running, v);
+        running += parse_string(running, v, line, col);
     } else if (strchr(SYMBOL_CHARS, *running)) {
-        running += parse_symbol(running, v);
+        running += parse_symbol(running, v, line, col);
     } else {
-        *v = value_new_error("unexpected symbol '%c'", *running);
+        *v = make_parsing_error(line, col, "unexpected symbol '%c'", *running);
         // skip to the end of the input
         running += strlen(running);
     }
@@ -296,8 +340,10 @@ value* find_error(value* v) {
 
 value* parse_from_str(char* input) {
     value* result = NULL;
+    size_t line = 1, col = 1;
+
     // parse till the end of the input
-    parse_list(input, &result, '\0');
+    parse_list(input, &result, '\0', &line, &col);
 
     value* error;
     if ((error = find_error(result)) != NULL) {

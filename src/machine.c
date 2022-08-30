@@ -745,7 +745,7 @@ static void trace_report(machine* m) {
         machine_stats* s = &m->stats;
 
         static const char* line = "\x1B[34m+---------------------------+-----------------+\x1B[0m\n";
-        static const char* header = "\x1B[34m|\x1B[0m %-43s \x1B[34m|\x1B[0m\n";
+        static const char* header = "\x1B[34m| %-43s |\x1B[0m\n";
         static const char* row = "\x1B[34m|\x1B[0m %-25.25s \x1B[34m|\x1B[0m %'15ld \x1B[34m|\x1B[0m\n";
 
         setlocale(LC_ALL, "en_US.UTF-8");

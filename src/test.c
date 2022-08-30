@@ -260,18 +260,28 @@ static void test_parse() {
     test_parse_output("'(\"x\" \"y\" \"z\")", "((quote (\"x\" \"y\" \"z\")))");
 
     // parsing errors
-    test_parse_error("(1 2", "missing )");
-    test_parse_error("1 2)", "premature )");
-    test_parse_error("( 1 (2", "missing )");
-    test_parse_error("'", "unfollowed '");
-    test_parse_error("(1 .)", "unfollowed .");
-    test_parse_error("(1 . 2 3)", ". followed by 2+ items");
-    test_parse_error("(1 . .)", ". followed by .");
-    test_parse_error("(. 2 3)", ". followed by 2+ items");
-    test_parse_error("\"", "unterminated string");
-    test_parse_error("\"xyz", "unterminated string");
-    test_parse_error(" \" xyz ", "unterminated string");
-    test_parse_error("\"xyz\" \"a", "unterminated string");
+    test_parse_error("(1 2", "missing ) at 1:5");
+    test_parse_error("1 2)", "premature ) at 1:4");
+    test_parse_error("( 1 (2", "missing ) at 1:7");
+    test_parse_error("'", "unfollowed ' at 1:2");
+    test_parse_error("'  a '  ", "unfollowed ' at 1:9");
+    test_parse_error("(1 .)", "unfollowed . in (1 .)");
+    test_parse_error("(1 . 2 3)", ". followed by 2+ items in (1 . 2 3)");
+    test_parse_error("(1 . .)", ". followed by . in (1 . .)");
+    test_parse_error("(. 2 3)", ". followed by 2+ items in (. 2 3)");
+    test_parse_error("\"", "unterminated string at 1:2");
+    test_parse_error("\"xyz", "unterminated string at 1:5");
+    test_parse_error(" \" xyz ", "unterminated string at 1:8");
+    test_parse_error("\"xyz\" \"a", "unterminated string at 1:9");
+    test_parse_error("@", "unexpected symbol '@' at 1:1");
+    test_parse_error("  @", "unexpected symbol '@' at 1:3");
+    test_parse_error("  @  ", "unexpected symbol '@' at 1:3");
+    test_parse_error("\n\n@", "unexpected symbol '@' at 3:1");
+    test_parse_error(" a bc\nde \n f@", "unexpected symbol '@' at 3:3");
+    test_parse_error(" a bc\nde \n f@ g h\n\ni j ", "unexpected symbol '@' at 3:3");
+    test_parse_error("@(1 (2 \n 3) (4\n 5  6\n 7)\n)", "unexpected symbol '@' at 1:1");
+    test_parse_error("(1 (2 \n 3) (4\n 5 @ 6\n 7)\n)", "unexpected symbol '@' at 3:4");
+    test_parse_error("(1 (2 \n 3) (4\n 5  6\n 7)\n)@", "unexpected symbol '@' at 5:2");
 }
 
 void test_to_str() {
