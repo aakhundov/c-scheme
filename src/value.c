@@ -91,6 +91,14 @@ static void value_init_lambda(value* v, value* car, value* cdr) {
     v->cdr = cdr;
 }
 
+static void value_init_compiled(value* v, value* car, value* cdr) {
+    assert(v != NULL);
+
+    v->type = VALUE_COMPILED;
+    v->car = car;
+    v->cdr = cdr;
+}
+
 static void value_init_code(value* v, value* car, value* cdr) {
     assert(v != NULL);
 
@@ -202,6 +210,13 @@ value* value_new_lambda(value* car, value* cdr) {
     return v;
 }
 
+value* value_new_compiled(value* car, value* cdr) {
+    value* v = value_new();
+    value_init_compiled(v, car, cdr);
+
+    return v;
+}
+
 value* value_new_code(value* car, value* cdr) {
     value* v = value_new();
     value_init_code(v, car, cdr);
@@ -220,6 +235,7 @@ int is_compound_type(value_type t) {
     return (
         t == VALUE_PAIR ||
         t == VALUE_LAMBDA ||
+        t == VALUE_COMPILED ||
         t == VALUE_CODE ||
         t == VALUE_ENV);
 }
@@ -244,6 +260,8 @@ char* get_type_name(value_type t) {
             return "pair";
         case VALUE_LAMBDA:
             return "lambda";
+        case VALUE_COMPILED:
+            return "compiled";
         case VALUE_CODE:
             return "code";
         case VALUE_ENV:
@@ -272,6 +290,7 @@ void value_cleanup(value* v) {
             case VALUE_BOOL:
             case VALUE_PAIR:
             case VALUE_LAMBDA:
+            case VALUE_COMPILED:
             case VALUE_CODE:
                 break;
             case VALUE_SYMBOL:
@@ -570,6 +589,9 @@ static void value_copy(value* dest, value* source) {
             break;
         case VALUE_LAMBDA:
             value_init_lambda(dest, source->car, source->cdr);
+            break;
+        case VALUE_COMPILED:
+            value_init_compiled(dest, source->car, source->cdr);
             break;
         case VALUE_CODE:
         case VALUE_ENV:

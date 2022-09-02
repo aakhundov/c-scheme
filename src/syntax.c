@@ -714,15 +714,19 @@ int is_compound_procedure(pool* p, value* proc) {
     return (proc != NULL && proc->type == VALUE_LAMBDA ? 1 : 0);
 }
 
-value* get_procedure_parameters(pool* p, value* proc) {
+int is_compiled_procedure(pool* p, value* proc) {
+    return (proc != NULL && proc->type == VALUE_COMPILED ? 1 : 0);
+}
+
+value* get_compound_parameters(pool* p, value* proc) {
     return proc->car->car;
 }
 
-value* get_procedure_body(pool* p, value* proc) {
+value* get_compound_body(pool* p, value* proc) {
     return proc->car->cdr;
 }
 
-value* get_procedure_environment(pool* p, value* proc) {
+value* get_compound_environment(pool* p, value* proc) {
     return proc->cdr;
 }
 
@@ -734,6 +738,18 @@ value* make_compound_procedure(pool* p, value* params, value* body, value* env) 
             params,
             body),
         env);
+}
+
+value* get_compiled_entry(pool* p, value* proc) {
+    return proc->car;
+}
+
+value* get_compiled_environment(pool* p, value* proc) {
+    return proc->cdr;
+}
+
+value* make_compiled_procedure(pool* p, value* entry, value* env) {
+    return pool_new_compiled(p, entry, env);
 }
 
 int format_args(value* message, value* args, char* buffer) {

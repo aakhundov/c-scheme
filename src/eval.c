@@ -399,22 +399,28 @@ static value* op_is_compound_procedure(machine* m, value* args) {
     return pool_new_bool(m->pool, is_compound_procedure(m->pool, proc));
 }
 
-static value* op_get_procedure_parameters(machine* m, value* args) {
+static value* op_is_compiled_procedure(machine* m, value* args) {
     value* proc = args->car->car;
 
-    return get_procedure_parameters(m->pool, proc);
+    return pool_new_bool(m->pool, is_compiled_procedure(m->pool, proc));
 }
 
-static value* op_get_procedure_body(machine* m, value* args) {
+static value* op_get_compound_parameters(machine* m, value* args) {
     value* proc = args->car->car;
 
-    return get_procedure_body(m->pool, proc);
+    return get_compound_parameters(m->pool, proc);
 }
 
-static value* op_get_procedure_environment(machine* m, value* args) {
+static value* op_get_compound_body(machine* m, value* args) {
     value* proc = args->car->car;
 
-    return get_procedure_environment(m->pool, proc);
+    return get_compound_body(m->pool, proc);
+}
+
+static value* op_get_compound_environment(machine* m, value* args) {
+    value* proc = args->car->car;
+
+    return get_compound_environment(m->pool, proc);
 }
 
 static value* op_make_compound_procedure(machine* m, value* args) {
@@ -423,6 +429,25 @@ static value* op_make_compound_procedure(machine* m, value* args) {
     value* env = args->cdr->cdr->car->car;
 
     return make_compound_procedure(m->pool, params, body, env);
+}
+
+static value* op_get_compiled_entry(machine* m, value* args) {
+    value* proc = args->car->car;
+
+    return get_compiled_entry(m->pool, proc);
+}
+
+static value* op_get_compiled_environment(machine* m, value* args) {
+    value* proc = args->car->car;
+
+    return get_compiled_environment(m->pool, proc);
+}
+
+static value* op_make_compiled_procedure(machine* m, value* args) {
+    value* entry = args->car->car;
+    value* env = args->cdr->car->car;
+
+    return make_compiled_procedure(m->pool, entry, env);
 }
 
 static value* op_signal_error(machine* m, value* args) {
@@ -591,6 +616,13 @@ static value* op_dispatch_on_type(machine* m, value* args) {
     return env_get_value(record)->car;
 }
 
+static value* op_cons(machine* m, value* args) {
+    value* first = args->car->car;
+    value* second = args->cdr->car->car;
+
+    return pool_new_pair(m->pool, first, second);
+}
+
 static void bind_machine_ops(eval* e) {
     machine* m = e->machine;
 
@@ -661,14 +693,21 @@ static void bind_machine_ops(eval* e) {
 
     machine_bind_op(m, "primitive-procedure?", op_is_primitive_procedure);
     machine_bind_op(m, "compound-procedure?", op_is_compound_procedure);
+    machine_bind_op(m, "compiled-procedure?", op_is_compiled_procedure);
+
+    machine_bind_op(m, "compound-parameters", op_get_compound_parameters);
+    machine_bind_op(m, "compound-body", op_get_compound_body);
+    machine_bind_op(m, "compound-environment", op_get_compound_environment);
     machine_bind_op(m, "make-compound-procedure", op_make_compound_procedure);
-    machine_bind_op(m, "procedure-parameters", op_get_procedure_parameters);
-    machine_bind_op(m, "procedure-body", op_get_procedure_body);
-    machine_bind_op(m, "procedure-environment", op_get_procedure_environment);
+
+    machine_bind_op(m, "compiled-entry", op_get_compiled_entry);
+    machine_bind_op(m, "compiled-environment", op_get_compiled_environment);
+    machine_bind_op(m, "make-compiled-procedure", op_make_compiled_procedure);
 
     machine_bind_op(m, "signal-error", op_signal_error);
 
     machine_bind_op(m, "apply-primitive-procedure", op_apply_primitive_procedure);
+
     machine_bind_op(m, "lookup-variable-value", op_lookup_variable_value);
     machine_bind_op(m, "set-variable-value!", op_set_variable_value);
     machine_bind_op(m, "define-variable!", op_define_variable);
@@ -678,6 +717,8 @@ static void bind_machine_ops(eval* e) {
     machine_bind_op(m, "make-dispatch-table", op_make_dispatch_table);
     machine_bind_op(m, "add-dispatch-record", op_add_dispatch_record);
     machine_bind_op(m, "dispatch-on-type", op_dispatch_on_type);
+
+    machine_bind_op(m, "cons", op_cons);
 }
 
 static value* prim_car(machine* m, value* args) {

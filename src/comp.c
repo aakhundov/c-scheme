@@ -600,7 +600,7 @@ static value* compile_lambda_body(pool* p, value* exp, value* proc_entry) {
     add_needed(p, pre_body_seq, "argl");
     add_modified(p, pre_body_seq, "env");
     add_code(p, pre_body_seq, "%s", proc_entry->symbol);
-    add_code(p, pre_body_seq, "assign env (op compiled-procedure-env) (reg proc)");
+    add_code(p, pre_body_seq, "assign env (op compiled-env) (reg proc)");
     add_code(
         p, pre_body_seq,
         "assign env (op extend-environment) (const %s) (reg argl) (reg env)",
@@ -935,13 +935,13 @@ static value* compile_compiled_call(pool* p, char* target, char* linkage) {
         add_needed(p, call_seq, "continue");
 
         // just goto the proc which will then return to the continue
-        add_code(p, call_seq, "assign val (op compiled-procedure-entry) (reg proc)");
+        add_code(p, call_seq, "assign val (op compiled-entry) (reg proc)");
         add_code(p, call_seq, "goto (reg val)");
     } else {
         if (strcmp(target, "val") == 0) {
             // set the continue to the linkage and goto the proc
             add_code(p, call_seq, "assign continue (label %s)", linkage);
-            add_code(p, call_seq, "assign val (op compiled-procedure-entry) (reg proc)");
+            add_code(p, call_seq, "assign val (op compiled-entry) (reg proc)");
             add_code(p, call_seq, "goto (reg val)");
         } else {
             // a new label to return to after the call
@@ -950,7 +950,7 @@ static value* compile_compiled_call(pool* p, char* target, char* linkage) {
             // set the continue to the proc-return label and goto the proc
             // on return, set the val to the target and goto the linkage
             add_code(p, call_seq, "assign continue (label %s)", proc_return->symbol);
-            add_code(p, call_seq, "assign val (op compiled-procedure-entry) (reg proc)");
+            add_code(p, call_seq, "assign val (op compiled-entry) (reg proc)");
             add_code(p, call_seq, "goto (reg val)");
             add_code(p, call_seq, "%s", proc_return->symbol);
             add_code(p, call_seq, "assign %s (reg val)", target);

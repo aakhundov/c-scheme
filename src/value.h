@@ -14,8 +14,9 @@ typedef enum {
     VALUE_PAIR = 6,
     VALUE_BUILTIN = 7,
     VALUE_LAMBDA = 8,
-    VALUE_CODE = 9,
-    VALUE_ENV = 10
+    VALUE_COMPILED = 9,
+    VALUE_CODE = 10,
+    VALUE_ENV = 11
 } value_type;
 
 typedef struct value value;
@@ -45,6 +46,7 @@ value* value_new_info(char* info, ...);
 value* value_new_info_from_args(char* info, va_list args);
 value* value_new_pair(value* car, value* cdr);
 value* value_new_lambda(value* car, value* cdr);
+value* value_new_compiled(value* car, value* cdr);
 value* value_new_code(value* car, value* cdr);
 value* value_new_env();
 

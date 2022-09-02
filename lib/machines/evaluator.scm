@@ -251,10 +251,10 @@ primitive-apply
     (restore continue)
     (goto (reg continue))
 compound-apply
-    (assign unev (op procedure-parameters) (reg proc))
-    (assign env (op procedure-environment) (reg proc))
+    (assign unev (op compound-parameters) (reg proc))
+    (assign env (op compound-environment) (reg proc))
     (assign env (op extend-environment) (reg unev) (reg argl) (reg env))
-    (assign unev (op procedure-body) (reg proc))
+    (assign unev (op compound-body) (reg proc))
     (goto (label ev-sequence))
 
 ev-sequence

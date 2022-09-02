@@ -89,10 +89,16 @@ value* adjoin_arg(pool* p, value* arg, value* arg_list);
 
 int is_primitive_procedure(pool* p, value* proc);
 int is_compound_procedure(pool* p, value* proc);
-value* get_procedure_parameters(pool* p, value* proc);
-value* get_procedure_body(pool* p, value* proc);
-value* get_procedure_environment(pool* p, value* proc);
+int is_compiled_procedure(pool* p, value* proc);
+
+value* get_compound_parameters(pool* p, value* proc);
+value* get_compound_body(pool* p, value* proc);
+value* get_compound_environment(pool* p, value* proc);
 value* make_compound_procedure(pool* p, value* params, value* body, value* env);
+
+value* get_compiled_entry(pool* p, value* proc);
+value* get_compiled_environment(pool* p, value* proc);
+value* make_compiled_procedure(pool* p, value* entry, value* env);
 
 int format_args(value* message, value* args, char* buffer);
 

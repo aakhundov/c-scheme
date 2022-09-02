@@ -214,6 +214,14 @@ value* pool_new_lambda(pool* p, value* car, value* cdr) {
     return v;
 }
 
+value* pool_new_compiled(pool* p, value* car, value* cdr) {
+    value* v = value_new_compiled(car, cdr);
+
+    add_to_chain(p, v);
+
+    return v;
+}
+
 value* pool_new_code(pool* p, value* car, value* cdr) {
     value* v = value_new_code(car, cdr);
 

@@ -116,17 +116,17 @@ static value* call_op(machine* m, value* op, value* args) {
     return result;
 }
 
-static value* make_count_env(machine* m, value* table) {
-    value* env = pool_new_env(m->pool);
-
+static value* update_count_env(machine* m, value* env, value* table) {
     value* pair = table->cdr;
     while (pair != NULL) {
         value* record = pair->car;
-        value* name = record->cdr;
+        char* name = record->cdr->symbol;
 
-        // initialize each name's count to zero
-        value* count = pool_new_number(m->pool, 0);
-        env_add_value(env, name->symbol, count, m->pool);
+        if (env_lookup(env, name, 0) == NULL) {
+            // add the name's count (0) to the env if absent
+            value* count = pool_new_number(m->pool, 0);
+            env_add_value(env, name, count, m->pool);
+        }
 
         pair = pair->cdr;
     }
@@ -141,6 +141,7 @@ static void reset_count_env(value* env, value* table) {
         value* name = record->cdr;
 
         // reset each name's count to zero
+        // (assuming every name is present in the env)
         map_record* r = env_lookup(env, name->symbol, 0);
         value* count = env_get_value(r);
         count->number = 0;
@@ -178,15 +179,22 @@ static void print_counts(value* env, value* table, const char* format) {
 }
 
 static void init_stats(machine* m) {
-    m->stats.cnt_op_calls = make_count_env(m, m->ops);
-    m->stats.cnt_register_assigns = make_count_env(m, m->registers);
-    m->stats.cnt_register_saves = make_count_env(m, m->registers);
-    m->stats.cnt_label_jumps = make_count_env(m, m->labels);
+    m->stats.cnt_op_calls = pool_new_env(m->pool);
+    m->stats.cnt_register_assigns = pool_new_env(m->pool);
+    m->stats.cnt_register_saves = pool_new_env(m->pool);
+    m->stats.cnt_label_jumps = pool_new_env(m->pool);
 
     pool_register_root(m->pool, m->stats.cnt_op_calls);
     pool_register_root(m->pool, m->stats.cnt_register_assigns);
     pool_register_root(m->pool, m->stats.cnt_register_saves);
     pool_register_root(m->pool, m->stats.cnt_label_jumps);
+}
+
+static void update_stats(machine* m) {
+    update_count_env(m, m->stats.cnt_op_calls, m->ops);
+    update_count_env(m, m->stats.cnt_register_assigns, m->registers);
+    update_count_env(m, m->stats.cnt_register_saves, m->registers);
+    update_count_env(m, m->stats.cnt_label_jumps, m->labels);
 }
 
 static void cleanup_stats(machine* m) {
@@ -531,6 +539,10 @@ static void process_code(machine* m, value* source) {
 
         source = source->cdr;
     }
+
+    // add new items introduced in the code
+    // (registers, labels, ops) to the stats
+    update_stats(m);
 }
 
 static void execute_assign(machine* m, value* inst) {
@@ -870,9 +882,10 @@ machine* machine_new(value* code, char* output_register_name) {
     m->pool = pool_new();
     create_backbone(m, output_register_name);
     pool_register_root(m->pool, m->root);
-    process_code(m, code);
 
     init_stats(m);
+
+    process_code(m, code);
 
     m->stop = 0;
     m->trace = 0;
@@ -891,6 +904,10 @@ void machine_dispose(machine* m) {
 void machine_bind_op(machine* m, char* name, builtin fn) {
     value* op = get_op(m, name);
     op->car = pool_new_builtin(m->pool, fn, name);
+
+    // add newly bound op to the op calls count env
+    // if it wasn't in the code  processed so far
+    update_count_env(m, m->stats.cnt_op_calls, m->ops);
 }
 
 void machine_copy_to_register(machine* m, char* name, value* v) {
