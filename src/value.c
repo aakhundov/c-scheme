@@ -463,7 +463,7 @@ static int pair_to_str(value* v, char* buffer) {
         if (v_running->type == VALUE_PAIR) {
             if (v_running->gen == -2) {
                 // marked value: cycle
-                running += sprintf(running, " . <cycle>");
+                running += sprintf(running, " . " CYCLE_MARK);
                 break;
             } else {
                 v_running->gen = -2;  // mark the value
@@ -509,7 +509,7 @@ static int value_to_str_rec(value* v, char* buffer) {
         return sprintf(buffer, "()");
     } else if (v->gen == -2) {
         // marked value: cycle
-        return sprintf(buffer, "<cycle>");
+        return sprintf(buffer, CYCLE_MARK);
     } else {
         int result;
         switch (v->type) {
@@ -638,4 +638,41 @@ value* value_clone(value* source) {
     value_update_gen(source, 0);  // clear
 
     return dest;
+}
+
+static void value_print_rec(value* v, int indent) {
+    static char buffer[BUFFER_SIZE];
+    value_to_str(v, buffer);
+
+    if (v == NULL ||
+        v->type != VALUE_PAIR ||
+        strlen(buffer) <= PRINT_MAX_LINE_LENGTH ||
+        strstr(buffer, CYCLE_MARK)) {
+        // print the full expression in one line
+        printf("%*s%s\n", indent * PRINT_INDENT_SPACES, "", buffer);
+    } else {
+        // print the opening bracket
+        printf("%*s(\n", indent * PRINT_INDENT_SPACES, "");
+
+        while (v != NULL) {
+            if (v->type == VALUE_PAIR) {
+                // recursively print the car
+                value_print_rec(v->car, indent + 1);
+            } else {
+                // print the dot
+                printf("%*s.\n", (indent + 1) * PRINT_INDENT_SPACES, "");
+                // recursively print the terminating cdr and break
+                value_print_rec(v, indent + 1);
+                break;
+            }
+            v = v->cdr;
+        }
+
+        // print the closing bracket
+        printf("%*s)\n", indent * PRINT_INDENT_SPACES, "");
+    }
+}
+
+void value_print(value* v) {
+    value_print_rec(v, 0);
 }

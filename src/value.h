@@ -61,5 +61,6 @@ int value_is_true(value* v);
 int value_equal(value* v1, value* v2);
 int value_to_str(value* v, char* buffer);
 value* value_clone(value* source);
+void value_print(value* v);
 
 #endif  // VALUE_H_
