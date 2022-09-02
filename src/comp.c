@@ -785,7 +785,7 @@ static value* compile_eval(pool* p, value* exp, char* target, char* linkage) {
     if (is_self_evaluating(exp)) {
         return compile_self_evaluating(p, exp, target, linkage);
     } else if (is_quoted(exp)) {
-        return compile_quoted(p, exp, target, linkage);
+        return compile_rec(p, get_text_of_quotation(p, exp), target, linkage);
     } else {
         // can't be target != "val" and linkage == "return" simultaneously
         assert(strcmp(target, "val") == 0 || strcmp(linkage, "return") != 0);
@@ -1122,11 +1122,13 @@ static value* check_syntax(pool* p, value* exp) {
         }
     } else if (is_lambda(exp)) {
         result = check_lambda(p, exp);
-        exp = get_lambda_body(p, exp);
-        // recursively check body expressions
-        while (result == NULL && !has_no_exps(p, exp)) {
-            result = check_syntax(p, get_first_exp(p, exp));
-            exp = get_rest_exps(p, exp);
+        if (result == NULL) {
+            exp = get_lambda_body(p, exp);
+            // recursively check body expressions
+            while (result == NULL && !has_no_exps(p, exp)) {
+                result = check_syntax(p, get_first_exp(p, exp));
+                exp = get_rest_exps(p, exp);
+            }
         }
     } else if (is_let(exp)) {
         result = check_let(p, exp);
