@@ -13,4 +13,8 @@
 #define LIBRARY_PAATH "./lib/scheme/library.scm"
 #define TESTS_PATH "./lib/scheme/tests.scm"
 
+#define PRINT_INDENT_SPACES 4
+#define PRINT_MAX_LINE_LENGTH 80
+#define CYCLE_MARK "<cycle>"
+
 #endif  // COMMON_H_

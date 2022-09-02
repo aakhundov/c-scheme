@@ -1202,5 +1202,7 @@ value* compile(pool* p, value* exp, char* target, char* linkage) {
         return syntax_result;
     }
 
-    return compile_rec(p, exp, target, linkage);
+    value* seq = compile_rec(p, exp, target, linkage);
+
+    return get_code(seq);
 }
