@@ -24,7 +24,7 @@
 #define RUN_EVAL_TEST_FN(e, fn)                              \
     {                                                        \
         compile_flag = 0;                                    \
-        printf("\x1B[32mC\x1B[0m \x1B[34m%s\x1B[0m\n", #fn); \
+        printf("\x1B[32mE\x1B[0m \x1B[34m%s\x1B[0m\n", #fn); \
         printf("===================================\n");     \
         eval_reset_env(e);                                   \
         fn(e);                                               \
