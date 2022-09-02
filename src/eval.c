@@ -1406,11 +1406,8 @@ static value* make_global_environment(eval* e) {
     value* env = pool_new_env(e->machine->pool);
 
     // constants
-    env_add_value(env, "nil", NULL, p);
     env_add_value(env, "#t", pool_new_bool(p, 1), p);
     env_add_value(env, "#f", pool_new_bool(p, 0), p);
-    env_add_value(env, "true", pool_new_bool(p, 1), p);
-    env_add_value(env, "false", pool_new_bool(p, 0), p);
     env_add_value(env, "PI", pool_new_number(p, 3.1415926536), p);
     env_add_value(env, "E", pool_new_number(p, 2.7182818285), p);
 
