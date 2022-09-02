@@ -21,8 +21,8 @@ init-dispatch
     (assign dispatch (op add-dispatch-record) (reg dispatch) (const "default") (label ev-application))
 
 eval-dispatch
-    (assign type (op dispatch-on-type) (reg exp) (reg dispatch))
-    (goto (reg type))
+    (assign val (op dispatch-on-type) (reg exp) (reg dispatch))
+    (goto (reg val))
 
 ev-self-eval
     (assign val (reg exp))
