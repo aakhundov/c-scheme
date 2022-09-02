@@ -600,7 +600,7 @@ static value* compile_lambda_body(pool* p, value* exp, value* proc_entry) {
     add_needed(p, pre_body_seq, "argl");
     add_modified(p, pre_body_seq, "env");
     add_code(p, pre_body_seq, "%s", proc_entry->symbol);
-    add_code(p, pre_body_seq, "assign env (op compiled-env) (reg proc)");
+    add_code(p, pre_body_seq, "assign env (op compiled-environment) (reg proc)");
     add_code(
         p, pre_body_seq,
         "assign env (op extend-environment) (const %s) (reg argl) (reg env)",
@@ -1196,13 +1196,18 @@ static value* check_syntax(pool* p, value* exp) {
 }
 
 value* compile(pool* p, value* exp, char* target, char* linkage) {
+    // check the syntax of the exp first
     value* syntax_result = check_syntax(p, exp);
 
     if (syntax_result != NULL) {
+        // if syntax is wrong,
+        // immediately return the error
         return syntax_result;
     }
 
+    // compile the sequence
     value* seq = compile_rec(p, exp, target, linkage);
 
+    // return the code
     return get_code(seq);
 }

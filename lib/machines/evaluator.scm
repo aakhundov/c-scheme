@@ -245,10 +245,11 @@ ev-application-accumulate-last-arg
 apply-dispatch
     (branch (label primitive-apply) (op primitive-procedure?) (reg proc))
     (branch (label compound-apply) (op compound-procedure?) (reg proc))
+    (branch (label compiled-apply) (op compiled-procedure?) (reg proc))
     (perform (op signal-error) (const "can't apply %s") (reg proc))
 primitive-apply
-    (assign val (op apply-primitive-procedure) (reg proc) (reg argl))
     (restore continue)
+    (assign val (op apply-primitive-procedure) (reg proc) (reg argl))
     (goto (reg continue))
 compound-apply
     (assign unev (op compound-parameters) (reg proc))
@@ -256,6 +257,10 @@ compound-apply
     (assign env (op extend-environment) (reg unev) (reg argl) (reg env))
     (assign unev (op compound-body) (reg proc))
     (goto (label ev-sequence))
+compiled-apply
+    (restore continue)
+    (assign val (op compiled-entry) (reg proc))
+    (goto (reg val))
 
 ev-sequence
     (assign exp (op first-exp) (reg unev))

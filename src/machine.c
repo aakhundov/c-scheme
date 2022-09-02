@@ -75,13 +75,15 @@ static void create_backbone(machine* m, char* output_register_name) {
     m->registers = pool_new_pair(m->pool, NULL, NULL);
     m->constants = pool_new_pair(m->pool, m->registers, NULL);
     m->labels = pool_new_pair(m->pool, m->constants, NULL);
-    m->code = pool_new_pair(m->pool, m->labels, NULL);
-    m->ops = pool_new_pair(m->pool, m->code, NULL);
-    m->stack = pool_new_pair(m->pool, m->ops, NULL);
+    m->ops = pool_new_pair(m->pool, m->labels, NULL);
+    m->code_head = pool_new_pair(m->pool, m->ops, NULL);
+    m->code_tail = pool_new_pair(m->pool, m->code_head, NULL);
+    m->stack = pool_new_pair(m->pool, m->code_tail, NULL);
     m->pc = pool_new_pair(m->pool, m->stack, NULL);
     m->root = pool_new_pair(m->pool, m->pc, NULL);  // memory root
 
     m->val = get_register(m, output_register_name);  // output register
+    m->code_tail = m->code_head;                     // initially no code
 }
 
 static void push_to_stack(machine* m, value* v) {
@@ -480,8 +482,9 @@ static void instrument_code(machine* m, value* line) {
     }
 }
 
-static void process_code(machine* m, value* source) {
-    value* code = m->code;
+static value* append_code(machine* m, value* source) {
+    value* head = m->code_tail;
+    value* tail = m->code_tail;
     value* label = NULL;
 
     while (source != NULL) {
@@ -520,19 +523,19 @@ static void process_code(machine* m, value* source) {
 
             // append the new instruction along with
             // the local line to the end of the code
-            code->cdr = pool_new_code(
+            tail->cdr = pool_new_code(
                 m->pool,
                 pool_new_pair(
                     m->pool,
                     instruction,
                     local_line),
                 NULL);
-            code = code->cdr;
+            tail = tail->cdr;
 
             if (label != NULL) {
                 // point the label above to
                 // the current instruction
-                label->car = code;
+                label->car = tail;
                 label = NULL;
             }
         }
@@ -543,6 +546,12 @@ static void process_code(machine* m, value* source) {
     // add new items introduced in the code
     // (registers, labels, ops) to the stats
     update_stats(m);
+
+    // set the new tail
+    m->code_tail = tail;
+
+    // return the head of the appended code
+    return head->cdr;
 }
 
 static void execute_assign(machine* m, value* inst) {
@@ -569,6 +578,11 @@ static void execute_call(machine* m, value* inst) {
     value* op = inst->cdr->car;    // op record (pointer . name)
     value* args = inst->cdr->cdr;  // op's args
 
+    // advance the pc before the call
+    // to allow the op to modify the pc
+    m->pc = m->pc->cdr;
+
+    // call the op
     value* result = call_op(m, op, args);
 
     if (result != NULL && result->type == VALUE_ERROR) {
@@ -581,8 +595,6 @@ static void execute_call(machine* m, value* inst) {
             // set the register from the result
             dst_reg->car = result;
         }
-        // advance the pc
-        m->pc = m->pc->cdr;
     }
 
     if (m->trace >= TRACE_SUMMARY) {
@@ -885,7 +897,7 @@ machine* machine_new(value* code, char* output_register_name) {
 
     init_stats(m);
 
-    process_code(m, code);
+    append_code(m, code);
 
     m->stop = 0;
     m->trace = 0;
@@ -913,6 +925,14 @@ void machine_bind_op(machine* m, char* name, builtin fn) {
 void machine_copy_to_register(machine* m, char* name, value* v) {
     value* dst_reg = get_register(m, name);
     dst_reg->car = pool_import(m->pool, v);
+}
+
+value* machine_append_code(machine* m, value* code) {
+    return append_code(m, code);
+}
+
+void machine_set_code_position(machine* m, value* pos) {
+    m->pc = pos;
 }
 
 value* machine_copy_from_register(machine* m, char* name) {
@@ -943,7 +963,7 @@ void machine_run(machine* m) {
     }
 
     m->stop = 0;
-    m->pc = m->code->cdr;
+    m->pc = m->code_head->cdr;
     while (m->pc != NULL) {
         execute_next_instruction(m);
     }

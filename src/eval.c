@@ -1380,6 +1380,31 @@ static value* prim_compile(machine* m, value* args) {
     return compile(m->pool, exp, target, linkage);
 }
 
+static value* prim_compile_and_go(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 1);
+
+    value* exp = args->car;
+
+    // compile the expression into machine code
+    // target: place the result in the val register
+    // lingage: (goto (reg continue)) in the end
+    value* code = compile(m->pool, exp, "val", "return");
+
+    if (code->type == VALUE_ERROR) {
+        // error in compilation -> return
+        return code;
+    }
+
+    // add the compiled code to the machine
+    value* start = machine_append_code(m, code);
+    // and set the position to the code's start
+    machine_set_code_position(m, start);
+
+    // the return value here doesn't matter
+    // as the machine will continue from the head
+    return NULL;
+}
+
 static void add_primitive(eval* e, value* env, char* name, builtin fn) {
     pool* p = e->machine->pool;
     env_add_value(env, name, pool_new_builtin(p, fn, name), p);
@@ -1465,6 +1490,7 @@ static value* make_global_environment(eval* e) {
 
     // compilation
     add_primitive(e, env, "compile", prim_compile);
+    add_primitive(e, env, "compile-and-go", prim_compile_and_go);
 
     return env;
 }

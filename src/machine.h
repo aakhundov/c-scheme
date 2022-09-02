@@ -52,8 +52,10 @@ struct machine {
     value* registers;
     value* constants;
     value* labels;
-    value* code;
     value* ops;
+
+    value* code_head;
+    value* code_tail;
 
     value* stack;
     value* pc;
@@ -74,7 +76,11 @@ value* machine_copy_from_register(machine* m, char* name);
 value* machine_get_register(machine* m, char* name);
 value* machine_get_label(machine* m, char* name);
 value* machine_export_output(machine* m);
+
 void machine_run(machine* m);
+
+value* machine_append_code(machine* m, value* code);
+void machine_set_code_position(machine* m, value* code);
 
 void machine_set_trace(machine* m, machine_trace_level level);
 void machine_interrupt(machine* m);
