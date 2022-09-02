@@ -681,11 +681,11 @@ static value* compile_and(pool* p, value* exp, char* target, char* linkage) {
             // with a conditional jump
             eval_seq = preserving(
                 p, "env",
+                rev_exp_seqs->car,
                 append_sequences(
                     p,
-                    rev_exp_seqs->car,
-                    jump_seq),
-                eval_seq);
+                    jump_seq,
+                    eval_seq));
             rev_exp_seqs = rev_exp_seqs->cdr;
         }
 
@@ -751,11 +751,11 @@ static value* compile_or(pool* p, value* exp, char* target, char* linkage) {
             // with a conditional jump
             eval_seq = preserving(
                 p, "env",
+                rev_exp_seqs->car,
                 append_sequences(
                     p,
-                    rev_exp_seqs->car,
-                    jump_seq),
-                eval_seq);
+                    jump_seq,
+                    eval_seq));
             rev_exp_seqs = rev_exp_seqs->cdr;
         }
 
@@ -798,6 +798,7 @@ static value* compile_eval(pool* p, value* exp, char* target, char* linkage) {
 
         // evaluation will need the env
         add_needed(p, external_seq, "env");
+        add_needed(p, external_seq, "continue");
 
         // anyting can happen during evaluation
         add_modified(p, external_seq, "env");
@@ -847,7 +848,7 @@ static value* compile_eval(pool* p, value* exp, char* target, char* linkage) {
         }
 
         return preserving(
-            p, "env",
+            p, "env,continue",
             internal_seq,
             external_seq);
     }
@@ -1022,12 +1023,21 @@ static value* compile_apply(pool* p, value* exp, char* target, char* linkage) {
     // put the arguments into argl with the next linkage
     value* arguments_seq = compile_rec(p, get_apply_arguments(p, exp), "argl", "next");
 
+    // check the arguments of apply after evaluation
+    value* check_args_seq = make_empty_sequence(p);
+
+    add_needed(p, check_args_seq, "argl");
+    add_code(p, check_args_seq, "perform (op check-apply-args) (reg argl)");
+
     return preserving(
         p, "env,continue",
         operator_seq,  // first get the operator into proc
         preserving(
             p, "proc,continue",
-            arguments_seq,                                 // then get the operands into argl
+            append_sequences(
+                p,
+                arguments_seq,                             // then get the operands into argl
+                check_args_seq),                           // check the argl after evaluating the args
             compile_procedure_call(p, target, linkage)));  // then call the proc: primitive or compiled
 }
 
@@ -1173,9 +1183,6 @@ static value* check_syntax(pool* p, value* exp) {
         result = check_apply(p, exp);
         if (result == NULL) {
             result = check_syntax(p, get_apply_operator(p, exp));
-        }
-        if (result == NULL) {
-            result = check_apply_arguments(p, get_apply_arguments(p, exp));
         }
         if (result == NULL) {
             result = check_syntax(p, get_apply_arguments(p, exp));
