@@ -21,13 +21,21 @@
         printf("\n");                          \
     }
 
-#define RUN_EVAL_TEST_FN(e, fn)                \
-    {                                          \
-        eval_reset_env(e);                     \
-        printf("[%s]\n", #fn);                 \
-        printf("=========================\n"); \
-        fn(e);                                 \
-        printf("\n");                          \
+#define RUN_EVAL_TEST_FN(e, fn)                              \
+    {                                                        \
+        compile_flag = 0;                                    \
+        printf("\x1B[32mC\x1B[0m \x1B[34m%s\x1B[0m\n", #fn); \
+        printf("===================================\n");     \
+        eval_reset_env(e);                                   \
+        fn(e);                                               \
+        printf("\n");                                        \
+        compile_flag = 1;                                    \
+        printf("\x1B[32mC\x1B[0m \x1B[34m%s\x1B[0m\n", #fn); \
+        printf("===================================\n");     \
+        eval_reset_env(e);                                   \
+        fn(e);                                               \
+        printf("\n");                                        \
+        compile_flag = 0;                                    \
     }
 
 #define PRINT_VALUE(name, v)               \
@@ -38,6 +46,7 @@
     }
 
 static int test_counter = 0;
+static int compile_flag = 0;
 
 static void report_test(char* output, ...) {
     static char buffer[BUFFER_SIZE];
@@ -48,12 +57,20 @@ static void report_test(char* output, ...) {
     va_end(args);
 
     printf(
-        "\x1B[34m%05d\x1B[0m %s\n",
-        ++test_counter, buffer);
+        "\x1B[32m%c\x1B[0m \x1B[34m%05d\x1B[0m %s\n",
+        (compile_flag ? 'C' : 'E'), ++test_counter, buffer);
 }
 
 static value* get_evaluated(eval* ev, char* input) {
-    value* v = parse_from_str(input);
+    value* v;
+
+    if (compile_flag) {
+        static char buffer[BUFFER_SIZE];
+        sprintf(buffer, "(compile '%s)", input);
+        v = parse_from_str(buffer);
+    } else {
+        v = parse_from_str(input);
+    }
 
     if (ev != NULL && v != NULL && v->type != VALUE_ERROR) {
         assert(v->cdr == NULL);
@@ -258,6 +275,11 @@ static void test_parse() {
     test_parse_output("\"'abc\"", "(\"'abc\")");
     test_parse_output("'\"x\" \"y\" \"z\"", "((quote \"x\") \"y\" \"z\")");
     test_parse_output("'(\"x\" \"y\" \"z\")", "((quote (\"x\" \"y\" \"z\")))");
+
+    // special symbols
+    test_parse_output("nil", "(())");
+    test_parse_output("true", "(true)");
+    test_parse_output("false", "(false)");
 
     // parsing errors
     test_parse_error("(1 2", "missing ) at 1:5");
@@ -861,9 +883,9 @@ static void test_syntax(eval* e) {
     test_eval_number(e, "c", 40);
     test_eval_error(e, "f", "f is unbound");
     test_eval_info(e, "(define (f x y) x y)", "f is defined");
-    test_eval_output(e, "f", "(lambda (x y) x y)");
+    test_eval_output(e, "f", (compile_flag ? "<compiled>" : "(lambda (x y) x y)"));
     test_eval_info(e, "(define (g) 1)", "g is defined");
-    test_eval_output(e, "g", "(lambda () 1)");
+    test_eval_output(e, "g", (compile_flag ? "<compiled>" : "(lambda () 1)"));
     test_eval_error(e, "d1", "d1 is unbound");
     test_eval_info(e, "(define (df1) (define d1 10) d1)", "df1 is defined");
     test_eval_number(e, "(df1)", 10);
@@ -881,6 +903,7 @@ static void test_syntax(eval* e) {
     test_eval_error(e, "(define (1 x y) 1)", "function name is not a symbol");
     test_eval_error(e, "(define x 1 2)", "can't be more than one item");
     test_eval_error(e, "(define 1 2)", "either variable or function must be defined");
+    test_eval_error(e, "(define true 2)", "either variable or function");
     test_eval_error(e, "(define \"x\" 2)", "either variable or function must be defined");
     test_eval_error(e, "(define 1 . 2)", "non-list structure");
     test_eval_error(e, "(define . 1)", "non-list structure");
@@ -907,14 +930,14 @@ static void test_syntax(eval* e) {
     test_eval_error(e, "(if . 1)", "non-list structure");
 
     // lambda
-    test_eval_output(e, "(lambda x x)", "(lambda x x)");
-    test_eval_output(e, "(lambda (. x) x)", "(lambda x x)");
-    test_eval_output(e, "(lambda () 1)", "(lambda () 1)");
-    test_eval_output(e, "(lambda (x) x)", "(lambda (x) x)");
-    test_eval_output(e, "(lambda (x) x x)", "(lambda (x) x x)");
-    test_eval_output(e, "(lambda (x y) x)", "(lambda (x y) x)");
-    test_eval_output(e, "(lambda (x y) x y)", "(lambda (x y) x y)");
-    test_eval_output(e, "(lambda (x . y) x y)", "(lambda (x . y) x y)");
+    test_eval_output(e, "(lambda x x)", (compile_flag ? "<compiled>" : "(lambda x x)"));
+    test_eval_output(e, "(lambda (. x) x)", (compile_flag ? "<compiled>" : "(lambda x x)"));
+    test_eval_output(e, "(lambda () 1)", (compile_flag ? "<compiled>" : "(lambda () 1)"));
+    test_eval_output(e, "(lambda (x) x)", (compile_flag ? "<compiled>" : "(lambda (x) x)"));
+    test_eval_output(e, "(lambda (x) x x)", (compile_flag ? "<compiled>" : "(lambda (x) x x)"));
+    test_eval_output(e, "(lambda (x y) x)", (compile_flag ? "<compiled>" : "(lambda (x y) x)"));
+    test_eval_output(e, "(lambda (x y) x y)", (compile_flag ? "<compiled>" : "(lambda (x y) x y)"));
+    test_eval_output(e, "(lambda (x . y) x y)", (compile_flag ? "<compiled>" : "(lambda (x . y) x y)"));
 
     // lambda errors
     test_eval_error(e, "(lambda)", "no parameters");
@@ -1976,8 +1999,8 @@ void test_predicates(eval* e) {
     test_eval_bool(e, "(eq? car cdr)", 0);
     test_eval_bool(e, "(eq? cons cons)", 1);
     test_eval_bool(e, "(eq? (cons car cdr) (cons car cdr))", 0);
-    test_eval_bool(e, "(eq? true true)", 1);
-    test_eval_bool(e, "(eq? false false)", 1);
+    test_eval_bool(e, "(eq? true true)", 0);
+    test_eval_bool(e, "(eq? false false)", 0);
     test_eval_bool(e, "(eq? nil nil)", 1);
     test_eval_bool(e, "(eq? 'a 'a)", 0);
     test_eval_bool(e, "(eq? \"a\" \"a\")", 0);
