@@ -14,6 +14,16 @@
         return pool_new_error(p, text, tag, buffer); \
     }
 
+static int is_tagged_list(value* v, const char* tag) {
+    // (tag ...)
+    return (
+        v != NULL &&
+        v->type == VALUE_PAIR &&
+        v->car != NULL &&
+        v->car->type == VALUE_SYMBOL &&
+        strcmp(v->car->symbol, tag) == 0);
+}
+
 static int is_null_terminated_list(value* v) {
     value* running = v;
     while (running != NULL) {
@@ -37,6 +47,54 @@ int is_self_evaluating(value* exp) {
 int is_variable(value* exp) {
     // x, car, etc.
     return (exp != NULL && exp->type == VALUE_SYMBOL);
+}
+
+int is_quoted(value* exp) {
+    return is_tagged_list(exp, "quote");
+}
+
+int is_assignment(value* exp) {
+    return is_tagged_list(exp, "set!");
+}
+
+int is_definition(value* exp) {
+    return is_tagged_list(exp, "define");
+}
+
+int is_if(value* exp) {
+    return is_tagged_list(exp, "if");
+}
+
+int is_lambda(value* exp) {
+    return is_tagged_list(exp, "lambda");
+}
+
+int is_let(value* exp) {
+    return is_tagged_list(exp, "let");
+}
+
+int is_begin(value* exp) {
+    return is_tagged_list(exp, "begin");
+}
+
+int is_cond(value* exp) {
+    return is_tagged_list(exp, "cond");
+}
+
+int is_and(value* exp) {
+    return is_tagged_list(exp, "and");
+}
+
+int is_or(value* exp) {
+    return is_tagged_list(exp, "or");
+}
+
+int is_eval(value* exp) {
+    return is_tagged_list(exp, "eval");
+}
+
+int is_apply(value* exp) {
+    return is_tagged_list(exp, "apply");
 }
 
 int starts_with_symbol(value* exp) {
@@ -163,7 +221,7 @@ value* check_if(pool* p, value* exp) {
         MAKE_ERROR(p, "%s: too many items in %s", tag, exp);
     }
 
-    return pool_new_bool(p, 1);
+    return NULL;
 }
 
 value* get_if_predicate(pool* p, value* exp) {
@@ -555,32 +613,32 @@ value* check_application(pool* p, value* exp) {
     return NULL;
 }
 
-value* is_true(pool* p, value* exp) {
+int is_true(pool* p, value* exp) {
     // exp != false
     if (exp != NULL && exp->type == VALUE_BOOL && !value_is_true(exp)) {
-        return pool_new_bool(p, 0);
+        return 0;
     } else {
-        return pool_new_bool(p, 1);
+        return 1;
     }
 }
 
-value* is_false(pool* p, value* exp) {
+int is_false(pool* p, value* exp) {
     // exp == false
     if (exp != NULL && exp->type == VALUE_BOOL && !value_is_true(exp)) {
-        return pool_new_bool(p, 1);
+        return 1;
     } else {
-        return pool_new_bool(p, 0);
+        return 0;
     }
 }
 
-value* has_no_exps(pool* p, value* seq) {
+int has_no_exps(pool* p, value* seq) {
     // ()
-    return pool_new_bool(p, seq == NULL);
+    return (seq == NULL ? 1 : 0);
 }
 
-value* is_last_exp(pool* p, value* seq) {
+int is_last_exp(pool* p, value* seq) {
     // (e)
-    return pool_new_bool(p, seq->cdr == NULL);
+    return (seq->cdr == NULL ? 1 : 0);
 }
 
 value* get_first_exp(pool* p, value* seq) {
@@ -603,14 +661,14 @@ value* get_operands(pool* p, value* compound) {
     return compound->cdr;
 }
 
-value* has_no_operands(pool* p, value* operands) {
+int has_no_operands(pool* p, value* operands) {
     // ()
-    return pool_new_bool(p, operands == NULL);
+    return (operands == NULL ? 1 : 0);
 }
 
-value* is_last_operand(pool* p, value* operands) {
+int is_last_operand(pool* p, value* operands) {
     // (p)
-    return pool_new_bool(p, operands->cdr == NULL);
+    return (operands->cdr == NULL ? 1 : 0);
 }
 
 value* get_first_operand(pool* p, value* operands) {
@@ -648,16 +706,12 @@ value* adjoin_arg(pool* p, value* arg, value* arg_list) {
     return arg_list;
 }
 
-value* is_primitive_procedure(pool* p, value* proc) {
-    return pool_new_bool(
-        p,
-        (proc != NULL && proc->type == VALUE_BUILTIN));
+int is_primitive_procedure(pool* p, value* proc) {
+    return (proc != NULL && proc->type == VALUE_BUILTIN ? 1 : 0);
 }
 
-value* is_compound_procedure(pool* p, value* proc) {
-    return pool_new_bool(
-        p,
-        (proc != NULL && proc->type == VALUE_LAMBDA));
+int is_compound_procedure(pool* p, value* proc) {
+    return (proc != NULL && proc->type == VALUE_LAMBDA ? 1 : 0);
 }
 
 value* get_procedure_parameters(pool* p, value* proc) {

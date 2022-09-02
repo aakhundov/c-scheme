@@ -299,13 +299,13 @@ static value* op_check_application(machine* m, value* args) {
 static value* op_is_true(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return is_true(m->pool, exp);
+    return pool_new_bool(m->pool, is_true(m->pool, exp));
 }
 
 static value* op_is_false(machine* m, value* args) {
     value* exp = args->car->car;
 
-    return is_false(m->pool, exp);
+    return pool_new_bool(m->pool, is_false(m->pool, exp));
 }
 
 static value* op_make_true(machine* m, value* args) {
@@ -319,13 +319,13 @@ static value* op_make_false(machine* m, value* args) {
 static value* op_has_no_exps(machine* m, value* args) {
     value* seq = args->car->car;
 
-    return has_no_exps(m->pool, seq);
+    return pool_new_bool(m->pool, has_no_exps(m->pool, seq));
 }
 
 static value* op_is_last_exp(machine* m, value* args) {
     value* seq = args->car->car;
 
-    return is_last_exp(m->pool, seq);
+    return pool_new_bool(m->pool, is_last_exp(m->pool, seq));
 }
 
 static value* op_get_first_exp(machine* m, value* args) {
@@ -355,13 +355,13 @@ static value* op_get_operands(machine* m, value* args) {
 static value* op_has_no_operands(machine* m, value* args) {
     value* operands = args->car->car;
 
-    return has_no_operands(m->pool, operands);
+    return pool_new_bool(m->pool, has_no_operands(m->pool, operands));
 }
 
 static value* op_is_last_operand(machine* m, value* args) {
     value* operands = args->car->car;
 
-    return is_last_operand(m->pool, operands);
+    return pool_new_bool(m->pool, is_last_operand(m->pool, operands));
 }
 
 static value* op_get_first_operand(machine* m, value* args) {
@@ -390,13 +390,13 @@ static value* op_adjoin_arg(machine* m, value* args) {
 static value* op_is_primitive_procedure(machine* m, value* args) {
     value* proc = args->car->car;
 
-    return is_primitive_procedure(m->pool, proc);
+    return pool_new_bool(m->pool, is_primitive_procedure(m->pool, proc));
 }
 
 static value* op_is_compound_procedure(machine* m, value* args) {
     value* proc = args->car->car;
 
-    return is_compound_procedure(m->pool, proc);
+    return pool_new_bool(m->pool, is_compound_procedure(m->pool, proc));
 }
 
 static value* op_get_procedure_parameters(machine* m, value* args) {
@@ -1082,7 +1082,7 @@ static value* prim_not(machine* m, value* args) {
 
     value* arg = args->car;
 
-    if (value_is_true(is_true(m->pool, arg))) {
+    if (is_true(m->pool, arg)) {
         return pool_new_bool(m->pool, 0);
     } else {
         return pool_new_bool(m->pool, 1);
@@ -1156,7 +1156,7 @@ static value* prim_true_q(machine* m, value* args) {
 
     value* arg = args->car;
 
-    return is_true(m->pool, arg);
+    return pool_new_bool(m->pool, is_true(m->pool, arg));
 }
 
 static value* prim_false_q(machine* m, value* args) {
@@ -1164,7 +1164,7 @@ static value* prim_false_q(machine* m, value* args) {
 
     value* arg = args->car;
 
-    return is_false(m->pool, arg);
+    return pool_new_bool(m->pool, is_false(m->pool, arg));
 }
 
 static value* prim_equal_q(machine* m, value* args) {
@@ -1404,7 +1404,6 @@ eval* eval_new(char* path_to_code) {
     bind_machine_ops(e);
 
     e->env = make_global_environment(e);
-    machine_get_register(e->machine, "env")->car = e->env;
 
     return e;
 }

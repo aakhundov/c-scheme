@@ -6,6 +6,19 @@
 
 int is_self_evaluating(value* exp);
 int is_variable(value* exp);
+int is_quoted(value* exp);
+int is_assignment(value* exp);
+int is_definition(value* exp);
+int is_if(value* exp);
+int is_lambda(value* exp);
+int is_let(value* exp);
+int is_begin(value* exp);
+int is_cond(value* exp);
+int is_and(value* exp);
+int is_or(value* exp);
+int is_eval(value* exp);
+int is_apply(value* exp);
+
 int starts_with_symbol(value* exp);
 
 value* check_quoted(pool* p, value* exp);
@@ -56,26 +69,26 @@ value* check_apply_arguments(pool* p, value* args);
 
 value* check_application(pool* p, value* exp);
 
-value* is_true(pool* p, value* exp);
-value* is_false(pool* p, value* exp);
+int is_true(pool* p, value* exp);
+int is_false(pool* p, value* exp);
 
-value* has_no_exps(pool* p, value* seq);
-value* is_last_exp(pool* p, value* seq);
+int has_no_exps(pool* p, value* seq);
+int is_last_exp(pool* p, value* seq);
 value* get_first_exp(pool* p, value* seq);
 value* get_rest_exps(pool* p, value* seq);
 
 value* get_operator(pool* p, value* compound);
 value* get_operands(pool* p, value* compound);
-value* has_no_operands(pool* p, value* operands);
-value* is_last_operand(pool* p, value* operands);
+int has_no_operands(pool* p, value* operands);
+int is_last_operand(pool* p, value* operands);
 value* get_first_operand(pool* p, value* operands);
 value* get_rest_operands(pool* p, value* operands);
 
 value* make_empty_arglist(pool* p);
 value* adjoin_arg(pool* p, value* arg, value* arg_list);
 
-value* is_primitive_procedure(pool* p, value* proc);
-value* is_compound_procedure(pool* p, value* proc);
+int is_primitive_procedure(pool* p, value* proc);
+int is_compound_procedure(pool* p, value* proc);
 value* get_procedure_parameters(pool* p, value* proc);
 value* get_procedure_body(pool* p, value* proc);
 value* get_procedure_environment(pool* p, value* proc);
