@@ -57,10 +57,11 @@ void value_update_gen(value* v, size_t gen);
 int is_compound_type(value_type t);
 char* get_type_name(value_type t);
 
+int value_to_str(value* v, char* buffer);
+int value_to_pretty_str(value* v, char* buffer, size_t line_len);
+
 int value_is_true(value* v);
 int value_equal(value* v1, value* v2);
-int value_to_str(value* v, char* buffer);
 value* value_clone(value* source);
-void value_print(value* v);
 
 #endif  // VALUE_H_

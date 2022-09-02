@@ -1309,14 +1309,6 @@ static value* prim_newline(machine* m, value* args) {
     return NULL;
 }
 
-static value* prim_print(machine* m, value* args) {
-    ASSERT_NUM_ARGS(m->pool, args, 1);
-
-    value_print(args->car);
-
-    return NULL;
-}
-
 static value* prim_collect(machine* m, value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 0);
 
@@ -1358,29 +1350,28 @@ static value* prim_time(machine* m, value* args) {
     return pool_new_number(m->pool, time(NULL));
 }
 
-static value* prim_compile(machine* m, value* args) {
+static value* prim_pretty(machine* m, value* args) {
+    ASSERT_NUM_ARGS(m->pool, args, 2);
+    ASSERT_ARG_TYPE(m->pool, args, 1, VALUE_NUMBER);
+
+    value* exp = args->car;
+    int line_len = (int)args->cdr->car->number;
+
+    static char buffer[BUFFER_SIZE];
+    value_to_pretty_str(exp, buffer, line_len);
+
+    return value_new_symbol(buffer);
+}
+
+static value* prim_code(machine* m, value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
 
     value* exp = args->car;
-    char* target = "val";
-    char* linkage = "return";
 
-    if (args->cdr != NULL &&
-        args->cdr->car != NULL &&
-        args->cdr->car->type == VALUE_STRING) {
-        target = args->cdr->car->symbol;
-    }
-    if (args->cdr != NULL &&
-        args->cdr->cdr != NULL &&
-        args->cdr->cdr->car != NULL &&
-        args->cdr->cdr->car->type == VALUE_STRING) {
-        linkage = args->cdr->cdr->car->symbol;
-    }
-
-    return compile(m->pool, exp, target, linkage);
+    return compile(m->pool, exp, "val", "return");
 }
 
-static value* prim_compile_and_go(machine* m, value* args) {
+static value* prim_compile(machine* m, value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
 
     value* exp = args->car;
@@ -1482,15 +1473,15 @@ static value* make_global_environment(eval* e) {
     add_primitive(e, env, "info", prim_info);
     add_primitive(e, env, "display", prim_display);
     add_primitive(e, env, "newline", prim_newline);
-    add_primitive(e, env, "print", prim_print);
     add_primitive(e, env, "collect", prim_collect);
     add_primitive(e, env, "srand", prim_srand);
     add_primitive(e, env, "random", prim_random);
     add_primitive(e, env, "time", prim_time);
+    add_primitive(e, env, "pretty", prim_pretty);
 
     // compilation
+    add_primitive(e, env, "code", prim_code);
     add_primitive(e, env, "compile", prim_compile);
-    add_primitive(e, env, "compile-and-go", prim_compile_and_go);
 
     return env;
 }

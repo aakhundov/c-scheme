@@ -350,77 +350,6 @@ void value_dispose(value* v) {
     value_dispose_rec(v);
 }
 
-int value_is_true(value* v) {
-    if (v == NULL) {
-        return 0;
-    } else {
-        switch (v->type) {
-            case VALUE_NUMBER:
-            case VALUE_BOOL:
-                return v->number != 0;
-            case VALUE_BUILTIN:
-                return v->ptr != NULL;
-            case VALUE_SYMBOL:
-            case VALUE_STRING:
-                return strlen(v->symbol) > 0;
-            default:
-                return 1;
-        }
-    }
-}
-
-static int value_equal_rec(value* v1, value* v2) {
-    if (v1 == v2) {
-        return 1;
-    } else if (v1 == NULL || v2 == NULL) {
-        return 0;
-    } else if (v1->gen == -2 || v2->gen == -2) {
-        return 0;
-    } else if (v1->type != v2->type) {
-        return 0;
-    } else {
-        int result;
-        switch (v1->type) {
-            case VALUE_NUMBER:
-            case VALUE_BOOL:
-                result = v1->number == v2->number;
-                break;
-            case VALUE_BUILTIN:
-                result = v1->ptr == v2->ptr;
-                break;
-            case VALUE_SYMBOL:
-            case VALUE_STRING:
-            case VALUE_ERROR:
-            case VALUE_INFO:
-                result = strcmp(v1->symbol, v2->symbol) == 0;
-                break;
-            case VALUE_PAIR:
-            case VALUE_LAMBDA:
-                v1->gen = -2;
-                v2->gen = -2;
-                result = (value_equal_rec(v1->car, v2->car) &&
-                          value_equal_rec(v1->cdr, v2->cdr));
-                v1->gen = -1;
-                v2->gen = -1;
-                break;
-            default:
-                result = 0;
-                break;
-        }
-        return result;
-    }
-}
-
-int value_equal(value* v1, value* v2) {
-    value_update_gen(v1, -1);  // prepare
-    value_update_gen(v2, -1);  // prepare
-    int result = value_equal_rec(v1, v2);
-    value_update_gen(v1, 0);  // clear
-    value_update_gen(v2, 0);  // clear
-
-    return result;
-}
-
 static int number_to_str(value* v, char* buffer) {
     long num = (long)v->number;
     if (num == v->number) {
@@ -558,6 +487,121 @@ int value_to_str(value* v, char* buffer) {
     return result;
 }
 
+static int value_to_pretty_str_rec(value* v, char* buffer, size_t line_len, int indent) {
+    static char v_str[BUFFER_SIZE];
+    value_to_str(v, v_str);
+
+    if (v == NULL ||
+        v->type != VALUE_PAIR ||
+        strlen(v_str) <= line_len ||
+        strstr(v_str, CYCLE_MARK)) {
+        // the full expression in one line
+        return sprintf(buffer, "%*s%s\n", indent * INDENT_SPACES, "", v_str);
+    } else {
+        char* running = buffer;
+
+        // print the opening bracket
+        running += sprintf(running, "%*s(\n", indent * INDENT_SPACES, "");
+
+        while (v != NULL) {
+            if (v->type == VALUE_PAIR) {
+                // recursively print the car
+                running += value_to_pretty_str_rec(v->car, running, line_len, indent + 1);
+            } else {
+                // print the dot
+                running += sprintf(running, "%*s.\n", (indent + 1) * INDENT_SPACES, "");
+                // recursively print the terminating cdr and break
+                running += value_to_pretty_str_rec(v, running, line_len, indent + 1);
+                break;
+            }
+            v = v->cdr;
+        }
+
+        // print the closing bracket
+        running += sprintf(running, "%*s)\n", indent * INDENT_SPACES, "");
+
+        return running - buffer;
+    }
+}
+
+int value_to_pretty_str(value* v, char* buffer, size_t line_len) {
+    int length = value_to_pretty_str_rec(v, buffer, line_len, 0);
+    buffer[length - 1] = '\0';  // remove trailing \n
+
+    return length - 1;
+}
+
+int value_is_true(value* v) {
+    if (v == NULL) {
+        return 0;
+    } else {
+        switch (v->type) {
+            case VALUE_NUMBER:
+            case VALUE_BOOL:
+                return v->number != 0;
+            case VALUE_BUILTIN:
+                return v->ptr != NULL;
+            case VALUE_SYMBOL:
+            case VALUE_STRING:
+                return strlen(v->symbol) > 0;
+            default:
+                return 1;
+        }
+    }
+}
+
+static int value_equal_rec(value* v1, value* v2) {
+    if (v1 == v2) {
+        return 1;
+    } else if (v1 == NULL || v2 == NULL) {
+        return 0;
+    } else if (v1->gen == -2 || v2->gen == -2) {
+        return 0;
+    } else if (v1->type != v2->type) {
+        return 0;
+    } else {
+        int result;
+        switch (v1->type) {
+            case VALUE_NUMBER:
+            case VALUE_BOOL:
+                result = v1->number == v2->number;
+                break;
+            case VALUE_BUILTIN:
+                result = v1->ptr == v2->ptr;
+                break;
+            case VALUE_SYMBOL:
+            case VALUE_STRING:
+            case VALUE_ERROR:
+            case VALUE_INFO:
+                result = strcmp(v1->symbol, v2->symbol) == 0;
+                break;
+            case VALUE_PAIR:
+            case VALUE_LAMBDA:
+                v1->gen = -2;
+                v2->gen = -2;
+                result = (value_equal_rec(v1->car, v2->car) &&
+                          value_equal_rec(v1->cdr, v2->cdr));
+                v1->gen = -1;
+                v2->gen = -1;
+                break;
+            default:
+                result = 0;
+                break;
+        }
+        return result;
+    }
+}
+
+int value_equal(value* v1, value* v2) {
+    value_update_gen(v1, -1);  // prepare
+    value_update_gen(v2, -1);  // prepare
+    int result = value_equal_rec(v1, v2);
+    value_update_gen(v1, 0);  // clear
+    value_update_gen(v2, 0);  // clear
+
+    return result;
+}
+
 static void value_copy(value* dest, value* source) {
     assert(dest != NULL);
     assert(source != NULL);
@@ -638,41 +682,4 @@ value* value_clone(value* source) {
     value_update_gen(source, 0);  // clear
 
     return dest;
-}
-
-static void value_print_rec(value* v, int indent) {
-    static char buffer[BUFFER_SIZE];
-    value_to_str(v, buffer);
-
-    if (v == NULL ||
-        v->type != VALUE_PAIR ||
-        strlen(buffer) <= PRINT_MAX_LINE_LENGTH ||
-        strstr(buffer, CYCLE_MARK)) {
-        // print the full expression in one line
-        printf("%*s%s\n", indent * PRINT_INDENT_SPACES, "", buffer);
-    } else {
-        // print the opening bracket
-        printf("%*s(\n", indent * PRINT_INDENT_SPACES, "");
-
-        while (v != NULL) {
-            if (v->type == VALUE_PAIR) {
-                // recursively print the car
-                value_print_rec(v->car, indent + 1);
-            } else {
-                // print the dot
-                printf("%*s.\n", (indent + 1) * PRINT_INDENT_SPACES, "");
-                // recursively print the terminating cdr and break
-                value_print_rec(v, indent + 1);
-                break;
-            }
-            v = v->cdr;
-        }
-
-        // print the closing bracket
-        printf("%*s)\n", indent * PRINT_INDENT_SPACES, "");
-    }
-}
-
-void value_print(value* v) {
-    value_print_rec(v, 0);
 }
