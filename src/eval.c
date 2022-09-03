@@ -502,6 +502,11 @@ static value* op_set_variable_value(machine* m, value* args) {
     if (record == NULL) {
         return pool_new_error(m->pool, "%s is unbound", name->symbol);
     } else {
+        value* current = env_get_value(record);
+        if (current != NULL && current->type == VALUE_BUILTIN) {
+            return pool_new_error(m->pool, "can't update the builtin %s", current->symbol);
+        }
+
         env_update_value(record, val);
         return pool_new_info(m->pool, "%s is updated", name->symbol);
     }
@@ -518,6 +523,11 @@ static value* op_define_variable(machine* m, value* args) {
         env_add_value(env, name->symbol, val, m->pool);
         return pool_new_info(m->pool, "%s is defined", name->symbol);
     } else {
+        value* current = env_get_value(record);
+        if (current != NULL && current->type == VALUE_BUILTIN) {
+            return pool_new_error(m->pool, "can't update the builtin %s", current->symbol);
+        }
+
         env_update_value(record, val);
         return pool_new_info(m->pool, "%s is updated", name->symbol);
     }
