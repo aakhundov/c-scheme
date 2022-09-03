@@ -921,7 +921,7 @@ static value* compile_compiled_call(pool* p, char* target, char* linkage) {
 
     value* call_seq = make_empty_sequence(p);
 
-    // need the proc to invoke
+    // need the proc to invoke the compiled
     add_needed(p, call_seq, "proc");
 
     // anyting can happen in the call
@@ -962,14 +962,62 @@ static value* compile_compiled_call(pool* p, char* target, char* linkage) {
     return call_seq;
 }
 
+static value* compile_compound_call(pool* p, char* target, char* linkage) {
+    // can't be target != "val" and linkage == "return" simultaneously
+    assert(strcmp(target, "val") == 0 || strcmp(linkage, "return") != 0);
+
+    value* call_seq = make_empty_sequence(p);
+
+    // need the proc to invoke the lambda
+    add_needed(p, call_seq, "proc");
+
+    // anyting can happen in the call
+    add_modified(p, call_seq, "env");
+    add_modified(p, call_seq, "proc");
+    add_modified(p, call_seq, "val");
+    add_modified(p, call_seq, "argl");
+    add_modified(p, call_seq, "continue");
+
+    if (strcmp(linkage, "return") == 0) {
+        // need the continue for the call to return to
+        add_needed(p, call_seq, "continue");
+
+        // save the continue and goto compound-apply
+        add_code(p, call_seq, "save continue");
+        add_code(p, call_seq, "goto (label compound-apply)");
+    } else {
+        if (strcmp(target, "val") == 0) {
+            // set the continue to the linkage, save it, and goto compound-apply
+            add_code(p, call_seq, "assign continue (label %s)", linkage);
+            add_code(p, call_seq, "save continue");
+            add_code(p, call_seq, "goto (label compound-apply)");
+        } else {
+            // a new label to return to after the call
+            value* proc_return = make_label(p, "proc-return", 1);
+
+            // set the continue to the proc-return label, save it, goto the
+            // proc on return, set the val to the target, and goto the linkage
+            add_code(p, call_seq, "assign continue (label %s)", proc_return->symbol);
+            add_code(p, call_seq, "save continue");
+            add_code(p, call_seq, "goto (label compound-apply)");
+            add_code(p, call_seq, "%s", proc_return->symbol);
+            add_code(p, call_seq, "assign %s (reg val)", target);
+            add_code(p, call_seq, "goto (label %s)", linkage);
+        }
+    }
+
+    return call_seq;
+}
+
 static value* compile_procedure_call(pool* p, char* target, char* linkage) {
     // labels for the procedure type selection
     value* primitive_branch = make_label(p, "primitive-branch", 1);
     value* compiled_branch = make_label(p, "compiled-branch", 0);
+    value* compound_branch = make_label(p, "compound-branch", 0);
     value* after_call = make_label(p, "after-call", 0);
 
     // to circumvent the primitive part after the compiled if linkage is next
-    char* compiled_linkage = (strcmp(linkage, "next") == 0 ? after_call->symbol : linkage);
+    char* non_primitive_linkage = (strcmp(linkage, "next") == 0 ? after_call->symbol : linkage);
 
     value* test_seq = make_empty_sequence(p);
 
@@ -983,6 +1031,10 @@ static value* compile_procedure_call(pool* p, char* target, char* linkage) {
         p, test_seq,
         "branch (label %s) (op compiled-procedure?) (reg proc)",
         compiled_branch->symbol);
+    add_code(
+        p, test_seq,
+        "branch (label %s) (op compound-procedure?) (reg proc)",
+        compound_branch->symbol);
     add_code(
         p, test_seq,
         "perform (op signal-error) (const \"can't apply %%s\") (reg proc)");
@@ -1002,13 +1054,19 @@ static value* compile_procedure_call(pool* p, char* target, char* linkage) {
         p,
         append_sequences(
             p,
-            test_seq,  // test for the proc type
-            parallel_sequences(
+            test_seq,            // test for the proc type
+            parallel_sequences(  // 3 parallel sequences
                 p,
-                append_sequences(
+                parallel_sequences(
                     p,
-                    make_label_sequence(p, compiled_branch),              // compiled label
-                    compile_compiled_call(p, target, compiled_linkage)),  // call the compiled
+                    append_sequences(
+                        p,
+                        make_label_sequence(p, compiled_branch),                   // compiled label
+                        compile_compiled_call(p, target, non_primitive_linkage)),  // call the compiled
+                    append_sequences(
+                        p,
+                        make_label_sequence(p, compound_branch),                    // compound label
+                        compile_compound_call(p, target, non_primitive_linkage))),  // call the compound
                 append_sequences(
                     p,
                     make_label_sequence(p, primitive_branch),        // primitive label

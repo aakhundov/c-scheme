@@ -355,7 +355,7 @@ static int number_to_str(value* v, char* buffer) {
     if (num == v->number) {
         return sprintf(buffer, "%ld", num);
     } else {
-        return sprintf(buffer, "%.10g", v->number);
+        return sprintf(buffer, "%.12g", v->number);
     }
 }
 
