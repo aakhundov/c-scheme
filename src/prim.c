@@ -772,7 +772,7 @@ static value* prim_time(machine* m, value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 0);
 
     struct timespec t;
-    clock_gettime(CLOCK_REALTIME, &t);
+    timespec_get(&t, TIME_UTC);
     double millitime = t.tv_sec + t.tv_nsec / 1000000000.0;
 
     return pool_new_number(m->pool, millitime);

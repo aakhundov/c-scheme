@@ -22,7 +22,7 @@ typedef enum {
 
 static double get_time() {
     struct timespec t;
-    clock_gettime(CLOCK_REALTIME, &t);
+    timespec_get(&t, TIME_UTC);
     return t.tv_sec + t.tv_nsec / 1000000000.0;
 }
 

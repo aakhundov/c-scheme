@@ -1,8 +1,7 @@
 #ifndef PRIM_H_
 #define PRIM_H_
 
-#include "machine.h"
-#include "posix.h"
+#include "value.h"
 
 void init_primitives();
 void cleanup_primitives();

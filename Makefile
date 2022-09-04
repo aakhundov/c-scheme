@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-c -std=c99 -Wall -Werror -fPIC -g
+CFLAGS=-c -std=c11 -Wall -Werror -fPIC -g
 LDFLAGS=-g
 LDLIBS=-ledit -lm
 
