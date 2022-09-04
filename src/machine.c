@@ -20,6 +20,12 @@ typedef enum {
     INST_RESTORE = 5,
 } instruction_type;
 
+static double get_time() {
+    struct timespec t;
+    clock_gettime(CLOCK_REALTIME, &t);
+    return t.tv_sec + t.tv_nsec / 1000000000.0;
+}
+
 static value* get_or_create_record(machine* m, value* table, char* name) {
     value* pair = table->cdr;
     value* record = NULL;
@@ -778,13 +784,13 @@ static void trace_report(machine* m) {
 
         setlocale(LC_ALL, "en_US.UTF-8");
 
-        long execution_time = s->end_time - s->start_time;
+        long execution_time = (s->end_time - s->start_time) * 1000;
         long execution_memory = s->garbage_after - s->garbage_before + s->garbage_collected_values;
 
         printf("%s", line);
         printf(header, "GENERAL");
         printf("%s", line);
-        printf(row, "time, seconds", execution_time);
+        printf(row, "time, ms", execution_time);
         printf(row, "memory, values", execution_memory);
         printf(row, "instructions", s->num_inst);
         printf("%s", line);
@@ -962,7 +968,7 @@ void machine_run(machine* m) {
     reset_stats(m);
 
     if (m->trace >= TRACE_GENERAL) {
-        m->stats.start_time = (size_t)time(NULL);
+        m->stats.start_time = get_time();
         m->stats.garbage_before = m->pool->size;
     }
 
@@ -973,7 +979,7 @@ void machine_run(machine* m) {
     }
 
     if (m->trace >= TRACE_GENERAL) {
-        m->stats.end_time = (size_t)time(NULL);
+        m->stats.end_time = get_time();
         m->stats.garbage_after = m->pool->size;
 
         if (m->trace >= TRACE_INSTRUCTIONS) {

@@ -771,7 +771,11 @@ static value* prim_random(machine* m, value* args) {
 static value* prim_time(machine* m, value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 0);
 
-    return pool_new_number(m->pool, time(NULL));
+    struct timespec t;
+    clock_gettime(CLOCK_REALTIME, &t);
+    double millitime = t.tv_sec + t.tv_nsec / 1000000000.0;
+
+    return pool_new_number(m->pool, millitime);
 }
 
 static value* prim_pretty(machine* m, value* args) {

@@ -18,8 +18,8 @@ typedef enum {
 } machine_trace_level;
 
 struct machine_stats {
-    long start_time;
-    long end_time;
+    double start_time;
+    double end_time;
 
     long num_inst;
     long num_inst_assign;
