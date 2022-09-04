@@ -605,9 +605,9 @@ value* check_apply_arguments(pool* p, value* args) {
 value* check_application(pool* p, value* exp) {
     // (f ...) with any f
     if (exp == NULL) {
-        MAKE_ERROR(p, "%s: bad application %s", "apply", exp);
+        MAKE_ERROR(p, "%s: bad application %s", "application", exp);
     } else if (!is_null_terminated_list(exp)) {
-        MAKE_ERROR(p, "%s: can't apply to %s", "apply", exp->cdr);
+        MAKE_ERROR(p, "%s: can't apply to %s", "application", exp->cdr);
     }
 
     return NULL;
