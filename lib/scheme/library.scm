@@ -110,7 +110,7 @@
 
 ; diagnostics tools
 
-(define (assert-equal expression expected)
+(define (assert-equals expression expected)
     (let ((result (eval expression)))
         (cond ((equal? result expected)
             (info "%s == %s" expression expected))  ; exactly equals
