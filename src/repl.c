@@ -132,7 +132,7 @@ value* load_from_path(eval* e, char* path, int verbose) {
             value_dispose(content);
             return result;
         }
-        if (verbose) {
+        if (verbose && result != NULL) {
             value_to_str(result, buffer);
             printf("%s\n", buffer);
         }
