@@ -485,14 +485,15 @@ static void instrument_code(machine* m, value* line) {
 static value* append_code(machine* m, value* source) {
     value* head = m->code_tail;
     value* tail = m->code_tail;
-    value* label = NULL;
+    value* pending_labels = NULL;
 
     while (source != NULL) {
         value* line = source->car;
         if (line->type == VALUE_SYMBOL) {
-            // create the label and add a pointer
-            // to the code in the next iteration
-            label = get_label(m, line->symbol);
+            // creat a new label and add it
+            // to the chain of pending labels
+            value* label = get_label(m, line->symbol);
+            pending_labels = pool_new_pair(m->pool, label, pending_labels);
         } else {
             // line is a list starting with a statement
             assert(line->type == VALUE_PAIR);
@@ -532,11 +533,15 @@ static value* append_code(machine* m, value* source) {
                 NULL);
             tail = tail->cdr;
 
-            if (label != NULL) {
-                // point the label above to
-                // the current instruction
+            // while any labels are pending
+            while (pending_labels != NULL) {
+                // point the first pending label in the
+                // chain to the current instruction
+                value* label = pending_labels->car;
                 label->car = tail;
-                label = NULL;
+
+                // move to the next pending label
+                pending_labels = pending_labels->cdr;
             }
         }
 
