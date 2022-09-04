@@ -856,7 +856,7 @@ static void test_syntax(eval* e) {
     test_eval_error(e, "(set! b 30)", "b is unbound");
     test_eval_info(e, "(define b 20)", "b is defined");
     test_eval_number(e, "b", 20);
-    test_eval_info(e, "(set! b 30)", "b is updated");
+    test_eval_output(e, "(set! b 30)", "()");
     test_eval_number(e, "b", 30);
     test_eval_error(e, "s1", "s1 is unbound");
     test_eval_info(e, "(define (sf1) (set! s1 10) s1)", "sf1 is defined");
@@ -1291,23 +1291,23 @@ static void test_structural(eval* e) {
     test_eval_error(e, "x", "x is unbound");
     test_eval_info(e, "(define x '(1 . 2))", "x is defined");
     test_eval_output(e, "x", "(1 . 2)");
-    test_eval_info(e, "(set-car! x 3)", "car is set");
+    test_eval_output(e, "(set-car! x 3)", "()");
     test_eval_output(e, "x", "(3 . 2)");
-    test_eval_info(e, "(set-car! x (+ (car x) 1))", "car is set");
+    test_eval_output(e, "(set-car! x (+ (car x) 1))", "()");
     test_eval_output(e, "x", "(4 . 2)");
-    test_eval_info(e, "(set-car! x (cdr x))", "car is set");
+    test_eval_output(e, "(set-car! x (cdr x))", "()");
     test_eval_output(e, "x", "(2 . 2)");
-    test_eval_info(e, "(set-car! x (+ (cdr x) 1))", "car is set");
+    test_eval_output(e, "(set-car! x (+ (cdr x) 1))", "()");
     test_eval_output(e, "x", "(3 . 2)");
     test_eval_info(e, "(define x '(1))", "x is updated");
     test_eval_output(e, "x", "(1)");
-    test_eval_info(e, "(set-car! x 2)", "car is set");
+    test_eval_output(e, "(set-car! x 2)", "()");
     test_eval_output(e, "x", "(2)");
-    test_eval_info(e, "(set-car! x 3)", "car is set");
+    test_eval_output(e, "(set-car! x 3)", "()");
     test_eval_output(e, "x", "(3)");
-    test_eval_info(e, "(set-car! x '(2))", "car is set");
+    test_eval_output(e, "(set-car! x '(2))", "()");
     test_eval_output(e, "x", "((2))");
-    test_eval_info(e, "(set-car! x '(3))", "car is set");
+    test_eval_output(e, "(set-car! x '(3))", "()");
     test_eval_output(e, "x", "((3))");
 
     // set-car! errors
@@ -1321,23 +1321,23 @@ static void test_structural(eval* e) {
     test_eval_error(e, "y", "y is unbound");
     test_eval_info(e, "(define y '(1 . 2))", "y is defined");
     test_eval_output(e, "y", "(1 . 2)");
-    test_eval_info(e, "(set-cdr! y 3)", "cdr is set");
+    test_eval_output(e, "(set-cdr! y 3)", "()");
     test_eval_output(e, "y", "(1 . 3)");
-    test_eval_info(e, "(set-cdr! y (+ (cdr y) 1))", "cdr is set");
+    test_eval_output(e, "(set-cdr! y (+ (cdr y) 1))", "()");
     test_eval_output(e, "y", "(1 . 4)");
-    test_eval_info(e, "(set-cdr! y (car y))", "cdr is set");
+    test_eval_output(e, "(set-cdr! y (car y))", "()");
     test_eval_output(e, "y", "(1 . 1)");
-    test_eval_info(e, "(set-cdr! y (+ (car y) 1))", "cdr is set");
+    test_eval_output(e, "(set-cdr! y (+ (car y) 1))", "()");
     test_eval_output(e, "y", "(1 . 2)");
     test_eval_info(e, "(define x '(1))", "x is updated");
     test_eval_output(e, "x", "(1)");
-    test_eval_info(e, "(set-cdr! x 2)", "cdr is set");
+    test_eval_output(e, "(set-cdr! x 2)", "()");
     test_eval_output(e, "x", "(1 . 2)");
-    test_eval_info(e, "(set-cdr! x 3)", "cdr is set");
+    test_eval_output(e, "(set-cdr! x 3)", "()");
     test_eval_output(e, "x", "(1 . 3)");
-    test_eval_info(e, "(set-cdr! x '(2))", "cdr is set");
+    test_eval_output(e, "(set-cdr! x '(2))", "()");
     test_eval_output(e, "x", "(1 2)");
-    test_eval_info(e, "(set-cdr! x '(3))", "cdr is set");
+    test_eval_output(e, "(set-cdr! x '(3))", "()");
     test_eval_output(e, "x", "(1 3)");
 
     // set-cdr! errors
