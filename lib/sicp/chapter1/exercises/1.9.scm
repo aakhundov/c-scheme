@@ -9,5 +9,5 @@
 (define (plus2 a b)
     (if (= a 0) b (+ (dec a) (inc b))))
 
-(assert-equal '(plus1 2 3) 5)
-(assert-equal '(plus2 2 3) 5)
+(assert-equals '(plus1 2 3) 5)
+(assert-equals '(plus2 2 3) 5)

@@ -14,6 +14,6 @@
     (cont-frac-iter n d k)
 )
 
-(assert-equal '(tan-cf 1 10) (tan 1))
-(assert-equal '(tan-cf 0 10) (tan 0))
-(assert-equal '(tan-cf -1 10) (tan -1))
+(assert-equals '(tan-cf 1 10) (tan 1))
+(assert-equals '(tan-cf 0 10) (tan 0))
+(assert-equals '(tan-cf -1 10) (tan -1))

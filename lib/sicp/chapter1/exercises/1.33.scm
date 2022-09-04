@@ -23,9 +23,9 @@
 (define (sum-of-squared-primes a b)
     (filtered-accumulate prime? + 0 square a inc b))
 
-(assert-equal '(sum-of-squared-primes 2 10) 87)
-(assert-equal '(sum-of-squared-primes 10 50) 10379)
-(assert-equal '(sum-of-squared-primes 2 100) 65796)
+(assert-equals '(sum-of-squared-primes 2 10) 87)
+(assert-equals '(sum-of-squared-primes 10 50) 10379)
+(assert-equals '(sum-of-squared-primes 2 100) 65796)
 
 
 (define (sum-of-relatively-prime n)
@@ -33,7 +33,7 @@
         (= (gcd x n) 1))
     (filtered-accumulate rel-prime? + 0 identity 1 inc (- n 1)))
 
-(assert-equal '(sum-of-relatively-prime 10) 20)
-(assert-equal '(sum-of-relatively-prime 97) 4656)
-(assert-equal '(sum-of-relatively-prime 99) 2970)
-(assert-equal '(sum-of-relatively-prime 100) 2000)
+(assert-equals '(sum-of-relatively-prime 10) 20)
+(assert-equals '(sum-of-relatively-prime 97) 4656)
+(assert-equals '(sum-of-relatively-prime 99) 2970)
+(assert-equals '(sum-of-relatively-prime 100) 2000)

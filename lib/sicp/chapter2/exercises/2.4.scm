@@ -7,5 +7,5 @@
 (define (my-cdr z)
     (z (lambda (p q) q)))
 
-(assert-equal '(my-car (my-cons 1 2)) 1)
-(assert-equal '(my-cdr (my-cons 1 2)) 2)
+(assert-equals '(my-car (my-cons 1 2)) 1)
+(assert-equals '(my-cdr (my-cons 1 2)) 2)

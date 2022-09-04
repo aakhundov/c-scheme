@@ -27,14 +27,14 @@
 
 (define (sum-integers acc a b) (acc identity a inc b))
 
-(assert-equal '(sum-integers sum-rec 1 10) 55)
-(assert-equal '(sum-integers sum-iter 1 10) 55)
+(assert-equals '(sum-integers sum-rec 1 10) 55)
+(assert-equals '(sum-integers sum-iter 1 10) 55)
 
 (define (fact acc n) (acc identity 1 inc n))
 
-(assert-equal '(fact product-rec 1) 1)
-(assert-equal '(fact product-rec 5) 120)
-(assert-equal '(fact product-rec 10) 3628800)
-(assert-equal '(fact product-iter 1) 1)
-(assert-equal '(fact product-iter 5) 120)
-(assert-equal '(fact product-iter 10) 3628800)
+(assert-equals '(fact product-rec 1) 1)
+(assert-equals '(fact product-rec 5) 120)
+(assert-equals '(fact product-rec 10) 3628800)
+(assert-equals '(fact product-iter 1) 1)
+(assert-equals '(fact product-iter 5) 120)
+(assert-equals '(fact product-iter 10) 3628800)

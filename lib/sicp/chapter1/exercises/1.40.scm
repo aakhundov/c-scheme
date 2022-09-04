@@ -30,6 +30,6 @@
 (define (cubic a b c)
     (lambda (x) (+ (cube x) (* a (square x)) (* b x) c)))
 
-(assert-equal '(newtons-method (cubic 1 1 1) 1.0) -1)
-(assert-equal '(newtons-method (cubic 1 2 3) 1.0) -1.27568)
-(assert-equal '(newtons-method (cubic 3 2 1) 1.0) -2.32472)
+(assert-equals '(newtons-method (cubic 1 1 1) 1.0) -1)
+(assert-equals '(newtons-method (cubic 1 2 3) 1.0) -1.27568)
+(assert-equals '(newtons-method (cubic 3 2 1) 1.0) -2.32472)

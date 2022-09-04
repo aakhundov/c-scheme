@@ -6,8 +6,8 @@
                       (f (+ x dx)))
                    3)))
 
-(assert-equal '((smooth square 0.001) 2) 4)
-(assert-equal '((smooth cos 0.001) PI) -1)
+(assert-equals '((smooth square 0.001) 2) 4)
+(assert-equals '((smooth cos 0.001) PI) -1)
 
 (define (repeated f n)
     (lambda (x)
@@ -20,5 +20,5 @@
 (define (repeated-smooth n f dx)
     ((repeated (lambda (f) (smooth f dx)) n) f))
 
-(assert-equal '((repeated-smooth 3 square 0.001) 2) 4)
-(assert-equal '((repeated-smooth 3 cos 0.001) PI) -1)
+(assert-equals '((repeated-smooth 3 square 0.001) 2) 4)
+(assert-equals '((repeated-smooth 3 cos 0.001) PI) -1)

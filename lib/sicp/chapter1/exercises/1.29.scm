@@ -15,5 +15,5 @@
                         (else (* 4 y)))))
         (* (/ h 3) (sum summand 0 inc n))))
 
-(assert-equal '(simpson cube 0 1 100) 0.25)
-(assert-equal '(simpson cube 0 1 1000) 0.25)
+(assert-equals '(simpson cube 0 1 100) 0.25)
+(assert-equals '(simpson cube 0 1 1000) 0.25)

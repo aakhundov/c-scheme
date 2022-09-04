@@ -9,12 +9,12 @@
 (define (sum-cubes a b)
     (sum cube a inc b))
 
-(assert-equal '(sum-cubes 1 10) 3025)
+(assert-equals '(sum-cubes 1 10) 3025)
 
 (define (sum-integers a b)
     (sum identity a inc b))
 
-(assert-equal '(sum-integers 1 10) 55)
+(assert-equals '(sum-integers 1 10) 55)
 
 (define (pi-sum a b)
     (define (pi-term x)
@@ -23,7 +23,7 @@
         (+ x 4))
     (sum pi-term a pi-next b))
 
-(assert-equal '(* 8 (pi-sum 1 1000)) 3.139592655589783)
+(assert-equals '(* 8 (pi-sum 1 1000)) 3.139592655589783)
 
 (define (integral f a b dx)
     (define (add-dx x)
@@ -31,5 +31,5 @@
     (* (sum f (+ a (/ dx 2.0)) add-dx b)
        dx))
 
-(assert-equal '(integral cube 0 1 0.01) .24998750000000042)
-(assert-equal '(integral cube 0 1 0.001) .249999875000001)
+(assert-equals '(integral cube 0 1 0.01) .24998750000000042)
+(assert-equals '(integral cube 0 1 0.001) .249999875000001)

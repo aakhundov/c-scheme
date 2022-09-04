@@ -24,15 +24,15 @@
 
 (define x (cons 1 2))
 
-(assert-equal '(car x) 1)
-(assert-equal '(cdr x) 2)
+(assert-equals '(car x) 1)
+(assert-equals '(cdr x) 2)
 
 (define x (cons 1 2))
 (define y (cons 3 4))
 (define z (cons x y))
 
-(assert-equal '(car (car z)) 1)
-(assert-equal '(car (cdr z)) 3)
+(assert-equals '(car (car z)) 1)
+(assert-equals '(car (cdr z)) 3)
 
 (define (make-rat n d) (cons n d))
 (define (numer x) (car x))
@@ -46,15 +46,15 @@
 
 (define one-half (make-rat 1 2))
 
-(assert-equal 'one-half (cons 1 2))
+(assert-equals 'one-half (cons 1 2))
 
 (print-rat one-half)
 
 (define one-third (make-rat 1 3))
 
-(assert-equal '(add-rat one-half one-third) (cons 5 6))
-(assert-equal '(mul-rat one-half one-third) (cons 1 6))
-(assert-equal '(add-rat one-third one-third) (cons 6 9))
+(assert-equals '(add-rat one-half one-third) (cons 5 6))
+(assert-equals '(mul-rat one-half one-third) (cons 1 6))
+(assert-equals '(add-rat one-third one-third) (cons 6 9))
 
 (print-rat (add-rat one-half one-third))
 (print-rat (mul-rat one-half one-third))
@@ -64,6 +64,6 @@
     (let ((g (gcd n d)))
         (cons (/ n g) (/ d g))))
 
-(assert-equal '(add-rat one-third one-third) (cons 2 3))
+(assert-equals '(add-rat one-third one-third) (cons 2 3))
 
 (print-rat (add-rat one-third one-third))

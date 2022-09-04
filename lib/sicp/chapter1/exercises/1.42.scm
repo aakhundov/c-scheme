@@ -2,5 +2,5 @@
 
 (define (compose f g) (lambda (x) (f (g x))))
 
-(assert-equal '((compose square inc) 6) 49)
-(assert-equal '((compose inc square) 6) 37)
+(assert-equals '((compose square inc) 6) 49)
+(assert-equals '((compose inc square) 6) 37)

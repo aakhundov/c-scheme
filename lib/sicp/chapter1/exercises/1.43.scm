@@ -8,8 +8,8 @@
         (let ((g (repeated-rec f (- n 1))))
             (lambda (x) (f (g x))))))
 
-(assert-equal '((repeated-rec square 2) 5) 625)
-(assert-equal '((repeated-rec square 3) 2) 256)
+(assert-equals '((repeated-rec square 2) 5) 625)
+(assert-equals '((repeated-rec square 3) 2) 256)
 
 (define (repeated-iter f n)
     (lambda (x)
@@ -19,5 +19,5 @@
                 (iter (f result) (- i 1))))
         (iter x n)))
 
-(assert-equal '((repeated-iter square 2) 5) 625)
-(assert-equal '((repeated-iter square 3) 2) 256)
+(assert-equals '((repeated-iter square 2) 5) 625)
+(assert-equals '((repeated-iter square 3) 2) 256)

@@ -15,4 +15,4 @@
         (* (/ (+ i 1) 3) 2)
         1))
 
-(assert-equal '(+ (cont-frac-iter n d 10) 2) 2.71828)
+(assert-equals '(+ (cont-frac-iter n d 10) 2) 2.71828)

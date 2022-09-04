@@ -1,6 +1,6 @@
 ; Exercise 1.2
 
-(assert-equal '
+(assert-equals '
     (/ (+ 5
           4
           (- 2

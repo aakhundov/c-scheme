@@ -12,7 +12,7 @@
                 (try next))))
     (try first-guess))
 
-(assert-equal '
+(assert-equals '
     (fixed-point (lambda (x) (+ 1 (/ 1 x)))
                  1.0)
     1.61803)

@@ -25,9 +25,9 @@
                 "Values are not of opposite sign: f(%s) = %s, f(%s) = %s"
                 a a-value b b-value)))))
 
-(assert-equal '(half-interval-method sin 2.0 4.0) 3.14111328125)
+(assert-equals '(half-interval-method sin 2.0 4.0) 3.14111328125)
 
-(assert-equal '
+(assert-equals '
     (half-interval-method (lambda (x) (- (* x x x) (* 2 x) 3))
                         1.0
                         2.0)
@@ -45,9 +45,9 @@
                 (try next))))
     (try first-guess))
 
-(assert-equal '(fixed-point cos 1.0) .7390822985224023)
+(assert-equals '(fixed-point cos 1.0) .7390822985224023)
 
-(assert-equal '
+(assert-equals '
     (fixed-point (lambda (y) (+ (sin y) (cos y)))
                  1.0)
     1.2587315962971173)
@@ -56,4 +56,4 @@
     (fixed-point (lambda (y) (average y (/ x y)))
                  1.0))
 
-(assert-equal '(sqrt 2) 1.41421)
+(assert-equals '(sqrt 2) 1.41421)

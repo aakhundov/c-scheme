@@ -19,5 +19,5 @@
     (define (no-more? coin-values) (null? coin-values))
 ))
 
-(assert-equal '(cc 100 us-coins) 292)
-(assert-equal '(cc 30 uk-coins) 1022)
+(assert-equals '(cc 100 us-coins) 292)
+(assert-equals '(cc 30 uk-coins) 1022)

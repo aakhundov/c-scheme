@@ -5,5 +5,5 @@
         items
         (last-pair (cdr items))))
 
-(assert-equal '(last-pair (list 23 72 149 34)) '(34))
-(assert-equal '(last-pair (list 23)) '(23))
+(assert-equals '(last-pair (list 23 72 149 34)) '(34))
+(assert-equals '(last-pair (list 23)) '(23))

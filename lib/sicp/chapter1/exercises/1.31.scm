@@ -15,12 +15,12 @@
 
 (define (fact acc n) (acc identity 1 inc n))
 
-(assert-equal '(fact product-rec 1) 1)
-(assert-equal '(fact product-rec 5) 120)
-(assert-equal '(fact product-rec 10) 3628800)
-(assert-equal '(fact product-iter 1) 1)
-(assert-equal '(fact product-iter 5) 120)
-(assert-equal '(fact product-iter 10) 3628800)
+(assert-equals '(fact product-rec 1) 1)
+(assert-equals '(fact product-rec 5) 120)
+(assert-equals '(fact product-rec 10) 3628800)
+(assert-equals '(fact product-iter 1) 1)
+(assert-equals '(fact product-iter 5) 120)
+(assert-equals '(fact product-iter 10) 3628800)
 
 (define (pi-product acc n)
     (define (pi-term x)
@@ -29,5 +29,5 @@
         (+ x 2))
     (* 4 (acc pi-term 3 pi-next n)))
 
-(assert-equal '(pi-product product-iter 1000) 3.14316)
-(assert-equal '(pi-product product-rec 1000) 3.14316)
+(assert-equals '(pi-product product-iter 1000) 3.14316)
+(assert-equals '(pi-product product-rec 1000) 3.14316)

@@ -13,7 +13,7 @@
           (lambda (x) (+ x 4))
           b))
 
-(assert-equal '(* 8 (pi-sum 1 1000)) 3.139592655589783)
+(assert-equals '(* 8 (pi-sum 1 1000)) 3.139592655589783)
 
 (define (integral f a b dx)
     (* (sum f
@@ -22,10 +22,10 @@
             b)
        dx))
 
-(assert-equal '(integral cube 0 1 0.01) .24998750000000042)
-(assert-equal '(integral cube 0 1 0.001) .249999875000001)
+(assert-equals '(integral cube 0 1 0.01) .24998750000000042)
+(assert-equals '(integral cube 0 1 0.001) .249999875000001)
 
-(assert-equal '
+(assert-equals '
     ((lambda (x y z) (+ x y (square z)))
      1 2 3)
     12)
@@ -37,8 +37,8 @@
            (* y b)
            (* a b))))
 
-(assert-equal '(f 2 3) 78)
-(assert-equal '(f 3 2) 138)
+(assert-equals '(f 2 3) 78)
+(assert-equals '(f 3 2) 138)
 
 (define (f2 x)
     (+ (let ((x 3))
@@ -46,7 +46,7 @@
      x)
 )
 
-(assert-equal '(f2 5) 38)
+(assert-equals '(f2 5) 38)
 
 (define (f3 x)
     (let ((x 3)
@@ -54,4 +54,4 @@
         (* x y))
 )
 
-(assert-equal '(f3 2) 12)
+(assert-equals '(f3 2) 12)

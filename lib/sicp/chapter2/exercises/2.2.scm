@@ -6,9 +6,9 @@
 
 (define p (make-point 1 2))
 
-(assert-equal 'p (cons 1 2))
-(assert-equal '(x-point p) 1)
-(assert-equal '(y-point p) 2)
+(assert-equals 'p (cons 1 2))
+(assert-equals '(x-point p) 1)
+(assert-equals '(y-point p) 2)
 
 (define (make-segment p1 p2) (cons p1 p2))
 (define (start-segment s) (car s))
@@ -16,9 +16,9 @@
 
 (define s (make-segment (make-point 1 2) (make-point 3 4)))
 
-(assert-equal 's (cons (cons 1 2) (cons 3 4)))
-(assert-equal '(start-segment s) (cons 1 2))
-(assert-equal '(end-segment s) (cons 3 4))
+(assert-equals 's (cons (cons 1 2) (cons 3 4)))
+(assert-equals '(start-segment s) (cons 1 2))
+(assert-equals '(end-segment s) (cons 3 4))
 
 (define (midpoint-segment s)
     (make-point (average (x-point (start-segment s))
@@ -26,7 +26,7 @@
                 (average (y-point (start-segment s))
                          (y-point (end-segment s)))))
 
-(assert-equal '(midpoint-segment s) (cons 2 3))
+(assert-equals '(midpoint-segment s) (cons 2 3))
 
 (define (print-point p)
     (display "(")

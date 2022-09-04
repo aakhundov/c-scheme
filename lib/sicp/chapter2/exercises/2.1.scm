@@ -19,12 +19,12 @@
                                -1)))
                      (cons (/ (* s (abs n)) g) (/ (abs d) g))))))
 
-(assert-equal '(make-rat 2 4) (cons 1 2))
-(assert-equal '(make-rat -2 4) (cons -1 2))
-(assert-equal '(make-rat 2 -4) (cons -1 2))
-(assert-equal '(make-rat -2 -4) (cons 1 2))
-(assert-equal '(make-rat 0 4) (cons 0 1))
-(assert-equal '(make-rat 0 -4) (cons 0 1))
+(assert-equals '(make-rat 2 4) (cons 1 2))
+(assert-equals '(make-rat -2 4) (cons -1 2))
+(assert-equals '(make-rat 2 -4) (cons -1 2))
+(assert-equals '(make-rat -2 -4) (cons 1 2))
+(assert-equals '(make-rat 0 4) (cons 0 1))
+(assert-equals '(make-rat 0 -4) (cons 0 1))
 
 ; this returns an error
 (print-rat (make-rat 4 0))

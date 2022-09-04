@@ -6,6 +6,6 @@
           ((= y 1) 2)
           (else (A (- x 1) (A x (- y 1))))))
 
-(assert-equal'(A 1 10) 1024)
-(assert-equal'(A 2 4) 65536)
-(assert-equal'(A 3 3) 65536)
+(assert-equals'(A 1 10) 1024)
+(assert-equals'(A 2 4) 65536)
+(assert-equals'(A 3 3) 65536)

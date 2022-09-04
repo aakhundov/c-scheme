@@ -17,13 +17,13 @@
 (define log-1000 (log 1000))
 
 ; without average damping
-(assert-equal '
+(assert-equals '
     (fixed-point (lambda (x) (/ log-1000 (log x)))
                  4.0)
     4.55555)
 
 ; with average damping
-(assert-equal '
+(assert-equals '
     (fixed-point (lambda (x) (average x (/ log-1000 (log x))))
                  4.0)
     4.55555)

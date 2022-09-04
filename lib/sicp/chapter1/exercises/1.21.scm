@@ -9,6 +9,6 @@
 
 (define (divides? a b) (= (remainder b a) 0))
 
-(assert-equal '(smallest-divisor 199) 199)
-(assert-equal '(smallest-divisor 1999) 1999)
-(assert-equal '(smallest-divisor 19999) 7)
+(assert-equals '(smallest-divisor 199) 199)
+(assert-equals '(smallest-divisor 1999) 1999)
+(assert-equals '(smallest-divisor 19999) 7)
