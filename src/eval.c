@@ -504,7 +504,7 @@ static value* op_set_variable_value(machine* m, value* args) {
     } else {
         value* current = env_get_value(record);
         if (current != NULL && current->type == VALUE_BUILTIN) {
-            return pool_new_error(m->pool, "can't update the builtin %s", current->symbol);
+            return pool_new_error(m->pool, "can't update the <builtin '%s'>", current->symbol);
         }
 
         env_update_value(record, val);
@@ -525,7 +525,7 @@ static value* op_define_variable(machine* m, value* args) {
     } else {
         value* current = env_get_value(record);
         if (current != NULL && current->type == VALUE_BUILTIN) {
-            return pool_new_error(m->pool, "can't update the builtin %s", current->symbol);
+            return pool_new_error(m->pool, "can't update the <builtin '%s'>", current->symbol);
         }
 
         env_update_value(record, val);
