@@ -38,10 +38,10 @@ static int is_null_terminated_list(value* v) {
 
 int is_self_evaluating(value* exp) {
     return (exp == NULL ||
-            exp->type == VALUE_NUMBER ||  // 10
-            exp->type == VALUE_STRING ||  // "abc"
-            exp->type == VALUE_BOOL ||    // true or false
-            exp->type == VALUE_BUILTIN);  // true or false
+            exp->type == VALUE_NUMBER ||    // 10
+            exp->type == VALUE_STRING ||    // "abc"
+            exp->type == VALUE_BOOL ||      // true or false
+            exp->type == VALUE_PRIMITIVE);  // primitive function
 }
 
 int is_variable(value* exp) {
@@ -707,7 +707,7 @@ value* adjoin_arg(pool* p, value* arg, value* arg_list) {
 }
 
 int is_primitive_procedure(pool* p, value* proc) {
-    return (proc != NULL && proc->type == VALUE_BUILTIN ? 1 : 0);
+    return (proc != NULL && proc->type == VALUE_PRIMITIVE ? 1 : 0);
 }
 
 int is_compound_procedure(pool* p, value* proc) {

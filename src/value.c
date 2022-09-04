@@ -40,10 +40,10 @@ static void value_init_bool(value* v, int truth) {
     v->number = truth;
 }
 
-static void value_init_builtin(value* v, void* ptr, char* name) {
+static void value_init_primitive(value* v, void* ptr, char* name) {
     assert(v != NULL);
 
-    v->type = VALUE_BUILTIN;
+    v->type = VALUE_PRIMITIVE;
     v->ptr = ptr;
     v->symbol = malloc(strlen(name) + 1);
     strcpy(v->symbol, name);
@@ -153,9 +153,9 @@ value* value_new_bool(int truth) {
     return v;
 }
 
-value* value_new_builtin(void* ptr, char* name) {
+value* value_new_primitive(void* ptr, char* name) {
     value* v = value_new();
-    value_init_builtin(v, ptr, name);
+    value_init_primitive(v, ptr, name);
 
     return v;
 }
@@ -250,8 +250,8 @@ char* get_type_name(value_type t) {
             return "string";
         case VALUE_BOOL:
             return "bool";
-        case VALUE_BUILTIN:
-            return "builtin";
+        case VALUE_PRIMITIVE:
+            return "primitive";
         case VALUE_ERROR:
             return "error";
         case VALUE_INFO:
@@ -297,7 +297,7 @@ void value_cleanup(value* v) {
             case VALUE_STRING:
             case VALUE_ERROR:
             case VALUE_INFO:
-            case VALUE_BUILTIN:
+            case VALUE_PRIMITIVE:
                 free(v->symbol);
                 break;
             case VALUE_ENV:
@@ -375,8 +375,8 @@ static int bool_to_str(value* v, char* buffer) {
     }
 }
 
-static int builtin_to_str(value* v, char* buffer) {
-    return sprintf(buffer, "<builtin '%s'>", v->symbol);
+static int primitive_to_str(value* v, char* buffer) {
+    return sprintf(buffer, "<primitive '%s'>", v->symbol);
 }
 
 static int value_to_str_rec(value* v, char* buffer);
@@ -454,8 +454,8 @@ static int value_to_str_rec(value* v, char* buffer) {
             case VALUE_BOOL:
                 result = bool_to_str(v, buffer);
                 break;
-            case VALUE_BUILTIN:
-                result = builtin_to_str(v, buffer);
+            case VALUE_PRIMITIVE:
+                result = primitive_to_str(v, buffer);
                 break;
             case VALUE_ERROR:
                 result = sprintf(buffer, "\x1B[31m%s\x1B[0m", v->symbol);
@@ -539,7 +539,7 @@ int value_is_true(value* v) {
             case VALUE_NUMBER:
             case VALUE_BOOL:
                 return v->number != 0;
-            case VALUE_BUILTIN:
+            case VALUE_PRIMITIVE:
                 return v->ptr != NULL;
             case VALUE_SYMBOL:
             case VALUE_STRING:
@@ -566,7 +566,7 @@ static int value_equal_rec(value* v1, value* v2) {
             case VALUE_BOOL:
                 result = v1->number == v2->number;
                 break;
-            case VALUE_BUILTIN:
+            case VALUE_PRIMITIVE:
                 result = v1->ptr == v2->ptr;
                 break;
             case VALUE_SYMBOL:
@@ -619,8 +619,8 @@ static void value_copy(value* dest, value* source) {
         case VALUE_BOOL:
             value_init_bool(dest, source->number);
             break;
-        case VALUE_BUILTIN:
-            value_init_builtin(dest, source->ptr, source->symbol);
+        case VALUE_PRIMITIVE:
+            value_init_primitive(dest, source->ptr, source->symbol);
             break;
         case VALUE_ERROR:
             value_init_error_from_args(dest, source->symbol, NULL);

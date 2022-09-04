@@ -25,7 +25,7 @@ value* pool_new_number(pool* p, double number);
 value* pool_new_symbol(pool* p, char* symbol);
 value* pool_new_string(pool* p, char* string);
 value* pool_new_bool(pool* p, int truth);
-value* pool_new_builtin(pool* p, void* ptr, char* name);
+value* pool_new_primitive(pool* p, void* ptr, char* name);
 value* pool_new_error(pool* p, char* error, ...);
 value* pool_new_error_from_args(pool* p, char* error, va_list args);
 value* pool_new_info(pool* p, char* info, ...);

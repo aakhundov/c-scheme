@@ -152,8 +152,8 @@ value* pool_new_bool(pool* p, int truth) {
     return v;
 }
 
-value* pool_new_builtin(pool* p, void* ptr, char* name) {
-    value* v = value_new_builtin(ptr, name);
+value* pool_new_primitive(pool* p, void* ptr, char* name) {
+    value* v = value_new_primitive(ptr, name);
 
     add_to_chain(p, v);
 

@@ -105,14 +105,13 @@ static void clear_stack(machine* m) {
 }
 
 static value* call_op(machine* m, value* op, value* args) {
-    // call the builtin op
     value* result = NULL;
     if (op->car == NULL) {
-        // the op record is not bound to a builtin function
+        // the op record is not bound to a machine op
         result = pool_new_error(m->pool, "machine op %s is unbound", op->cdr->symbol);
     } else {
-        // call the builtin
-        result = ((builtin)op->car->ptr)(m, args);
+        // call the machine op
+        result = ((primitive)op->car->ptr)(m, args);
     }
 
     return result;
@@ -918,9 +917,9 @@ void machine_dispose(machine* m) {
     free(m);
 }
 
-void machine_bind_op(machine* m, char* name, builtin fn) {
+void machine_bind_op(machine* m, char* name, primitive fn) {
     value* op = get_op(m, name);
-    op->car = pool_new_builtin(m->pool, fn, name);
+    op->car = pool_new_primitive(m->pool, fn, name);
 
     // add newly bound op to the op calls count env
     // if it wasn't in the code  processed so far

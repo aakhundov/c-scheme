@@ -471,7 +471,7 @@ static value* op_apply_primitive_procedure(machine* m, value* args) {
     value* proc = args->car->car;
     value* arg_list = args->cdr->car->car;
 
-    value* result = ((builtin)proc->ptr)(m, arg_list);
+    value* result = ((primitive)proc->ptr)(m, arg_list);
     if (result != NULL && result->type == VALUE_ERROR) {
         result = pool_new_error(m->pool, "%s: %s", proc->symbol, result->symbol);
     }
@@ -503,8 +503,8 @@ static value* op_set_variable_value(machine* m, value* args) {
         return pool_new_error(m->pool, "%s is unbound", name->symbol);
     } else {
         value* current = env_get_value(record);
-        if (current != NULL && current->type == VALUE_BUILTIN) {
-            return pool_new_error(m->pool, "can't update the <builtin '%s'>", current->symbol);
+        if (current != NULL && current->type == VALUE_PRIMITIVE) {
+            return pool_new_error(m->pool, "can't update the <primitive '%s'>", current->symbol);
         }
 
         env_update_value(record, val);
@@ -524,8 +524,8 @@ static value* op_define_variable(machine* m, value* args) {
         return pool_new_info(m->pool, "%s is defined", name->symbol);
     } else {
         value* current = env_get_value(record);
-        if (current != NULL && current->type == VALUE_BUILTIN) {
-            return pool_new_error(m->pool, "can't update the <builtin '%s'>", current->symbol);
+        if (current != NULL && current->type == VALUE_PRIMITIVE) {
+            return pool_new_error(m->pool, "can't update the <primitive '%s'>", current->symbol);
         }
 
         env_update_value(record, val);
@@ -1406,9 +1406,9 @@ static value* prim_compile(machine* m, value* args) {
     return NULL;
 }
 
-static void add_primitive(eval* e, value* env, char* name, builtin fn) {
+static void add_primitive(eval* e, value* env, char* name, primitive fn) {
     pool* p = e->machine->pool;
-    env_add_value(env, name, pool_new_builtin(p, fn, name), p);
+    env_add_value(env, name, pool_new_primitive(p, fn, name), p);
 }
 
 static value* make_global_environment(eval* e) {

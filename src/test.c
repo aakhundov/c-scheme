@@ -874,8 +874,8 @@ static void test_syntax(eval* e) {
     test_eval_error(e, "(set! y 30 40)", "more than two items");
     test_eval_error(e, "(set! 1 . 2)", "non-list structure");
     test_eval_error(e, "(set! . 1)", "non-list structure");
-    test_eval_error(e, "(set! + -)", "can't update the <builtin '+'>");
-    test_eval_error(e, "(set! * 1)", "can't update the <builtin '*'>");
+    test_eval_error(e, "(set! + -)", "can't update the <primitive '+'>");
+    test_eval_error(e, "(set! * 1)", "can't update the <primitive '*'>");
 
     // define
     test_eval_error(e, "c", "c is unbound");
@@ -909,8 +909,8 @@ static void test_syntax(eval* e) {
     test_eval_error(e, "(define \"x\" 2)", "either variable or function must be defined");
     test_eval_error(e, "(define 1 . 2)", "non-list structure");
     test_eval_error(e, "(define . 1)", "non-list structure");
-    test_eval_error(e, "(define + -)", "can't update the <builtin '+'>");
-    test_eval_error(e, "(define * 1)", "can't update the <builtin '*'>");
+    test_eval_error(e, "(define + -)", "can't update the <primitive '+'>");
+    test_eval_error(e, "(define * 1)", "can't update the <primitive '*'>");
 
     // if
     test_eval_number(e, "(if 1 2 3)", 2);
@@ -1114,7 +1114,7 @@ static void test_syntax(eval* e) {
     test_eval_output(e, "(eval 'e2)", "(+ 1 2 3)");
     test_eval_output(e, "(eval ''e2)", "e2");
     test_eval_info(e, "(define e3 '(cons + '(1 2 3)))", "e3 is defined");
-    test_eval_output(e, "(eval e3)", "(<builtin '+'> 1 2 3)");
+    test_eval_output(e, "(eval e3)", "(<primitive '+'> 1 2 3)");
     test_eval_output(e, "(eval 'e3)", "(cons + (quote (1 2 3)))");
     test_eval_number(e, "(eval (eval e3))", 6);
 

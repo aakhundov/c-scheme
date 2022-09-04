@@ -12,7 +12,7 @@ typedef enum {
     VALUE_ERROR = 4,
     VALUE_INFO = 5,
     VALUE_PAIR = 6,
-    VALUE_BUILTIN = 7,
+    VALUE_PRIMITIVE = 7,
     VALUE_LAMBDA = 8,
     VALUE_COMPILED = 9,
     VALUE_CODE = 10,
@@ -39,7 +39,7 @@ value* value_new_number(double number);
 value* value_new_symbol(char* symbol);
 value* value_new_string(char* string);
 value* value_new_bool(int truth);
-value* value_new_builtin(void* ptr, char* name);
+value* value_new_primitive(void* ptr, char* name);
 value* value_new_error(char* error, ...);
 value* value_new_error_from_args(char* error, va_list args);
 value* value_new_info(char* info, ...);
