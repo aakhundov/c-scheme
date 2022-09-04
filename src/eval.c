@@ -51,6 +51,23 @@
         }                                                   \
     }
 
+#define ASSERT_MAX_NUM_ARGS(p, args, max_expected_num_args) \
+    {                                                       \
+        size_t num_args = 0;                                \
+        value* arg = args;                                  \
+        while (arg != NULL) {                               \
+            num_args++;                                     \
+            arg = arg->cdr;                                 \
+        }                                                   \
+        if (num_args > max_expected_num_args) {             \
+            return pool_new_error(                          \
+                p, "expects at most %d arg%s, but got %d",  \
+                max_expected_num_args,                      \
+                (max_expected_num_args == 1 ? "" : "s"),    \
+                num_args);                                  \
+        }                                                   \
+    }
+
 #define ASSERT_ARG_TYPE(p, args, ordinal, expected_type) \
     {                                                    \
         size_t i = 0;                                    \
@@ -103,6 +120,34 @@
             arg = arg->cdr;                                    \
             i++;                                               \
         }                                                      \
+    }
+
+#define GET_OPTIONAL_ARG(p, args, ordinal, expected_type, target) \
+    {                                                             \
+        size_t i = 0;                                             \
+        value* arg = args;                                        \
+        while (arg != NULL && i < ordinal) {                      \
+            arg = arg->cdr;                                       \
+            i++;                                                  \
+        }                                                         \
+        if (arg != NULL) {                                        \
+            if (arg->car == NULL) {                               \
+                return pool_new_error(                            \
+                    p, "arg #%d must be %s, but got ()",          \
+                    ordinal, get_type_name(expected_type));       \
+            } else if (arg->car->type != expected_type) {         \
+                static char buffer[BUFFER_SIZE];                  \
+                value_to_str(arg->car, buffer);                   \
+                return pool_new_error(                            \
+                    p, "arg #%d must be %s, but is %s %s",        \
+                    ordinal,                                      \
+                    get_type_name(expected_type),                 \
+                    get_type_name(arg->car->type),                \
+                    buffer);                                      \
+            } else {                                              \
+                target = arg->car;                                \
+            }                                                     \
+        }                                                         \
     }
 
 static value* op_check_quoted(machine* m, value* args) {
@@ -508,7 +553,7 @@ static value* op_set_variable_value(machine* m, value* args) {
         }
 
         env_update_value(record, val);
-        
+
         return NULL;
     }
 }
@@ -1363,24 +1408,32 @@ static value* prim_time(machine* m, value* args) {
 }
 
 static value* prim_pretty(machine* m, value* args) {
-    ASSERT_NUM_ARGS(m->pool, args, 2);
-    ASSERT_ARG_TYPE(m->pool, args, 1, VALUE_NUMBER);
+    ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
+    ASSERT_MAX_NUM_ARGS(m->pool, args, 2);
 
     value* exp = args->car;
-    int line_len = (int)args->cdr->car->number;
+    value* line_len = pool_new_number(m->pool, 80);
+
+    GET_OPTIONAL_ARG(m->pool, args, 1, VALUE_NUMBER, line_len);
 
     static char buffer[BUFFER_SIZE];
-    value_to_pretty_str(exp, buffer, line_len);
+    value_to_pretty_str(exp, buffer, (int)line_len->number);
 
     return value_new_symbol(buffer);
 }
 
 static value* prim_code(machine* m, value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
+    ASSERT_MAX_NUM_ARGS(m->pool, args, 3);
 
     value* exp = args->car;
+    value* target = pool_new_string(m->pool, "val");
+    value* linkage = pool_new_string(m->pool, "return");
 
-    return compile(m->pool, exp, "val", "return");
+    GET_OPTIONAL_ARG(m->pool, args, 1, VALUE_STRING, target);
+    GET_OPTIONAL_ARG(m->pool, args, 2, VALUE_STRING, linkage);
+
+    return compile(m->pool, exp, target->symbol, linkage->symbol);
 }
 
 static value* prim_compile(machine* m, value* args) {
