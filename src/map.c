@@ -101,6 +101,23 @@ void map_dispose(map* m) {
     free(m);
 }
 
+int map_has(map* m, char* key) {
+    // find the bucket for the key
+    size_t id = get_bucket_id(m, key);
+    map_record** bucket = m->buckets + id;
+
+    map_record* r = *bucket;
+    while (r != NULL) {
+        // search for the key in the bucket
+        if (strcmp(r->key, key) == 0) {
+            return 1;
+        }
+        r = r->next;
+    }
+
+    return 0;
+}
+
 map_record* map_get(map* m, char* key) {
     // find the bucket for the key
     size_t id = get_bucket_id(m, key);
@@ -151,5 +168,18 @@ map* map_copy(map* source) {
         }
 
         return m;
+    }
+}
+
+void map_dispose_values(map* m) {
+    for (size_t i = 0; i < m->num_buckets; i++) {
+        // iterate over the buckets
+        map_record* r = *(m->buckets + i);
+        while (r != NULL) {
+            // dispose each value in a chain
+            value_dispose(r->val);
+            r->val = NULL;
+            r = r->next;
+        }
     }
 }

@@ -111,7 +111,7 @@ static value* call_op(machine* m, value* op, value* args) {
         result = pool_new_error(m->pool, "machine op %s is unbound", op->cdr->symbol);
     } else {
         // call the machine op
-        result = ((primitive)op->car->ptr)(m, args);
+        result = ((machine_op)op->car->ptr)(m, args);
     }
 
     return result;
@@ -917,7 +917,7 @@ void machine_dispose(machine* m) {
     free(m);
 }
 
-void machine_bind_op(machine* m, char* name, primitive fn) {
+void machine_bind_op(machine* m, char* name, machine_op fn) {
     value* op = get_op(m, name);
     op->car = pool_new_primitive(m->pool, fn, name);
 

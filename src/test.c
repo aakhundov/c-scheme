@@ -11,6 +11,7 @@
 #include "machine.h"
 #include "parse.h"
 #include "pool.h"
+#include "prim.h"
 #include "value.h"
 
 #define RUN_TEST_FN(fn)                        \
@@ -2080,6 +2081,7 @@ void test_other(eval* e) {
 }
 
 void run_test() {
+    init_primitives();
     eval* e = eval_new(EVALUATOR_PATH);
 
     RUN_TEST_FN(test_parse);
@@ -2099,4 +2101,5 @@ void run_test() {
     printf("all tests have been passed!\n");
 
     eval_dispose(e);
+    cleanup_primitives();
 }

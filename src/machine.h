@@ -6,7 +6,7 @@
 
 typedef struct machine machine;
 typedef struct machine_stats machine_stats;
-typedef value* (*primitive)(machine* m, value* args);
+typedef value* (*machine_op)(machine* m, value* args);
 
 typedef enum {
     TRACE_OFF = 0,
@@ -70,7 +70,7 @@ struct machine {
 machine* machine_new(value* code, char* output_register_name);
 void machine_dispose(machine* m);
 
-void machine_bind_op(machine* m, char* name, primitive fn);
+void machine_bind_op(machine* m, char* name, machine_op fn);
 void machine_copy_to_register(machine* m, char* name, value* v);
 value* machine_copy_from_register(machine* m, char* name);
 value* machine_get_register(machine* m, char* name);

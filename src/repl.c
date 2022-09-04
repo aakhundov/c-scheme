@@ -11,6 +11,7 @@
 #include "hist.h"
 #include "machine.h"
 #include "parse.h"
+#include "prim.h"
 #include "value.h"
 
 typedef enum {
@@ -201,6 +202,7 @@ void run_repl() {
     static char output[BUFFER_SIZE];
     machine_trace_level level;
 
+    init_primitives();
     e = eval_new(EVALUATOR_PATH);
     h = hist_new(HISTORY_PATH);
 
@@ -249,6 +251,7 @@ void run_repl() {
 
     hist_dispose(h);
     eval_dispose(e);
+    cleanup_primitives();
 
     printf("\nbye!\n");
 }
