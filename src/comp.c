@@ -8,6 +8,7 @@
 #include "const.h"
 #include "parse.h"
 #include "pool.h"
+#include "prim.h"
 #include "syntax.h"
 #include "value.h"
 
@@ -1009,7 +1010,22 @@ static value* compile_compound_call(pool* p, char* target, char* linkage) {
     return call_seq;
 }
 
-static value* compile_procedure_call(pool* p, char* target, char* linkage) {
+static value* compile_primitive_call(pool* p, char* target, char* linkage) {
+    value* call_seq = make_empty_sequence(p);
+
+    // call the primitive proc
+    add_needed(p, call_seq, "proc");
+    add_needed(p, call_seq, "argl");
+    add_modified(p, call_seq, target);
+    add_code(
+        p, call_seq,
+        "assign %s (op apply-primitive-procedure) (reg proc) (reg argl)",
+        target);
+
+    return end_with_linkage(p, linkage, call_seq);
+}
+
+static value* compile_general_call(pool* p, char* target, char* linkage) {
     // labels for the procedure type selection
     value* primitive_branch = make_label(p, "primitive-branch", 1);
     value* compiled_branch = make_label(p, "compiled-branch", 0);
@@ -1074,12 +1090,31 @@ static value* compile_procedure_call(pool* p, char* target, char* linkage) {
         make_label_sequence(p, after_call));                         // after call label
 }
 
+static value* make_application_sequence(pool* p, value* op_exp, value* arg_seq, char* target, char* linkage) {
+    value* op_seq = compile_rec(p, op_exp, "proc", "next");
+
+    value* call_seq;
+    if (op_exp != NULL && op_exp->type == VALUE_SYMBOL && is_primitive(op_exp->symbol)) {
+        call_seq = compile_primitive_call(p, target, linkage);
+    } else {
+        call_seq = compile_general_call(p, target, linkage);
+    }
+
+    return preserving(
+        p, "env,continue",
+        op_seq,  // first get the operator into proc
+        preserving(
+            p, "proc,continue",
+            arg_seq,     // then get the operands into argl
+            call_seq));  // then call the proc: primitive or non-primitive
+}
+
 static value* compile_apply(pool* p, value* exp, char* target, char* linkage) {
-    // put the operator into proc with the next linkage
-    value* operator_seq = compile_rec(p, get_apply_operator(p, exp), "proc", "next");
+    // operator expression
+    value* op_exp = get_apply_operator(p, exp);
 
     // put the arguments into argl with the next linkage
-    value* arguments_seq = compile_rec(p, get_apply_arguments(p, exp), "argl", "next");
+    value* get_args_seq = compile_rec(p, get_apply_arguments(p, exp), "argl", "next");
 
     // check the arguments of apply after evaluation
     value* check_args_seq = make_empty_sequence(p);
@@ -1087,21 +1122,15 @@ static value* compile_apply(pool* p, value* exp, char* target, char* linkage) {
     add_needed(p, check_args_seq, "argl");
     add_code(p, check_args_seq, "perform (op check-apply-args) (reg argl)");
 
-    return preserving(
-        p, "env,continue",
-        operator_seq,  // first get the operator into proc
-        preserving(
-            p, "proc,continue",
-            append_sequences(
-                p,
-                arguments_seq,                             // then get the operands into argl
-                check_args_seq),                           // check the argl after evaluating the args
-            compile_procedure_call(p, target, linkage)));  // then call the proc: primitive or compiled
+    // put the argument list into argl and check the list
+    value* arg_seq = append_sequences(p, get_args_seq, check_args_seq);
+
+    return make_application_sequence(p, op_exp, arg_seq, target, linkage);
 }
 
 static value* compile_application(pool* p, value* exp, char* target, char* linkage) {
-    // put the operator into proc with the next linkage
-    value* operator_seq = compile_rec(p, get_operator(p, exp), "proc", "next");
+    // operator expression
+    value* op_exp = get_operator(p, exp);
 
     // collect the code snippets to put each operand
     // into val with next linkage, in the reversed order
@@ -1114,13 +1143,10 @@ static value* compile_application(pool* p, value* exp, char* target, char* linka
         operands = get_rest_operands(p, operands);
     }
 
-    return preserving(
-        p, "env,continue",
-        operator_seq,  // first get the operator into proc
-        preserving(
-            p, "proc,continue",
-            compile_arglist(p, rev_operand_seqs),          // then get the operands into argl
-            compile_procedure_call(p, target, linkage)));  // then call the proc: primitive or compiled
+    // compile and collect the arguments into the argl list
+    value* arg_seq = compile_arglist(p, rev_operand_seqs);
+
+    return make_application_sequence(p, op_exp, arg_seq, target, linkage);
 }
 
 static value* compile_rec(pool* p, value* exp, char* target, char* linkage) {
