@@ -508,7 +508,8 @@ static value* op_set_variable_value(machine* m, value* args) {
         }
 
         env_update_value(record, val);
-        return pool_new_info(m->pool, "%s is updated", name->symbol);
+        
+        return NULL;
     }
 }
 
@@ -529,6 +530,7 @@ static value* op_define_variable(machine* m, value* args) {
         }
 
         env_update_value(record, val);
+
         return pool_new_info(m->pool, "%s is updated", name->symbol);
     }
 }
@@ -785,7 +787,7 @@ static value* prim_set_car(machine* m, value* args) {
 
     first->car = second;
 
-    return pool_new_info(m->pool, "car is set");
+    return NULL;
 }
 
 static value* prim_set_cdr(machine* m, value* args) {
@@ -797,7 +799,7 @@ static value* prim_set_cdr(machine* m, value* args) {
 
     first->cdr = second;
 
-    return pool_new_info(m->pool, "cdr is set");
+    return NULL;
 }
 
 static value* prim_add(machine* m, value* args) {
