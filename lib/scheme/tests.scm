@@ -1,4 +1,4 @@
-; unit test
+; unit tests
 
 (assert-equal '(caar '((1 2) 3 4)) 1)
 (assert-equal '(cadr '((1 2) 3 4)) 3)
@@ -79,11 +79,33 @@
 (assert-equal '(gcd 111 222) 111)
 (assert-equal '(gcd 1234 4321) 1)
 
-(assert-equal '(list-ref 0 '(1 2 3 4 5)) 1)
-(assert-equal '(list-ref 4 '(1 2 3 4 5)) 5)
-(assert-equal '(list-ref 5 '(1 2 3 4 5)) '())
+(assert-equal '(list-ref '(1 2 3 4 5) 0) 1)
+(assert-equal '(list-ref '(1 2 3 4 5) 4) 5)
+(assert-equal '(list-ref '(1 2 3 4 5) 5) '())
 
 (assert-equal '(map - '(1 2 3)) '(-1 -2 -3))
 (assert-equal '(map car '((1 1) (2 2) (3 3))) '(1 2 3))
 (assert-equal '(map cdr '((1 1) (2 2) (3 3))) '((1) (2) (3)))
 (assert-equal '(map + '()) '())
+
+(assert-equal '(length '()) 0)
+(assert-equal '(length '(1)) 1)
+(assert-equal '(length '(1 2 3)) 3)
+(assert-equal '(length '(1 2 3 4 5 6 7 8 9 10)) 10)
+
+(assert-equal '(append '(1) '(2)) '(1 2))
+(assert-equal '(append '(1) '(2 3 4)) '(1 2 3 4))
+(assert-equal '(append '(1 2 3) '(4)) '(1 2 3 4))
+(assert-equal '(append '(1 2 3) '(4 5)) '(1 2 3 4 5))
+(assert-equal '(append '(1 2) '(3 4 5)) '(1 2 3 4 5))
+(assert-equal '(append '() '()) '())
+(assert-equal '(append '() '(1)) '(1))
+(assert-equal '(append '(1) '()) '(1))
+(assert-equal '(append '() '(1 2 3)) '(1 2 3))
+(assert-equal '(append '(1 2 3) '()) '(1 2 3))
+
+(assert-equal '(reverse '()) '())
+(assert-equal '(reverse '(1)) '(1))
+(assert-equal '(reverse '(1 2 1)) '(1 2 1))
+(assert-equal '(reverse '(1 1 1)) '(1 1 1))
+(assert-equal '(reverse '(1 2 3 4 5)) '(5 4 3 2 1))
