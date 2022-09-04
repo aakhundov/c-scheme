@@ -2,6 +2,7 @@
 #define PRIM_H_
 
 #include "machine.h"
+#include "posix.h"
 
 void init_primitives();
 void cleanup_primitives();

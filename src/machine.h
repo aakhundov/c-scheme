@@ -2,6 +2,7 @@
 #define MACHINE_H_
 
 #include "pool.h"
+#include "posix.h"
 #include "value.h"
 
 typedef struct machine machine;
