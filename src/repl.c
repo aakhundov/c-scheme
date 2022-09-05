@@ -146,7 +146,17 @@ value* load_from_path(eval* e, const char* path, const int verbose) {
     return value_new_info("loaded from '%s'", path);
 }
 
-void load_external(eval* e, const char* path, const int verbose) {
+void load_external(eval* e, char* path, const int verbose) {
+    // trim after trailing space
+    char* running = path;
+    while (*running != '\0') {
+        if (*running == ' ') {
+            *running = '\0';
+            break;
+        }
+        running++;
+    }
+
     value* result = load_from_path(e, path, verbose);
 
     static char buffer[BUFFER_SIZE];
