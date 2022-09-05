@@ -8,7 +8,7 @@ static const char escaped_chars[] = {
 static const char unescaped_chars[] = {
     'a', 'b', 'f', 'n', 'r', 't', 'v', '\"', '0'};
 
-static int find_escaped_char(char c) {
+static int find_escaped_char(const char c) {
     for (size_t i = 0; i < sizeof(escaped_chars) / sizeof(char); i++) {
         if (escaped_chars[i] == c) {
             return i;
@@ -18,7 +18,7 @@ static int find_escaped_char(char c) {
     return -1;
 }
 
-static int find_unescaped_char(char c) {
+static int find_unescaped_char(const char c) {
     for (size_t i = 0; i < sizeof(unescaped_chars) / sizeof(char); i++) {
         if (unescaped_chars[i] == c) {
             return i;
@@ -28,7 +28,7 @@ static int find_unescaped_char(char c) {
     return -1;
 }
 
-char* str_escape(char* s) {
+char* str_escape(const char* s) {
     size_t len = strlen(s);
     size_t num_replace = 0;
 
@@ -60,7 +60,7 @@ char* str_escape(char* s) {
     return result;
 }
 
-char* str_unescape(char* s) {
+char* str_unescape(const char* s) {
     size_t len = strlen(s);
     size_t num_replace = 0;
 

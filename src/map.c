@@ -6,7 +6,7 @@
 #include "const.h"
 #include "value.h"
 
-static size_t get_bucket_id(map* m, char* key) {
+static size_t get_bucket_id(const map* m, const char* key) {
     // http://www.cse.yorku.ca/~oz/hash.html
 
     int c;
@@ -49,7 +49,7 @@ static void expand_buckets(map* m) {
     free(old_buckets);
 }
 
-static map_record* record_new(char* key, value* val, map_record* next) {
+static map_record* record_new(const char* key, value* val, map_record* next) {
     map_record* r = malloc(sizeof(map_record));
 
     r->key = malloc(strlen(key) + 1);
@@ -66,7 +66,7 @@ static void record_dispose(map_record* r) {
     free(r);
 }
 
-static map_record* record_copy(map_record* source) {
+static map_record* record_copy(const map_record* source) {
     if (source == NULL) {
         return NULL;
     } else {
@@ -101,7 +101,7 @@ void map_dispose(map* m) {
     free(m);
 }
 
-int map_has(map* m, char* key) {
+int map_has(const map* m, const char* key) {
     // find the bucket for the key
     size_t id = get_bucket_id(m, key);
     map_record** bucket = m->buckets + id;
@@ -118,7 +118,7 @@ int map_has(map* m, char* key) {
     return 0;
 }
 
-map_record* map_get(map* m, char* key) {
+map_record* map_get(const map* m, const char* key) {
     // find the bucket for the key
     size_t id = get_bucket_id(m, key);
     map_record** bucket = m->buckets + id;
@@ -135,7 +135,7 @@ map_record* map_get(map* m, char* key) {
     return NULL;
 }
 
-void map_add(map* m, char* key, value* val) {
+void map_add(map* m, const char* key, value* val) {
     // find the bucket for the key
     size_t id = get_bucket_id(m, key);
     map_record** bucket = m->buckets + id;
@@ -153,7 +153,7 @@ void map_add(map* m, char* key, value* val) {
     *bucket = record_new(key, val, *bucket);
 }
 
-map* map_copy(map* source) {
+map* map_copy(const map* source) {
     if (source == NULL) {
         return NULL;
     } else {

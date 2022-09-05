@@ -4,6 +4,6 @@
 #include "pool.h"
 #include "value.h"
 
-value* compile(pool* p, value* exp, char* target, char* linkage);
+value* compile(pool* p, value* exp, const char* target, const char* linkage);
 
 #endif  // COMP_H_

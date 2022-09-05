@@ -3,8 +3,8 @@
 
 #ifdef _WIN32
 
-char* readline(char* prompt);
-void add_history(char* line);
+char* readline(const char* prompt);
+void add_history(const char* line);
 
 #elif __APPLE__
 

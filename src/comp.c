@@ -139,7 +139,7 @@ static value* list_difference(pool* p, value* lst1, value* lst2) {
     return result;
 }
 
-static int list_contains(value* list, char* name) {
+static int list_contains(value* list, const char* name) {
     value* running = list;
     while (running != NULL) {
         if (strcmp(running->car->symbol, name) == 0) {
@@ -151,7 +151,7 @@ static int list_contains(value* list, char* name) {
     return 0;
 }
 
-static void add_to_list(pool* p, value* list, char* name) {
+static void add_to_list(pool* p, value* list, const char* name) {
     value* prev = list;
     while (prev->cdr != NULL) {
         int cmp = strcmp(prev->cdr->car->symbol, name);
@@ -168,8 +168,8 @@ static void add_to_list(pool* p, value* list, char* name) {
     prev->cdr = pool_new_pair(p, new_symbol, prev->cdr);
 }
 
-static void split_tokens(char* tokens, char delim, char* first, char* rest) {
-    char* running = tokens;
+static void split_tokens(const char* tokens, const char delim, char* first, char* rest) {
+    const char* running = tokens;
     while (*running != '\0') {
         if (*running == delim) {
             break;
@@ -219,15 +219,15 @@ static value* get_code(value* seq) {
     return seq->cdr;
 }
 
-static int needs(value* seq, char* reg) {
+static int needs(value* seq, const char* reg) {
     return list_contains(get_needed(seq), reg);
 }
 
-static int modifies(value* seq, char* reg) {
+static int modifies(value* seq, const char* reg) {
     return list_contains(get_modified(seq), reg);
 }
 
-static value* make_code_from_args(pool* p, char* line, va_list args) {
+static value* make_code_from_args(pool* p, const char* line, va_list args) {
     static char buffer[BUFFER_SIZE];
     vsnprintf(buffer, sizeof(buffer), line, args);
 
@@ -238,7 +238,7 @@ static value* make_code_from_args(pool* p, char* line, va_list args) {
     return result;
 }
 
-static value* make_code(pool* p, char* line, ...) {
+static value* make_code(pool* p, const char* line, ...) {
     va_list args;
     va_start(args, line);
     value* result = make_code_from_args(p, line, args);
@@ -247,15 +247,15 @@ static value* make_code(pool* p, char* line, ...) {
     return result;
 }
 
-static void add_needed(pool* p, value* seq, char* reg) {
+static void add_needed(pool* p, value* seq, const char* reg) {
     add_to_list(p, seq->car->car, reg);
 }
 
-static void add_modified(pool* p, value* seq, char* reg) {
+static void add_modified(pool* p, value* seq, const char* reg) {
     add_to_list(p, seq->car->cdr, reg);
 }
 
-static void add_code(pool* p, value* seq, char* line, ...) {
+static void add_code(pool* p, value* seq, const char* line, ...) {
     va_list args;
     va_start(args, line);
     value* code = make_code_from_args(p, line, args);
@@ -274,7 +274,7 @@ static void add_code(pool* p, value* seq, char* line, ...) {
     running->cdr = pool_new_pair(p, code, NULL);
 }
 
-static value* make_label(pool* p, char* name, int increment_counter) {
+static value* make_label(pool* p, const char* name, int increment_counter) {
     if (increment_counter) {
         label_counter++;
     }
@@ -293,7 +293,7 @@ static value* make_label_sequence(pool* p, value* label) {
     return result;
 }
 
-static value* wrap_in_save_restore(pool* p, value* code, char* reg) {
+static value* wrap_in_save_restore(pool* p, value* code, const char* reg) {
     value* save = make_code(p, "save %s", reg);
     value* restore = make_code(p, "restore %s", reg);
 
@@ -334,7 +334,7 @@ static value* append_sequences(pool* p, value* seq1, value* seq2) {
             get_code(seq2)));
 }
 
-static value* preserving(pool* p, char* regs, value* seq1, value* seq2) {
+static value* preserving(pool* p, const char* regs, value* seq1, value* seq2) {
     if (strlen(regs) == 0) {
         // just append the sequences normally
         return append_sequences(p, seq1, seq2);
@@ -411,7 +411,7 @@ static value* parallel_sequences(pool* p, value* seq1, value* seq2) {
             get_code(seq2)));
 }
 
-static value* compile_linkage(pool* p, char* linkage) {
+static value* compile_linkage(pool* p, const char* linkage) {
     value* result = make_empty_sequence(p);
 
     if (strcmp(linkage, "return") == 0) {
@@ -424,16 +424,16 @@ static value* compile_linkage(pool* p, char* linkage) {
     return result;
 }
 
-static value* end_with_linkage(pool* p, char* linkage, value* seq) {
+static value* end_with_linkage(pool* p, const char* linkage, value* seq) {
     return preserving(
         p, "continue",
         seq,
         compile_linkage(p, linkage));
 }
 
-static value* compile_rec(pool* p, value* exp, char* target, char* linkage);
+static value* compile_rec(pool* p, value* exp, const char* target, const char* linkage);
 
-static value* compile_self_evaluating(pool* p, value* exp, char* target, char* linkage) {
+static value* compile_self_evaluating(pool* p, value* exp, const char* target, const char* linkage) {
     static char self[BUFFER_SIZE];
     // the exp in string form
     value_to_str(exp, self);
@@ -447,7 +447,7 @@ static value* compile_self_evaluating(pool* p, value* exp, char* target, char* l
     return end_with_linkage(p, linkage, seq);
 }
 
-static value* compile_quoted(pool* p, value* exp, char* target, char* linkage) {
+static value* compile_quoted(pool* p, value* exp, const char* target, const char* linkage) {
     static char quoted[BUFFER_SIZE];
     // the quoted exp in string form
     value_to_str(get_text_of_quotation(p, exp), quoted);
@@ -461,7 +461,7 @@ static value* compile_quoted(pool* p, value* exp, char* target, char* linkage) {
     return end_with_linkage(p, linkage, seq);
 }
 
-static value* compile_variable(pool* p, value* exp, char* target, char* linkage) {
+static value* compile_variable(pool* p, value* exp, const char* target, const char* linkage) {
     // the variable name
     char* name = exp->symbol;
 
@@ -479,7 +479,7 @@ static value* compile_variable(pool* p, value* exp, char* target, char* linkage)
     return end_with_linkage(p, linkage, seq);
 }
 
-static value* compile_assignment(pool* p, value* exp, char* target, char* linkage) {
+static value* compile_assignment(pool* p, value* exp, const char* target, const char* linkage) {
     // evaluate the value of the assignment
     value* value_seq = compile_rec(p, get_assignment_value(p, exp), "val", "next");
 
@@ -505,7 +505,7 @@ static value* compile_assignment(pool* p, value* exp, char* target, char* linkag
             assign_seq));  // assignment
 }
 
-static value* compile_definition(pool* p, value* exp, char* target, char* linkage) {
+static value* compile_definition(pool* p, value* exp, const char* target, const char* linkage) {
     // evaluate the value of the definition
     value* value_seq = compile_rec(p, get_definition_value(p, exp), "val", "next");
 
@@ -531,14 +531,14 @@ static value* compile_definition(pool* p, value* exp, char* target, char* linkag
             define_seq));  // definition
 }
 
-static value* compile_if(pool* p, value* exp, char* target, char* linkage) {
+static value* compile_if(pool* p, value* exp, const char* target, const char* linkage) {
     // labels for different sections of the if
     value* true_branch = make_label(p, "true-branch", 1);
     value* false_branch = make_label(p, "false-branch", 0);
     value* after_if = make_label(p, "after-if", 0);
 
     // to circumvent the alternative if linkage is next
-    char* cons_linkage = (strcmp(linkage, "next") == 0 ? after_if->symbol : linkage);
+    const char* cons_linkage = (strcmp(linkage, "next") == 0 ? after_if->symbol : linkage);
 
     // compiled predicate, consequent, and alternative of the if
     value* pred_seq = compile_rec(p, get_if_predicate(p, exp), "val", "next");
@@ -575,7 +575,7 @@ static value* compile_if(pool* p, value* exp, char* target, char* linkage) {
             make_label_sequence(p, after_if)));                // after label
 }
 
-static value* compile_sequence(pool* p, value* exp, char* target, char* linkage) {
+static value* compile_sequence(pool* p, value* exp, const char* target, const char* linkage) {
     if (is_last_exp(p, exp)) {
         // compile the last expression with target and linkage
         return compile_rec(p, get_first_exp(p, exp), target, linkage);
@@ -613,17 +613,17 @@ static value* compile_lambda_body(pool* p, value* exp, value* proc_entry) {
         compile_sequence(p, get_lambda_body(p, exp), "val", "return"));  // the body
 }
 
-static value* compile_lambda(pool* p, value* exp, char* target, char* linkage) {
+static value* compile_lambda(pool* p, value* exp, const char* target, const char* linkage) {
     // labels to separate the body from the rest
     value* proc_entry = make_label(p, "proc-entry", 1);      // before the body
     value* after_lambda = make_label(p, "after-lambda", 0);  // after the body
 
     // to circumvent the body if linkage is next
-    char* lambda_linkage = (strcmp(linkage, "next") == 0 ? after_lambda->symbol : linkage);
+    const char* lambda_linkage = (strcmp(linkage, "next") == 0 ? after_lambda->symbol : linkage);
 
     value* assign_seq = make_empty_sequence(p);
 
-    // make the compiled procedure
+    // make the compiled procedureconst
     // form the env and the proc entry
     add_needed(p, assign_seq, "env");
     add_modified(p, assign_seq, target);
@@ -641,7 +641,7 @@ static value* compile_lambda(pool* p, value* exp, char* target, char* linkage) {
         make_label_sequence(p, after_lambda));                // after label
 }
 
-static value* compile_and(pool* p, value* exp, char* target, char* linkage) {
+static value* compile_and(pool* p, value* exp, const char* target, const char* linkage) {
     value* exps = get_and_expressions(p, exp);
     if (has_no_exps(p, exps)) {
         // no exps: return true
@@ -711,7 +711,7 @@ static value* compile_and(pool* p, value* exp, char* target, char* linkage) {
     }
 }
 
-static value* compile_or(pool* p, value* exp, char* target, char* linkage) {
+static value* compile_or(pool* p, value* exp, const char* target, const char* linkage) {
     value* exps = get_or_expressions(p, exp);
     if (has_no_exps(p, exps)) {
         // no exps: return false
@@ -781,7 +781,7 @@ static value* compile_or(pool* p, value* exp, char* target, char* linkage) {
     }
 }
 
-static value* compile_eval(pool* p, value* exp, char* target, char* linkage) {
+static value* compile_eval(pool* p, value* exp, const char* target, const char* linkage) {
     exp = get_eval_expression(p, exp);
     if (is_self_evaluating(exp)) {
         return compile_self_evaluating(p, exp, target, linkage);
@@ -916,7 +916,7 @@ static value* compile_arglist(pool* p, value* rev_operand_seqs) {
     }
 }
 
-static value* compile_compiled_call(pool* p, char* target, char* linkage) {
+static value* compile_compiled_call(pool* p, const char* target, const char* linkage) {
     // can't be target != "val" and linkage == "return" simultaneously
     assert(strcmp(target, "val") == 0 || strcmp(linkage, "return") != 0);
 
@@ -963,7 +963,7 @@ static value* compile_compiled_call(pool* p, char* target, char* linkage) {
     return call_seq;
 }
 
-static value* compile_compound_call(pool* p, char* target, char* linkage) {
+static value* compile_compound_call(pool* p, const char* target, const char* linkage) {
     // can't be target != "val" and linkage == "return" simultaneously
     assert(strcmp(target, "val") == 0 || strcmp(linkage, "return") != 0);
 
@@ -1010,7 +1010,7 @@ static value* compile_compound_call(pool* p, char* target, char* linkage) {
     return call_seq;
 }
 
-static value* compile_primitive_call(pool* p, char* target, char* linkage) {
+static value* compile_primitive_call(pool* p, const char* target, const char* linkage) {
     value* call_seq = make_empty_sequence(p);
 
     // call the primitive proc
@@ -1025,7 +1025,7 @@ static value* compile_primitive_call(pool* p, char* target, char* linkage) {
     return end_with_linkage(p, linkage, call_seq);
 }
 
-static value* compile_general_call(pool* p, char* target, char* linkage) {
+static value* compile_general_call(pool* p, const char* target, const char* linkage) {
     // labels for the procedure type selection
     value* primitive_branch = make_label(p, "primitive-branch", 1);
     value* compiled_branch = make_label(p, "compiled-branch", 0);
@@ -1033,7 +1033,7 @@ static value* compile_general_call(pool* p, char* target, char* linkage) {
     value* after_call = make_label(p, "after-call", 0);
 
     // to circumvent the primitive part after the compiled if linkage is next
-    char* non_primitive_linkage = (strcmp(linkage, "next") == 0 ? after_call->symbol : linkage);
+    const char* non_primitive_linkage = (strcmp(linkage, "next") == 0 ? after_call->symbol : linkage);
 
     value* test_seq = make_empty_sequence(p);
 
@@ -1090,7 +1090,8 @@ static value* compile_general_call(pool* p, char* target, char* linkage) {
         make_label_sequence(p, after_call));                         // after call label
 }
 
-static value* make_application_sequence(pool* p, value* op_exp, value* arg_seq, char* target, char* linkage) {
+static value* make_application_sequence(
+    pool* p, value* op_exp, value* arg_seq, const char* target, const char* linkage) {
     value* op_seq = compile_rec(p, op_exp, "proc", "next");
 
     value* call_seq;
@@ -1109,7 +1110,7 @@ static value* make_application_sequence(pool* p, value* op_exp, value* arg_seq, 
             call_seq));  // then call the proc: primitive or non-primitive
 }
 
-static value* compile_apply(pool* p, value* exp, char* target, char* linkage) {
+static value* compile_apply(pool* p, value* exp, const char* target, const char* linkage) {
     // operator expression
     value* op_exp = get_apply_operator(p, exp);
 
@@ -1128,7 +1129,7 @@ static value* compile_apply(pool* p, value* exp, char* target, char* linkage) {
     return make_application_sequence(p, op_exp, arg_seq, target, linkage);
 }
 
-static value* compile_application(pool* p, value* exp, char* target, char* linkage) {
+static value* compile_application(pool* p, value* exp, const char* target, const char* linkage) {
     // operator expression
     value* op_exp = get_operator(p, exp);
 
@@ -1149,7 +1150,7 @@ static value* compile_application(pool* p, value* exp, char* target, char* linka
     return make_application_sequence(p, op_exp, arg_seq, target, linkage);
 }
 
-static value* compile_rec(pool* p, value* exp, char* target, char* linkage) {
+static value* compile_rec(pool* p, value* exp, const char* target, const char* linkage) {
     if (is_self_evaluating(exp)) {
         return compile_self_evaluating(p, exp, target, linkage);
     } else if (is_variable(exp)) {
@@ -1288,7 +1289,7 @@ static value* check_syntax(pool* p, value* exp) {
     return result;
 }
 
-value* compile(pool* p, value* exp, char* target, char* linkage) {
+value* compile(pool* p, value* exp, const char* target, const char* linkage) {
     // check the syntax of the exp first
     value* syntax_result = check_syntax(p, exp);
 

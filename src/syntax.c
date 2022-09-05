@@ -14,7 +14,7 @@
         return pool_new_error(p, text, tag, buffer); \
     }
 
-static int is_tagged_list(value* v, const char* tag) {
+static int is_tagged_list(const value* v, const char* tag) {
     // (tag ...)
     return (
         v != NULL &&
@@ -24,8 +24,8 @@ static int is_tagged_list(value* v, const char* tag) {
         strcmp(v->car->symbol, tag) == 0);
 }
 
-static int is_null_terminated_list(value* v) {
-    value* running = v;
+static int is_null_terminated_list(const value* v) {
+    const value* running = v;
     while (running != NULL) {
         if (running->type != VALUE_PAIR) {
             return 0;
@@ -36,7 +36,7 @@ static int is_null_terminated_list(value* v) {
     return 1;
 }
 
-int is_self_evaluating(value* exp) {
+int is_self_evaluating(const value* exp) {
     return (exp == NULL ||
             exp->type == VALUE_NUMBER ||    // 10
             exp->type == VALUE_STRING ||    // "abc"
@@ -44,60 +44,60 @@ int is_self_evaluating(value* exp) {
             exp->type == VALUE_PRIMITIVE);  // primitive function
 }
 
-int is_variable(value* exp) {
+int is_variable(const value* exp) {
     // x, car, etc.
     return (exp != NULL && exp->type == VALUE_SYMBOL);
 }
 
-int is_quoted(value* exp) {
+int is_quoted(const value* exp) {
     return is_tagged_list(exp, "quote");
 }
 
-int is_assignment(value* exp) {
+int is_assignment(const value* exp) {
     return is_tagged_list(exp, "set!");
 }
 
-int is_definition(value* exp) {
+int is_definition(const value* exp) {
     return is_tagged_list(exp, "define");
 }
 
-int is_if(value* exp) {
+int is_if(const value* exp) {
     return is_tagged_list(exp, "if");
 }
 
-int is_lambda(value* exp) {
+int is_lambda(const value* exp) {
     return is_tagged_list(exp, "lambda");
 }
 
-int is_let(value* exp) {
+int is_let(const value* exp) {
     return is_tagged_list(exp, "let");
 }
 
-int is_begin(value* exp) {
+int is_begin(const value* exp) {
     return is_tagged_list(exp, "begin");
 }
 
-int is_cond(value* exp) {
+int is_cond(const value* exp) {
     return is_tagged_list(exp, "cond");
 }
 
-int is_and(value* exp) {
+int is_and(const value* exp) {
     return is_tagged_list(exp, "and");
 }
 
-int is_or(value* exp) {
+int is_or(const value* exp) {
     return is_tagged_list(exp, "or");
 }
 
-int is_eval(value* exp) {
+int is_eval(const value* exp) {
     return is_tagged_list(exp, "eval");
 }
 
-int is_apply(value* exp) {
+int is_apply(const value* exp) {
     return is_tagged_list(exp, "apply");
 }
 
-int starts_with_symbol(value* exp) {
+int starts_with_symbol(const value* exp) {
     // (symbol ...)
     return (exp != NULL &&
             exp->type == VALUE_PAIR &&
@@ -119,7 +119,7 @@ value* check_quoted(pool* p, value* exp) {
     return NULL;
 }
 
-value* get_text_of_quotation(pool* p, value* exp) {
+value* get_text_of_quotation(pool* p, const value* exp) {
     // x from (quote x)
     return exp->cdr->car;
 }
@@ -142,12 +142,12 @@ value* check_assignment(pool* p, value* exp) {
     return NULL;
 }
 
-value* get_assignment_variable(pool* p, value* exp) {
+value* get_assignment_variable(pool* p, const value* exp) {
     // x from (set! x 10)
     return exp->cdr->car;
 }
 
-value* get_assignment_value(pool* p, value* exp) {
+value* get_assignment_value(pool* p, const value* exp) {
     // 10 from (set! x 10)
     return exp->cdr->cdr->car;
 }
@@ -187,7 +187,7 @@ value* check_definition(pool* p, value* exp) {
     return NULL;
 }
 
-value* get_definition_variable(pool* p, value* exp) {
+value* get_definition_variable(pool* p, const value* exp) {
     if (exp->cdr->car->type == VALUE_SYMBOL) {
         // f from (define f 10)"
         return exp->cdr->car;
@@ -197,7 +197,7 @@ value* get_definition_variable(pool* p, value* exp) {
     }
 }
 
-value* get_definition_value(pool* p, value* exp) {
+value* get_definition_value(pool* p, const value* exp) {
     if (exp->cdr->car->type == VALUE_SYMBOL) {
         // 10 from (define f 10)
         return exp->cdr->cdr->car;
@@ -224,17 +224,17 @@ value* check_if(pool* p, value* exp) {
     return NULL;
 }
 
-value* get_if_predicate(pool* p, value* exp) {
+value* get_if_predicate(pool* p, const value* exp) {
     // pred from (if pred cons alt) or (if pred cons)
     return exp->cdr->car;
 }
 
-value* get_if_consequent(pool* p, value* exp) {
+value* get_if_consequent(pool* p, const value* exp) {
     // cons from (if pred cons alt) or (if pred cons)
     return exp->cdr->cdr->car;
 }
 
-value* get_if_alternative(pool* p, value* exp) {
+value* get_if_alternative(pool* p, const value* exp) {
     if (exp->cdr->cdr->cdr != NULL) {
         // alt from (if pred cons alt)
         return exp->cdr->cdr->cdr->car;
@@ -319,12 +319,12 @@ value* check_lambda(pool* p, value* exp) {
     return NULL;
 }
 
-value* get_lambda_parameters(pool* p, value* exp) {
+value* get_lambda_parameters(pool* p, const value* exp) {
     // (p1 p2 ...) from (lambda (p1 p2 ...) e1 e2 ...)
     return exp->cdr->car;
 }
 
-value* get_lambda_body(pool* p, value* exp) {
+value* get_lambda_body(pool* p, const value* exp) {
     // (e1 e2 ...) from (lambda (p1 p2 ...) e1 e2 ...)
     return exp->cdr->cdr;
 }
@@ -375,14 +375,14 @@ value* check_let(pool* p, value* exp) {
     return NULL;
 }
 
-value* transform_let(pool* p, value* exp) {
+value* transform_let(pool* p, const value* exp) {
     value* params = NULL;
     value* args = NULL;
     value* body = exp->cdr->cdr;
 
     value* params_tail = NULL;
     value* args_tail = NULL;
-    value* running = exp->cdr->car;
+    const value* running = exp->cdr->car;
     while (running != NULL) {
         value* pair = running->car;
         value* name = pair->car;
@@ -424,7 +424,7 @@ value* check_begin(pool* p, value* exp) {
     return NULL;
 }
 
-value* get_begin_actions(pool* p, value* exp) {
+value* get_begin_actions(pool* p, const value* exp) {
     // (a1 a2 ...) from (begin a1 a2 ...)
     return exp->cdr;
 }
@@ -511,7 +511,7 @@ static value* transform_cond_rec(pool* p, value* clauses) {
     }
 }
 
-value* transform_cond(pool* p, value* exp) {
+value* transform_cond(pool* p, const value* exp) {
     // transform clauses recursively
     return transform_cond_rec(p, exp->cdr);
 }
@@ -526,7 +526,7 @@ value* check_and(pool* p, value* exp) {
     return NULL;
 }
 
-value* get_and_expressions(pool* p, value* exp) {
+value* get_and_expressions(pool* p, const value* exp) {
     // () from (and)
     // (e1 e2 ...) from (and e1 e2 ...)
     return exp->cdr;
@@ -542,7 +542,7 @@ value* check_or(pool* p, value* exp) {
     return NULL;
 }
 
-value* get_or_expressions(pool* p, value* exp) {
+value* get_or_expressions(pool* p, const value* exp) {
     // () from (or)
     // (e1 e2 ...) from (or e1 e2 ...)
     return exp->cdr;
@@ -562,7 +562,7 @@ value* check_eval(pool* p, value* exp) {
     return NULL;
 }
 
-value* get_eval_expression(pool* p, value* exp) {
+value* get_eval_expression(pool* p, const value* exp) {
     // exp from (eval exp)
     return exp->cdr->car;
 }
@@ -583,12 +583,12 @@ value* check_apply(pool* p, value* exp) {
     return NULL;
 }
 
-value* get_apply_operator(pool* p, value* exp) {
+value* get_apply_operator(pool* p, const value* exp) {
     // f from (apply f (a1 a2 ...))
     return exp->cdr->car;
 }
 
-value* get_apply_arguments(pool* p, value* exp) {
+value* get_apply_arguments(pool* p, const value* exp) {
     // (a1 a2 ...) from (apply f (a1 a2 ...))
     return exp->cdr->cdr->car;
 }
@@ -613,7 +613,7 @@ value* check_application(pool* p, value* exp) {
     return NULL;
 }
 
-int is_true(pool* p, value* exp) {
+int is_true(pool* p, const value* exp) {
     // exp != false
     if (exp != NULL && exp->type == VALUE_BOOL && !value_is_true(exp)) {
         return 0;
@@ -622,7 +622,7 @@ int is_true(pool* p, value* exp) {
     }
 }
 
-int is_false(pool* p, value* exp) {
+int is_false(pool* p, const value* exp) {
     // exp == false
     if (exp != NULL && exp->type == VALUE_BOOL && !value_is_true(exp)) {
         return 1;
@@ -631,52 +631,52 @@ int is_false(pool* p, value* exp) {
     }
 }
 
-int has_no_exps(pool* p, value* seq) {
+int has_no_exps(pool* p, const value* seq) {
     // ()
     return (seq == NULL ? 1 : 0);
 }
 
-int is_last_exp(pool* p, value* seq) {
+int is_last_exp(pool* p, const value* seq) {
     // (e)
     return (seq->cdr == NULL ? 1 : 0);
 }
 
-value* get_first_exp(pool* p, value* seq) {
+value* get_first_exp(pool* p, const value* seq) {
     // e1 from (e1 e2 ...)
     return seq->car;
 }
 
-value* get_rest_exps(pool* p, value* seq) {
+value* get_rest_exps(pool* p, const value* seq) {
     // (e2 ...) from (e1 e2 ...)
     return seq->cdr;
 }
 
-value* get_operator(pool* p, value* compound) {
+value* get_operator(pool* p, const value* compound) {
     // op from (op p1 p2 ...)
     return compound->car;
 }
 
-value* get_operands(pool* p, value* compound) {
+value* get_operands(pool* p, const value* compound) {
     // (p1 p2 ...) from (op p1 p2 ...)
     return compound->cdr;
 }
 
-int has_no_operands(pool* p, value* operands) {
+int has_no_operands(pool* p, const value* operands) {
     // ()
     return (operands == NULL ? 1 : 0);
 }
 
-int is_last_operand(pool* p, value* operands) {
+int is_last_operand(pool* p, const value* operands) {
     // (p)
     return (operands->cdr == NULL ? 1 : 0);
 }
 
-value* get_first_operand(pool* p, value* operands) {
+value* get_first_operand(pool* p, const value* operands) {
     // p1 from (p1 p2 ...)
     return operands->car;
 }
 
-value* get_rest_operands(pool* p, value* operands) {
+value* get_rest_operands(pool* p, const value* operands) {
     // (p2 ...) from (p1 p2 ...)
     return operands->cdr;
 }
@@ -706,27 +706,27 @@ value* adjoin_arg(pool* p, value* arg, value* arg_list) {
     return arg_list;
 }
 
-int is_primitive_procedure(pool* p, value* proc) {
+int is_primitive_procedure(pool* p, const value* proc) {
     return (proc != NULL && proc->type == VALUE_PRIMITIVE ? 1 : 0);
 }
 
-int is_compound_procedure(pool* p, value* proc) {
+int is_compound_procedure(pool* p, const value* proc) {
     return (proc != NULL && proc->type == VALUE_LAMBDA ? 1 : 0);
 }
 
-int is_compiled_procedure(pool* p, value* proc) {
+int is_compiled_procedure(pool* p, const value* proc) {
     return (proc != NULL && proc->type == VALUE_COMPILED ? 1 : 0);
 }
 
-value* get_compound_parameters(pool* p, value* proc) {
+value* get_compound_parameters(pool* p, const value* proc) {
     return proc->car->car;
 }
 
-value* get_compound_body(pool* p, value* proc) {
+value* get_compound_body(pool* p, const value* proc) {
     return proc->car->cdr;
 }
 
-value* get_compound_environment(pool* p, value* proc) {
+value* get_compound_environment(pool* p, const value* proc) {
     return proc->cdr;
 }
 
@@ -740,11 +740,11 @@ value* make_compound_procedure(pool* p, value* params, value* body, value* env) 
         env);
 }
 
-value* get_compiled_entry(pool* p, value* proc) {
+value* get_compiled_entry(pool* p, const value* proc) {
     return proc->car;
 }
 
-value* get_compiled_environment(pool* p, value* proc) {
+value* get_compiled_environment(pool* p, const value* proc) {
     return proc->cdr;
 }
 
@@ -752,7 +752,7 @@ value* make_compiled_procedure(pool* p, value* entry, value* env) {
     return pool_new_compiled(p, entry, env);
 }
 
-int format_args(value* message, value* args, char* buffer) {
+int format_args(const value* message, const value* args, char* buffer) {
     static char bufs[MAX_ERROR_ARGS][BUFFER_SIZE];
     char* fmt = message->symbol;
 

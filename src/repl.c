@@ -69,7 +69,7 @@ static void get_input(char* input) {
     }
 }
 
-static command_type get_command_type(char* line) {
+static command_type get_command_type(const char* line) {
     size_t num_command_types = sizeof(commands) / sizeof(char**);
     for (size_t i = 0; i < num_command_types; i++) {
         for (size_t j = 0; j < command_counts[i]; j++) {
@@ -85,7 +85,7 @@ static command_type get_command_type(char* line) {
     return COMMAND_OTHER;
 }
 
-static void process_repl_command(eval* e, hist* h, char* input, char* output) {
+static void process_repl_command(eval* e, hist* h, const char* input, char* output) {
     value* parsed = parse_from_str(input);
 
     if (parsed == NULL || parsed->type != VALUE_ERROR) {
@@ -119,7 +119,7 @@ static void process_repl_command(eval* e, hist* h, char* input, char* output) {
     value_dispose(parsed);
 }
 
-value* load_from_path(eval* e, char* path, int verbose) {
+value* load_from_path(eval* e, const char* path, const int verbose) {
     static char buffer[BUFFER_SIZE];
     value* content = parse_from_file(path);
     if (content != NULL && content->type == VALUE_ERROR) {
@@ -146,7 +146,7 @@ value* load_from_path(eval* e, char* path, int verbose) {
     return value_new_info("loaded from '%s'", path);
 }
 
-void load_external(eval* e, char* path, int verbose) {
+void load_external(eval* e, const char* path, const int verbose) {
     value* result = load_from_path(e, path, verbose);
 
     static char buffer[BUFFER_SIZE];
@@ -162,7 +162,7 @@ void load_external(eval* e, char* path, int verbose) {
     value_dispose(result);
 }
 
-static machine_trace_level set_trace(eval* e, char* input) {
+static machine_trace_level set_trace(eval* e, const char* input) {
     machine_trace_level result;
     value* tokens = parse_from_str(input);
 

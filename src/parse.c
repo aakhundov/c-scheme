@@ -29,9 +29,9 @@ static char QUOTE_CHAR = '\'';
 static char* QUOTE_SYMBOL = "quote";
 static char* DOT_SYMBOL = ".";
 
-static int parse_token(char* input, value** v, size_t* line, size_t* col);
+static int parse_token(const char* input, value** v, size_t* line, size_t* col);
 
-static value* make_parsing_error(size_t* line, size_t* col, char* format, ...) {
+static value* make_parsing_error(const size_t* line, const size_t* col, const char* format, ...) {
     va_list args;
     va_start(args, format);
     value* error = value_new_error_from_args(format, args);
@@ -43,8 +43,8 @@ static value* make_parsing_error(size_t* line, size_t* col, char* format, ...) {
     return result;
 }
 
-static int is_number(char* symbol) {
-    char* running = symbol;
+static int is_number(const char* symbol) {
+    const char* running = symbol;
 
     int digit_seen = 0;
     int exp_seen = 0;
@@ -77,7 +77,7 @@ static int is_number(char* symbol) {
     return digit_seen;
 }
 
-static value* make_number(char* symbol, size_t* line, size_t* col) {
+static value* make_number(const char* symbol, size_t* line, size_t* col) {
     errno = 0;
     double result = strtod(symbol, NULL);
 
@@ -88,14 +88,14 @@ static value* make_number(char* symbol, size_t* line, size_t* col) {
     }
 }
 
-static int is_special(char* symbol) {
+static int is_special(const char* symbol) {
     return (
         strcmp(symbol, "nil") == 0 ||
         strcmp(symbol, "true") == 0 ||
         strcmp(symbol, "false") == 0);
 }
 
-static value* make_special(char* symbol) {
+static value* make_special(const char* symbol) {
     if (strcmp(symbol, "nil") == 0) {
         return NULL;
     } else if (strcmp(symbol, "true") == 0) {
@@ -121,8 +121,8 @@ static value* make_string(char* content) {
     return result;
 }
 
-static int parse_symbol(char* input, value** v, size_t* line, size_t* col) {
-    char* running = input;
+static int parse_symbol(const char* input, value** v, size_t* line, size_t* col) {
+    const char* running = input;
     while (*running != '\0' && strchr(SYMBOL_CHARS, *running)) {
         if (*running == '\n') {
             *line += 1;
@@ -150,9 +150,9 @@ static int parse_symbol(char* input, value** v, size_t* line, size_t* col) {
     return length;
 }
 
-static int parse_string(char* input, value** v, size_t* line, size_t* col) {
-    char* running = input + 1;  // skip the leading quote
-    *col += 1;                  // leading quote
+static int parse_string(const char* input, value** v, size_t* line, size_t* col) {
+    const char* running = input + 1;  // skip the leading quote
+    *col += 1;                        // leading quote
     while (!(*running == STRING_CHAR && *(running - 1) != '\\')) {
         if (*running == '\0') {
             *v = make_parsing_error(line, col, "unterminated string");
@@ -242,11 +242,11 @@ static value* replace_dot_in_list(value* v) {
     return v;
 }
 
-static int parse_list(char* input, value** v, char terminal, size_t* line, size_t* col) {
+static int parse_list(const char* input, value** v, char terminal, size_t* line, size_t* col) {
     *v = NULL;
 
     value** pair = v;
-    char* running = input;
+    const char* running = input;
     while (*running != terminal) {
         if (*running == '\0') {
             // non-terminal end of the input
@@ -290,9 +290,9 @@ static int parse_list(char* input, value** v, char terminal, size_t* line, size_
     return running - input;
 }
 
-static int parse_quoted(char* input, value** v, size_t* line, size_t* col) {
-    char* running = input + 1;  // skip the '
-    *col += 1;                  // the '
+static int parse_quoted(const char* input, value** v, size_t* line, size_t* col) {
+    const char* running = input + 1;  // skip the '
+    *col += 1;                        // the '
     while (*running != '\0' && strchr(WHITESPACE_CHARS, *running)) {
         // skip all whitespaces
         if (*running == '\n') {
@@ -320,8 +320,8 @@ static int parse_quoted(char* input, value** v, size_t* line, size_t* col) {
     return running - input;
 }
 
-static int parse_token(char* input, value** v, size_t* line, size_t* col) {
-    char* running = input;
+static int parse_token(const char* input, value** v, size_t* line, size_t* col) {
+    const char* running = input;
     if (*input == LIST_OPEN_CHAR) {
         *col += 1;  // LIST_OPEN_CHAR
         running += parse_list(running + 1, v, LIST_CLOSE_CHAR, line, col) + 2;
@@ -341,12 +341,12 @@ static int parse_token(char* input, value** v, size_t* line, size_t* col) {
     return running - input;
 }
 
-value* find_error(value* v) {
+const value* find_error(const value* v) {
     if (v != NULL) {
         if (v->type == VALUE_ERROR) {
             return v;
         } else if (v->type == VALUE_PAIR) {
-            value* error = NULL;
+            const value* error = NULL;
             if ((error = find_error(v->car)) != NULL) {
                 return error;
             } else if ((error = find_error(v->cdr)) != NULL) {
@@ -358,14 +358,14 @@ value* find_error(value* v) {
     return NULL;
 }
 
-value* parse_from_str(char* input) {
+value* parse_from_str(const char* input) {
     value* result = NULL;
     size_t line = 1, col = 1;
 
     // parse till the end of the input
     parse_list(input, &result, '\0', &line, &col);
 
-    value* error;
+    const value* error;
     if ((error = find_error(result)) != NULL) {
         value* temp = value_new_error(error->symbol);
         value_dispose(result);
@@ -375,7 +375,7 @@ value* parse_from_str(char* input) {
     return result;
 }
 
-value* parse_from_file(char* path) {
+value* parse_from_file(const char* path) {
     FILE* file = fopen(path, "r");
     if (file) {
         // open and read the file

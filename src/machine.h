@@ -6,7 +6,7 @@
 
 typedef struct machine machine;
 typedef struct machine_stats machine_stats;
-typedef value* (*machine_op)(machine* m, value* args);
+typedef value* (*machine_op)(machine* m, const value* args);
 
 typedef enum {
     TRACE_OFF = 0,
@@ -67,22 +67,22 @@ struct machine {
     volatile int trace;
 };
 
-machine* machine_new(value* code, char* output_register_name);
+machine* machine_new(value* code, const char* output_register_name);
 void machine_dispose(machine* m);
 
-void machine_bind_op(machine* m, char* name, machine_op fn);
-void machine_copy_to_register(machine* m, char* name, value* v);
-value* machine_copy_from_register(machine* m, char* name);
-value* machine_get_register(machine* m, char* name);
-value* machine_get_label(machine* m, char* name);
+void machine_bind_op(machine* m, const char* name, const machine_op fn);
+void machine_copy_to_register(machine* m, const char* name, value* v);
+value* machine_copy_from_register(machine* m, const char* name);
+value* machine_get_register(machine* m, const char* name);
+value* machine_get_label(machine* m, const char* name);
 value* machine_export_output(machine* m);
 
 void machine_run(machine* m);
 
-value* machine_append_code(machine* m, value* code);
-void machine_set_code_position(machine* m, value* code);
+value* machine_append_code(machine* m, const value* code);
+void machine_set_code_position(machine* m, value* pos);
 
-void machine_set_trace(machine* m, machine_trace_level level);
+void machine_set_trace(machine* m, const machine_trace_level level);
 void machine_interrupt(machine* m);
 
 #endif  // MACHINE_H_

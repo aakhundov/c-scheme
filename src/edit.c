@@ -10,7 +10,7 @@
 
 static char buffer[BUFFER_SIZE];
 
-char* readline(char* prompt) {
+char* readline(const char* prompt) {
     fputs(prompt, stdout);
     fgets(buffer, sizeof(buffer), stdin);
 
@@ -23,7 +23,7 @@ char* readline(char* prompt) {
     return result;
 }
 
-void add_history(char* line) {
+void add_history(const char* line) {
 }
 
 #endif  // _WIN32

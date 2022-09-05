@@ -20,10 +20,10 @@ struct map {
 map* map_new();
 void map_dispose(map* m);
 
-int map_has(map* m, char* key);
-map_record* map_get(map* m, char* key);
-void map_add(map* m, char* key, value* val);
-map* map_copy(map* source);
+int map_has(const map* m, const char* key);
+map_record* map_get(const map* m, const char* key);
+void map_add(map* m, const char* key, value* val);
+map* map_copy(const map* source);
 
 void map_dispose_values(map* m);
 

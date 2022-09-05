@@ -6,7 +6,7 @@
 void init_primitives();
 void cleanup_primitives();
 
-int is_primitive(char* name);
-value* get_primitive(char* name);
+int is_primitive(const char* name);
+value* get_primitive(const char* name);
 
 #endif  // PRIM_H_

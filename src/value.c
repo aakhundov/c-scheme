@@ -10,14 +10,14 @@
 #include "map.h"
 #include "str.h"
 
-static void value_init_number(value* v, double number) {
+static void value_init_number(value* v, const double number) {
     assert(v != NULL);
 
     v->type = VALUE_NUMBER;
     v->number = number;
 }
 
-static void value_init_symbol(value* v, char* symbol) {
+static void value_init_symbol(value* v, const char* symbol) {
     assert(v != NULL);
 
     v->type = VALUE_SYMBOL;
@@ -25,7 +25,7 @@ static void value_init_symbol(value* v, char* symbol) {
     strcpy(v->symbol, symbol);
 }
 
-static void value_init_string(value* v, char* string) {
+static void value_init_string(value* v, const char* string) {
     assert(v != NULL);
 
     v->type = VALUE_STRING;
@@ -33,14 +33,14 @@ static void value_init_string(value* v, char* string) {
     strcpy(v->symbol, string);
 }
 
-static void value_init_bool(value* v, int truth) {
+static void value_init_bool(value* v, const int truth) {
     assert(v != NULL);
 
     v->type = VALUE_BOOL;
     v->number = truth;
 }
 
-static void value_init_primitive(value* v, void* ptr, char* name) {
+static void value_init_primitive(value* v, void* ptr, const char* name) {
     assert(v != NULL);
 
     v->type = VALUE_PRIMITIVE;
@@ -49,7 +49,7 @@ static void value_init_primitive(value* v, void* ptr, char* name) {
     strcpy(v->symbol, name);
 }
 
-static void value_init_symbol_from_args(value* v, char* format, va_list args) {
+static void value_init_symbol_from_args(value* v, const char* format, va_list args) {
     assert(v != NULL);
 
     if (args != NULL) {
@@ -61,14 +61,14 @@ static void value_init_symbol_from_args(value* v, char* format, va_list args) {
     }
 }
 
-static void value_init_error_from_args(value* v, char* error, va_list args) {
+static void value_init_error_from_args(value* v, const char* error, va_list args) {
     assert(v != NULL);
 
     value_init_symbol_from_args(v, error, args);
     v->type = VALUE_ERROR;
 }
 
-static void value_init_info_from_args(value* v, char* info, va_list args) {
+static void value_init_info_from_args(value* v, const char* info, va_list args) {
     assert(v != NULL);
 
     value_init_symbol_from_args(v, info, args);
@@ -125,42 +125,42 @@ static value* value_new() {
     return v;
 }
 
-value* value_new_number(double number) {
+value* value_new_number(const double number) {
     value* v = value_new();
     value_init_number(v, number);
 
     return v;
 }
 
-value* value_new_symbol(char* symbol) {
+value* value_new_symbol(const char* symbol) {
     value* v = value_new();
     value_init_symbol(v, symbol);
 
     return v;
 }
 
-value* value_new_string(char* string) {
+value* value_new_string(const char* string) {
     value* v = value_new();
     value_init_string(v, string);
 
     return v;
 }
 
-value* value_new_bool(int truth) {
+value* value_new_bool(const int truth) {
     value* v = value_new();
     value_init_bool(v, truth);
 
     return v;
 }
 
-value* value_new_primitive(void* ptr, char* name) {
+value* value_new_primitive(void* ptr, const char* name) {
     value* v = value_new();
     value_init_primitive(v, ptr, name);
 
     return v;
 }
 
-value* value_new_error(char* error, ...) {
+value* value_new_error(const char* error, ...) {
     value* v = value_new();
 
     va_list args;
@@ -171,14 +171,14 @@ value* value_new_error(char* error, ...) {
     return v;
 }
 
-value* value_new_error_from_args(char* error, va_list args) {
+value* value_new_error_from_args(const char* error, va_list args) {
     value* v = value_new();
     value_init_error_from_args(v, error, args);
 
     return v;
 }
 
-value* value_new_info(char* info, ...) {
+value* value_new_info(const char* info, ...) {
     value* v = value_new();
 
     va_list args;
@@ -189,7 +189,7 @@ value* value_new_info(char* info, ...) {
     return v;
 }
 
-value* value_new_info_from_args(char* info, va_list args) {
+value* value_new_info_from_args(const char* info, va_list args) {
     value* v = value_new();
     value_init_info_from_args(v, info, args);
 
@@ -231,7 +231,7 @@ value* value_new_env() {
     return v;
 }
 
-int is_compound_type(value_type t) {
+int is_compound_type(const value_type t) {
     return (
         t == VALUE_PAIR ||
         t == VALUE_LAMBDA ||
@@ -240,7 +240,7 @@ int is_compound_type(value_type t) {
         t == VALUE_ENV);
 }
 
-char* get_type_name(value_type t) {
+char* get_type_name(const value_type t) {
     switch (t) {
         case VALUE_NUMBER:
             return "number";
@@ -271,7 +271,7 @@ char* get_type_name(value_type t) {
     }
 }
 
-void value_update_gen(value* v, size_t gen) {
+void value_update_gen(value* v, const size_t gen) {
     while (v != NULL && v->gen != gen) {
         v->gen = gen;
         if (is_compound_type(v->type)) {
@@ -350,7 +350,7 @@ void value_dispose(value* v) {
     value_dispose_rec(v);
 }
 
-static int number_to_str(value* v, char* buffer) {
+static int number_to_str(const value* v, char* buffer) {
     long num = (long)v->number;
     if (num == v->number) {
         return sprintf(buffer, "%ld", num);
@@ -359,7 +359,7 @@ static int number_to_str(value* v, char* buffer) {
     }
 }
 
-static int string_to_str(value* v, char* buffer) {
+static int string_to_str(const value* v, char* buffer) {
     char* escaped = str_escape(v->symbol);
     int result = sprintf(buffer, "\"%s\"", escaped);
     free(escaped);
@@ -367,7 +367,7 @@ static int string_to_str(value* v, char* buffer) {
     return result;
 }
 
-static int bool_to_str(value* v, char* buffer) {
+static int bool_to_str(const value* v, char* buffer) {
     if (v->number) {
         return sprintf(buffer, "true");
     } else {
@@ -375,7 +375,7 @@ static int bool_to_str(value* v, char* buffer) {
     }
 }
 
-static int primitive_to_str(value* v, char* buffer) {
+static int primitive_to_str(const value* v, char* buffer) {
     return sprintf(buffer, "<primitive '%s'>", v->symbol);
 }
 
@@ -420,7 +420,7 @@ static int pair_to_str(value* v, char* buffer) {
     return running - buffer;
 }
 
-static int lambda_to_str(value* v, char* buffer) {
+static int lambda_to_str(const value* v, char* buffer) {
     static char params[BUFFER_SIZE];
     static char body[BUFFER_SIZE];
 
@@ -487,7 +487,7 @@ int value_to_str(value* v, char* buffer) {
     return result;
 }
 
-static int value_to_pretty_str_rec(value* v, char* buffer, size_t line_len, int indent) {
+static int value_to_pretty_str_rec(value* v, char* buffer, const size_t line_len, const int indent) {
     static char v_str[BUFFER_SIZE];
     value_to_str(v, v_str);
 
@@ -524,14 +524,14 @@ static int value_to_pretty_str_rec(value* v, char* buffer, size_t line_len, int 
     }
 }
 
-int value_to_pretty_str(value* v, char* buffer, size_t line_len) {
+int value_to_pretty_str(value* v, char* buffer, const size_t line_len) {
     int length = value_to_pretty_str_rec(v, buffer, line_len, 0);
     buffer[length - 1] = '\0';  // remove trailing \n
 
     return length - 1;
 }
 
-int value_is_true(value* v) {
+int value_is_true(const value* v) {
     if (v == NULL) {
         return 0;
     } else {
@@ -602,7 +602,7 @@ int value_equal(value* v1, value* v2) {
     return result;
 }
 
-static void value_copy(value* dest, value* source) {
+static void value_copy(value* dest, const value* source) {
     assert(dest != NULL);
     assert(source != NULL);
 

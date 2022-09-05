@@ -49,7 +49,7 @@
 static int test_counter = 0;
 static int compile_flag = 0;
 
-static void report_test(char* output, ...) {
+static void report_test(const char* output, ...) {
     static char buffer[BUFFER_SIZE];
 
     va_list args;
@@ -62,7 +62,7 @@ static void report_test(char* output, ...) {
         (compile_flag ? 'C' : 'E'), ++test_counter, buffer);
 }
 
-static value* get_evaluated(eval* ev, char* input) {
+static value* get_evaluated(eval* ev, const char* input) {
     value* v;
 
     if (compile_flag) {
@@ -93,7 +93,7 @@ static value* get_evaluated(eval* ev, char* input) {
     return v;
 }
 
-static void test_parse_output(char* input, char* expected) {
+static void test_parse_output(const char* input, const char* expected) {
     value* p = get_evaluated(NULL, input);
 
     static char buffer[BUFFER_SIZE];
@@ -105,7 +105,7 @@ static void test_parse_output(char* input, char* expected) {
     value_dispose(p);
 }
 
-static void test_parse_error(char* input, char* expected) {
+static void test_parse_error(const char* input, const char* expected) {
     value* p = get_evaluated(NULL, input);
 
     assert(p != NULL);
@@ -117,7 +117,7 @@ static void test_parse_error(char* input, char* expected) {
     value_dispose(p);
 }
 
-static void test_eval_output(eval* ev, char* input, char* expected) {
+static void test_eval_output(eval* ev, const char* input, const char* expected) {
     value* e = get_evaluated(ev, input);
 
     static char buffer[BUFFER_SIZE];
@@ -129,7 +129,7 @@ static void test_eval_output(eval* ev, char* input, char* expected) {
     value_dispose(e);
 }
 
-static void test_eval_number(eval* ev, char* input, double expected) {
+static void test_eval_number(eval* ev, const char* input, const double expected) {
     value* e = get_evaluated(ev, input);
 
     assert(e != NULL);
@@ -148,7 +148,7 @@ static void test_eval_number(eval* ev, char* input, double expected) {
     value_dispose(e);
 }
 
-static void test_eval_string(eval* ev, char* input, char* expected) {
+static void test_eval_string(eval* ev, const char* input, const char* expected) {
     value* e = get_evaluated(ev, input);
 
     assert(e != NULL);
@@ -160,7 +160,7 @@ static void test_eval_string(eval* ev, char* input, char* expected) {
     value_dispose(e);
 }
 
-static void test_eval_bool(eval* ev, char* input, int expected) {
+static void test_eval_bool(eval* ev, const char* input, const int expected) {
     value* e = get_evaluated(ev, input);
 
     assert(e != NULL);
@@ -177,7 +177,7 @@ static void test_eval_bool(eval* ev, char* input, int expected) {
     value_dispose(e);
 }
 
-static void test_eval_error(eval* ev, char* input, char* expected) {
+static void test_eval_error(eval* ev, const char* input, const char* expected) {
     value* e = get_evaluated(ev, input);
 
     assert(e != NULL);
@@ -189,7 +189,7 @@ static void test_eval_error(eval* ev, char* input, char* expected) {
     value_dispose(e);
 }
 
-static void test_eval_info(eval* ev, char* input, char* expected) {
+static void test_eval_info(eval* ev, const char* input, const char* expected) {
     value* e = get_evaluated(ev, input);
 
     assert(e != NULL);
@@ -201,7 +201,7 @@ static void test_eval_info(eval* ev, char* input, char* expected) {
     value_dispose(e);
 }
 
-static void test_to_str_output(char* name, value* v, char* expected) {
+static void test_to_str_output(const char* name, value* v, const char* expected) {
     static char buffer[BUFFER_SIZE];
 
     value_to_str(v, buffer);
@@ -663,37 +663,37 @@ static void test_pool() {
     value_dispose(r2);
 }
 
-static value* op_rem(machine* m, value* args) {
+static value* op_rem(machine* m, const value* args) {
     value* x = args->car->car;
     value* y = args->cdr->car->car;
     return pool_new_number(m->pool, (int)x->number % (int)y->number);
 }
 
-static value* op_eq(machine* m, value* args) {
+static value* op_eq(machine* m, const value* args) {
     value* x = args->car->car;
     value* y = args->cdr->car->car;
     return pool_new_number(m->pool, x->number == y->number);
 }
 
-static value* op_lt(machine* m, value* args) {
+static value* op_lt(machine* m, const value* args) {
     value* x = args->car->car;
     value* y = args->cdr->car->car;
     return pool_new_number(m->pool, x->number < y->number);
 }
 
-static value* op_plus(machine* m, value* args) {
+static value* op_plus(machine* m, const value* args) {
     value* x = args->car->car;
     value* y = args->cdr->car->car;
     return pool_new_number(m->pool, x->number + y->number);
 }
 
-static value* op_minus(machine* m, value* args) {
+static value* op_minus(machine* m, const value* args) {
     value* x = args->car->car;
     value* y = args->cdr->car->car;
     return pool_new_number(m->pool, x->number - y->number);
 }
 
-static value* op_mult(machine* m, value* args) {
+static value* op_mult(machine* m, const value* args) {
     value* x = args->car->car;
     value* y = args->cdr->car->car;
     return pool_new_number(m->pool, x->number * y->number);

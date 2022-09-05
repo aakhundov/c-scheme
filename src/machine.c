@@ -26,7 +26,7 @@ static double get_time() {
     return t.tv_sec + t.tv_nsec / 1000000000.0;
 }
 
-static value* get_or_create_record(machine* m, value* table, char* name) {
+static value* get_or_create_record(machine* m, value* table, const char* name) {
     value* pair = table->cdr;
     value* record = NULL;
     value* key = NULL;
@@ -56,15 +56,15 @@ static value* get_or_create_record(machine* m, value* table, char* name) {
     return record;
 }
 
-static value* get_register(machine* m, char* name) {
+static value* get_register(machine* m, const char* name) {
     return get_or_create_record(m, m->registers, name);
 }
 
-static value* get_label(machine* m, char* name) {
+static value* get_label(machine* m, const char* name) {
     return get_or_create_record(m, m->labels, name);
 }
 
-static value* get_op(machine* m, char* name) {
+static value* get_op(machine* m, const char* name) {
     return get_or_create_record(m, m->ops, name);
 }
 
@@ -75,7 +75,7 @@ static value* make_constant(machine* m, value* source) {
     return m->constants->cdr;
 }
 
-static void create_backbone(machine* m, char* output_register_name) {
+static void create_backbone(machine* m, const char* output_register_name) {
     // chain of containers to keep the machine state:
     // cars are used as links, cdrs are for the content
     m->registers = pool_new_pair(m->pool, NULL, NULL);
@@ -487,7 +487,7 @@ static void instrument_code(machine* m, value* line) {
     }
 }
 
-static value* append_code(machine* m, value* source) {
+static value* append_code(machine* m, const value* source) {
     value* head = m->code_tail;
     value* tail = m->code_tail;
     value* pending_labels = NULL;
@@ -898,7 +898,7 @@ static void execute_next_instruction(machine* m) {
     }
 }
 
-machine* machine_new(value* code, char* output_register_name) {
+machine* machine_new(value* code, const char* output_register_name) {
     machine* m = malloc(sizeof(machine));
 
     m->pool = pool_new();
@@ -923,7 +923,7 @@ void machine_dispose(machine* m) {
     free(m);
 }
 
-void machine_bind_op(machine* m, char* name, machine_op fn) {
+void machine_bind_op(machine* m, const char* name, machine_op fn) {
     value* op = get_op(m, name);
     op->car = pool_new_primitive(m->pool, fn, name);
 
@@ -932,12 +932,12 @@ void machine_bind_op(machine* m, char* name, machine_op fn) {
     update_count_env(m, m->stats.cnt_op_calls, m->ops);
 }
 
-void machine_copy_to_register(machine* m, char* name, value* v) {
+void machine_copy_to_register(machine* m, const char* name, value* v) {
     value* dst_reg = get_register(m, name);
     dst_reg->car = pool_import(m->pool, v);
 }
 
-value* machine_append_code(machine* m, value* code) {
+value* machine_append_code(machine* m, const value* code) {
     return append_code(m, code);
 }
 
@@ -945,17 +945,17 @@ void machine_set_code_position(machine* m, value* pos) {
     m->pc = pos;
 }
 
-value* machine_copy_from_register(machine* m, char* name) {
+value* machine_copy_from_register(machine* m, const char* name) {
     value* src_reg = get_register(m, name);
 
     return pool_export(m->pool, src_reg->car);
 }
 
-value* machine_get_register(machine* m, char* name) {
+value* machine_get_register(machine* m, const char* name) {
     return get_register(m, name);
 }
 
-value* machine_get_label(machine* m, char* name) {
+value* machine_get_label(machine* m, const char* name) {
     return get_label(m, name);
 }
 
@@ -990,7 +990,7 @@ void machine_run(machine* m) {
     }
 }
 
-void machine_set_trace(machine* m, machine_trace_level level) {
+void machine_set_trace(machine* m, const machine_trace_level level) {
     m->trace = level;
 }
 

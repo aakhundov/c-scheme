@@ -13,326 +13,326 @@
 #include "syntax.h"
 #include "value.h"
 
-static value* op_check_quoted(machine* m, value* args) {
+static value* op_check_quoted(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return check_quoted(m->pool, exp);
 }
 
-static value* op_get_text_of_quotation(machine* m, value* args) {
+static value* op_get_text_of_quotation(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return get_text_of_quotation(m->pool, exp);
 }
 
-static value* op_check_assignment(machine* m, value* args) {
+static value* op_check_assignment(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return check_assignment(m->pool, exp);
 }
 
-static value* op_get_assignment_variable(machine* m, value* args) {
+static value* op_get_assignment_variable(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return get_assignment_variable(m->pool, exp);
 }
 
-static value* op_get_assignment_value(machine* m, value* args) {
+static value* op_get_assignment_value(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return get_assignment_value(m->pool, exp);
 }
 
-static value* op_check_definition(machine* m, value* args) {
+static value* op_check_definition(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return check_definition(m->pool, exp);
 }
 
-static value* op_get_definition_variable(machine* m, value* args) {
+static value* op_get_definition_variable(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return get_definition_variable(m->pool, exp);
 }
 
-static value* op_get_definition_value(machine* m, value* args) {
+static value* op_get_definition_value(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return get_definition_value(m->pool, exp);
 }
 
-static value* op_check_if(machine* m, value* args) {
+static value* op_check_if(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return check_if(m->pool, exp);
 }
 
-static value* op_get_if_predicate(machine* m, value* args) {
+static value* op_get_if_predicate(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return get_if_predicate(m->pool, exp);
 }
 
-static value* op_get_if_consequent(machine* m, value* args) {
+static value* op_get_if_consequent(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return get_if_consequent(m->pool, exp);
 }
 
-static value* op_get_if_alternative(machine* m, value* args) {
+static value* op_get_if_alternative(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return get_if_alternative(m->pool, exp);
 }
 
-static value* op_check_lambda(machine* m, value* args) {
+static value* op_check_lambda(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return check_lambda(m->pool, exp);
 }
 
-static value* op_get_lambda_parameters(machine* m, value* args) {
+static value* op_get_lambda_parameters(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return get_lambda_parameters(m->pool, exp);
 }
 
-static value* op_get_lambda_body(machine* m, value* args) {
+static value* op_get_lambda_body(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return get_lambda_body(m->pool, exp);
 }
 
-static value* op_check_let(machine* m, value* args) {
+static value* op_check_let(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return check_let(m->pool, exp);
 }
 
-static value* op_transform_let(machine* m, value* args) {
+static value* op_transform_let(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return transform_let(m->pool, exp);
 }
 
-static value* op_check_begin(machine* m, value* args) {
+static value* op_check_begin(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return check_begin(m->pool, exp);
 }
 
-static value* op_get_begin_actions(machine* m, value* args) {
+static value* op_get_begin_actions(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return get_begin_actions(m->pool, exp);
 }
 
-static value* op_check_cond(machine* m, value* args) {
+static value* op_check_cond(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return check_cond(m->pool, exp);
 }
 
-static value* op_transform_cond(machine* m, value* args) {
+static value* op_transform_cond(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return transform_cond(m->pool, exp);
 }
 
-static value* op_check_and(machine* m, value* args) {
+static value* op_check_and(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return check_and(m->pool, exp);
 }
 
-static value* op_get_and_expressions(machine* m, value* args) {
+static value* op_get_and_expressions(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return get_and_expressions(m->pool, exp);
 }
 
-static value* op_check_or(machine* m, value* args) {
+static value* op_check_or(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return check_or(m->pool, exp);
 }
 
-static value* op_get_or_expressions(machine* m, value* args) {
+static value* op_get_or_expressions(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return get_or_expressions(m->pool, exp);
 }
 
-static value* op_check_eval(machine* m, value* args) {
+static value* op_check_eval(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return check_eval(m->pool, exp);
 }
 
-static value* op_get_eval_expression(machine* m, value* args) {
+static value* op_get_eval_expression(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return get_eval_expression(m->pool, exp);
 }
 
-static value* op_check_apply(machine* m, value* args) {
+static value* op_check_apply(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return check_apply(m->pool, exp);
 }
 
-static value* op_get_apply_operator(machine* m, value* args) {
+static value* op_get_apply_operator(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return get_apply_operator(m->pool, exp);
 }
 
-static value* op_get_apply_arguments(machine* m, value* args) {
+static value* op_get_apply_arguments(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return get_apply_arguments(m->pool, exp);
 }
 
-static value* op_check_apply_arguments(machine* m, value* args) {
+static value* op_check_apply_arguments(machine* m, const value* args) {
     value* apply_args = args->car->car;
 
     return check_apply_arguments(m->pool, apply_args);
 }
 
-static value* op_check_application(machine* m, value* args) {
+static value* op_check_application(machine* m, const value* args) {
     value* apply_args = args->car->car;
 
     return check_application(m->pool, apply_args);
 }
 
-static value* op_is_true(machine* m, value* args) {
+static value* op_is_true(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return pool_new_bool(m->pool, is_true(m->pool, exp));
 }
 
-static value* op_is_false(machine* m, value* args) {
+static value* op_is_false(machine* m, const value* args) {
     value* exp = args->car->car;
 
     return pool_new_bool(m->pool, is_false(m->pool, exp));
 }
 
-static value* op_make_true(machine* m, value* args) {
+static value* op_make_true(machine* m, const value* args) {
     return pool_new_bool(m->pool, 1);
 }
 
-static value* op_make_false(machine* m, value* args) {
+static value* op_make_false(machine* m, const value* args) {
     return pool_new_bool(m->pool, 0);
 }
 
-static value* op_has_no_exps(machine* m, value* args) {
+static value* op_has_no_exps(machine* m, const value* args) {
     value* seq = args->car->car;
 
     return pool_new_bool(m->pool, has_no_exps(m->pool, seq));
 }
 
-static value* op_is_last_exp(machine* m, value* args) {
+static value* op_is_last_exp(machine* m, const value* args) {
     value* seq = args->car->car;
 
     return pool_new_bool(m->pool, is_last_exp(m->pool, seq));
 }
 
-static value* op_get_first_exp(machine* m, value* args) {
+static value* op_get_first_exp(machine* m, const value* args) {
     value* seq = args->car->car;
 
     return get_first_exp(m->pool, seq);
 }
 
-static value* op_get_rest_exps(machine* m, value* args) {
+static value* op_get_rest_exps(machine* m, const value* args) {
     value* seq = args->car->car;
 
     return get_rest_exps(m->pool, seq);
 }
 
-static value* op_get_operator(machine* m, value* args) {
+static value* op_get_operator(machine* m, const value* args) {
     value* compound = args->car->car;
 
     return get_operator(m->pool, compound);
 }
 
-static value* op_get_operands(machine* m, value* args) {
+static value* op_get_operands(machine* m, const value* args) {
     value* compound = args->car->car;
 
     return get_operands(m->pool, compound);
 }
 
-static value* op_has_no_operands(machine* m, value* args) {
+static value* op_has_no_operands(machine* m, const value* args) {
     value* operands = args->car->car;
 
     return pool_new_bool(m->pool, has_no_operands(m->pool, operands));
 }
 
-static value* op_is_last_operand(machine* m, value* args) {
+static value* op_is_last_operand(machine* m, const value* args) {
     value* operands = args->car->car;
 
     return pool_new_bool(m->pool, is_last_operand(m->pool, operands));
 }
 
-static value* op_get_first_operand(machine* m, value* args) {
+static value* op_get_first_operand(machine* m, const value* args) {
     value* operands = args->car->car;
 
     return get_first_operand(m->pool, operands);
 }
 
-static value* op_get_rest_operands(machine* m, value* args) {
+static value* op_get_rest_operands(machine* m, const value* args) {
     value* operands = args->car->car;
 
     return get_rest_operands(m->pool, operands);
 }
 
-static value* op_make_empty_arglist(machine* m, value* args) {
+static value* op_make_empty_arglist(machine* m, const value* args) {
     return make_empty_arglist(m->pool);
 }
 
-static value* op_adjoin_arg(machine* m, value* args) {
+static value* op_adjoin_arg(machine* m, const value* args) {
     value* new_arg = args->car->car;
     value* arg_list = args->cdr->car->car;
 
     return adjoin_arg(m->pool, new_arg, arg_list);
 }
 
-static value* op_is_primitive_procedure(machine* m, value* args) {
+static value* op_is_primitive_procedure(machine* m, const value* args) {
     value* proc = args->car->car;
 
     return pool_new_bool(m->pool, is_primitive_procedure(m->pool, proc));
 }
 
-static value* op_is_compound_procedure(machine* m, value* args) {
+static value* op_is_compound_procedure(machine* m, const value* args) {
     value* proc = args->car->car;
 
     return pool_new_bool(m->pool, is_compound_procedure(m->pool, proc));
 }
 
-static value* op_is_compiled_procedure(machine* m, value* args) {
+static value* op_is_compiled_procedure(machine* m, const value* args) {
     value* proc = args->car->car;
 
     return pool_new_bool(m->pool, is_compiled_procedure(m->pool, proc));
 }
 
-static value* op_get_compound_parameters(machine* m, value* args) {
+static value* op_get_compound_parameters(machine* m, const value* args) {
     value* proc = args->car->car;
 
     return get_compound_parameters(m->pool, proc);
 }
 
-static value* op_get_compound_body(machine* m, value* args) {
+static value* op_get_compound_body(machine* m, const value* args) {
     value* proc = args->car->car;
 
     return get_compound_body(m->pool, proc);
 }
 
-static value* op_get_compound_environment(machine* m, value* args) {
+static value* op_get_compound_environment(machine* m, const value* args) {
     value* proc = args->car->car;
 
     return get_compound_environment(m->pool, proc);
 }
 
-static value* op_make_compound_procedure(machine* m, value* args) {
+static value* op_make_compound_procedure(machine* m, const value* args) {
     value* params = args->car->car;
     value* body = args->cdr->car->car;
     value* env = args->cdr->cdr->car->car;
@@ -340,26 +340,26 @@ static value* op_make_compound_procedure(machine* m, value* args) {
     return make_compound_procedure(m->pool, params, body, env);
 }
 
-static value* op_get_compiled_entry(machine* m, value* args) {
+static value* op_get_compiled_entry(machine* m, const value* args) {
     value* proc = args->car->car;
 
     return get_compiled_entry(m->pool, proc);
 }
 
-static value* op_get_compiled_environment(machine* m, value* args) {
+static value* op_get_compiled_environment(machine* m, const value* args) {
     value* proc = args->car->car;
 
     return get_compiled_environment(m->pool, proc);
 }
 
-static value* op_make_compiled_procedure(machine* m, value* args) {
+static value* op_make_compiled_procedure(machine* m, const value* args) {
     value* entry = args->car->car;
     value* env = args->cdr->car->car;
 
     return make_compiled_procedure(m->pool, entry, env);
 }
 
-static value* op_signal_error(machine* m, value* args) {
+static value* op_signal_error(machine* m, const value* args) {
     value* error_message = args->car->car;
     value* error_args = NULL;
 
@@ -375,7 +375,7 @@ static value* op_signal_error(machine* m, value* args) {
     return pool_new_error(m->pool, buffer);
 }
 
-static value* op_apply_primitive_procedure(machine* m, value* args) {
+static value* op_apply_primitive_procedure(machine* m, const value* args) {
     value* proc = args->car->car;
     value* arg_list = args->cdr->car->car;
 
@@ -387,7 +387,7 @@ static value* op_apply_primitive_procedure(machine* m, value* args) {
     return result;
 }
 
-static value* op_lookup_variable_value(machine* m, value* args) {
+static value* op_lookup_variable_value(machine* m, const value* args) {
     value* name = args->car->car;
     value* env = args->cdr->car->car;
 
@@ -405,7 +405,7 @@ static value* op_lookup_variable_value(machine* m, value* args) {
     }
 }
 
-static value* op_set_variable_value(machine* m, value* args) {
+static value* op_set_variable_value(machine* m, const value* args) {
     value* name = args->car->car;
     value* val = args->cdr->car->car;
     value* env = args->cdr->cdr->car->car;
@@ -425,7 +425,7 @@ static value* op_set_variable_value(machine* m, value* args) {
     }
 }
 
-static value* op_define_variable(machine* m, value* args) {
+static value* op_define_variable(machine* m, const value* args) {
     value* name = args->car->car;
     value* val = args->cdr->car->car;
     value* env = args->cdr->cdr->car->car;
@@ -446,7 +446,7 @@ static value* op_define_variable(machine* m, value* args) {
     }
 }
 
-static value* op_extend_environment(machine* m, value* args) {
+static value* op_extend_environment(machine* m, const value* args) {
     value* names = args->car->car;
     value* values = args->cdr->car->car;
     value* parent_env = args->cdr->cdr->car->car;
@@ -496,17 +496,17 @@ static value* op_extend_environment(machine* m, value* args) {
     }
 }
 
-static value* op_is_dispatch_table_ready(machine* m, value* args) {
+static value* op_is_dispatch_table_ready(machine* m, const value* args) {
     value* dispatch_reg = args->car;
 
     return pool_new_bool(m->pool, dispatch_reg->car != NULL);
 }
 
-static value* op_make_dispatch_table(machine* m, value* args) {
+static value* op_make_dispatch_table(machine* m, const value* args) {
     return pool_new_env(m->pool);
 }
 
-static value* op_add_dispatch_record(machine* m, value* args) {
+static value* op_add_dispatch_record(machine* m, const value* args) {
     value* dispatch = args->car->car;
     value* name = args->cdr->car->car;
     value* label = args->cdr->cdr->car;
@@ -516,7 +516,7 @@ static value* op_add_dispatch_record(machine* m, value* args) {
     return dispatch;
 }
 
-static value* op_dispatch_on_type(machine* m, value* args) {
+static value* op_dispatch_on_type(machine* m, const value* args) {
     value* exp = args->car->car;
     value* dispatch = args->cdr->car->car;
 
@@ -540,7 +540,7 @@ static value* op_dispatch_on_type(machine* m, value* args) {
     return env_get_value(record)->car;
 }
 
-static value* op_cons(machine* m, value* args) {
+static value* op_cons(machine* m, const value* args) {
     value* first = args->car->car;
     value* second = args->cdr->car->car;
 
@@ -658,7 +658,7 @@ static value* make_global_environment(eval* e) {
     return env;
 }
 
-eval* eval_new(char* path_to_code) {
+eval* eval_new(const char* path_to_code) {
     eval* e = malloc(sizeof(eval));
 
     value* code = parse_from_file(path_to_code);

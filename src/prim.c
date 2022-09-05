@@ -16,7 +16,7 @@ static map* primitive_map = NULL;
 #define ASSERT_NUM_ARGS(p, args, expected_num_args)  \
     {                                                \
         size_t num_args = 0;                         \
-        value* arg = args;                           \
+        const value* arg = args;                     \
         while (arg != NULL) {                        \
             num_args++;                              \
             arg = arg->cdr;                          \
@@ -33,7 +33,7 @@ static map* primitive_map = NULL;
 #define ASSERT_MIN_NUM_ARGS(p, args, min_expected_num_args) \
     {                                                       \
         size_t num_args = 0;                                \
-        value* arg = args;                                  \
+        const value* arg = args;                            \
         while (arg != NULL) {                               \
             num_args++;                                     \
             arg = arg->cdr;                                 \
@@ -50,7 +50,7 @@ static map* primitive_map = NULL;
 #define ASSERT_MAX_NUM_ARGS(p, args, max_expected_num_args) \
     {                                                       \
         size_t num_args = 0;                                \
-        value* arg = args;                                  \
+        const value* arg = args;                            \
         while (arg != NULL) {                               \
             num_args++;                                     \
             arg = arg->cdr;                                 \
@@ -67,7 +67,7 @@ static map* primitive_map = NULL;
 #define ASSERT_ARG_TYPE(p, args, ordinal, expected_type) \
     {                                                    \
         size_t i = 0;                                    \
-        value* arg = args;                               \
+        const value* arg = args;                         \
         while (arg != NULL && i < ordinal) {             \
             arg = arg->cdr;                              \
             i++;                                         \
@@ -95,7 +95,7 @@ static map* primitive_map = NULL;
 #define ASSERT_ALL_ARGS_TYPE(p, args, offset, expected_type)   \
     {                                                          \
         size_t i = 0;                                          \
-        value* arg = args;                                     \
+        const value* arg = args;                               \
         while (arg != NULL) {                                  \
             if (i >= offset) {                                 \
                 if (arg->car == NULL) {                        \
@@ -121,7 +121,7 @@ static map* primitive_map = NULL;
 #define GET_OPTIONAL_ARG(p, args, ordinal, expected_type, target) \
     {                                                             \
         size_t i = 0;                                             \
-        value* arg = args;                                        \
+        const value* arg = args;                                  \
         while (arg != NULL && i < ordinal) {                      \
             arg = arg->cdr;                                       \
             i++;                                                  \
@@ -146,7 +146,7 @@ static map* primitive_map = NULL;
         }                                                         \
     }
 
-static value* prim_car(machine* m, value* args) {
+static value* prim_car(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
     ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_PAIR);
 
@@ -155,7 +155,7 @@ static value* prim_car(machine* m, value* args) {
     return pair->car;
 }
 
-static value* prim_cdr(machine* m, value* args) {
+static value* prim_cdr(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
     ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_PAIR);
 
@@ -164,7 +164,7 @@ static value* prim_cdr(machine* m, value* args) {
     return pair->cdr;
 }
 
-static value* prim_cons(machine* m, value* args) {
+static value* prim_cons(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 2);
 
     value* first = args->car;
@@ -173,7 +173,7 @@ static value* prim_cons(machine* m, value* args) {
     return pool_new_pair(m->pool, first, second);
 }
 
-static value* prim_list(machine* m, value* args) {
+static value* prim_list(machine* m, const value* args) {
     value* result = NULL;
     value* running = NULL;
     while (args != NULL) {
@@ -190,7 +190,7 @@ static value* prim_list(machine* m, value* args) {
     return result;
 }
 
-static value* prim_set_car(machine* m, value* args) {
+static value* prim_set_car(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 2);
     ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_PAIR);
 
@@ -202,7 +202,7 @@ static value* prim_set_car(machine* m, value* args) {
     return NULL;
 }
 
-static value* prim_set_cdr(machine* m, value* args) {
+static value* prim_set_cdr(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 2);
     ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_PAIR);
 
@@ -214,7 +214,7 @@ static value* prim_set_cdr(machine* m, value* args) {
     return NULL;
 }
 
-static value* prim_add(machine* m, value* args) {
+static value* prim_add(machine* m, const value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -229,7 +229,7 @@ static value* prim_add(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_sub(machine* m, value* args) {
+static value* prim_sub(machine* m, const value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -248,7 +248,7 @@ static value* prim_sub(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_mul(machine* m, value* args) {
+static value* prim_mul(machine* m, const value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 2);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -263,7 +263,7 @@ static value* prim_mul(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_div(machine* m, value* args) {
+static value* prim_div(machine* m, const value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 2);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -281,7 +281,7 @@ static value* prim_div(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_remainder(machine* m, value* args) {
+static value* prim_remainder(machine* m, const value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 2);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -299,7 +299,7 @@ static value* prim_remainder(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_expt(machine* m, value* args) {
+static value* prim_expt(machine* m, const value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 2);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -314,7 +314,7 @@ static value* prim_expt(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_min(machine* m, value* args) {
+static value* prim_min(machine* m, const value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -331,7 +331,7 @@ static value* prim_min(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_max(machine* m, value* args) {
+static value* prim_max(machine* m, const value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -348,7 +348,7 @@ static value* prim_max(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_abs(machine* m, value* args) {
+static value* prim_abs(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -357,7 +357,7 @@ static value* prim_abs(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_exp(machine* m, value* args) {
+static value* prim_exp(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -366,7 +366,7 @@ static value* prim_exp(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_log(machine* m, value* args) {
+static value* prim_log(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -379,7 +379,7 @@ static value* prim_log(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_sin(machine* m, value* args) {
+static value* prim_sin(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -388,7 +388,7 @@ static value* prim_sin(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_cos(machine* m, value* args) {
+static value* prim_cos(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -397,7 +397,7 @@ static value* prim_cos(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_tan(machine* m, value* args) {
+static value* prim_tan(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -406,7 +406,7 @@ static value* prim_tan(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_atan(machine* m, value* args) {
+static value* prim_atan(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -415,7 +415,7 @@ static value* prim_atan(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_atan2(machine* m, value* args) {
+static value* prim_atan2(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 2);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -427,7 +427,7 @@ static value* prim_atan2(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_round(machine* m, value* args) {
+static value* prim_round(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -436,7 +436,7 @@ static value* prim_round(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_floor(machine* m, value* args) {
+static value* prim_floor(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -445,7 +445,7 @@ static value* prim_floor(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_ceiling(machine* m, value* args) {
+static value* prim_ceiling(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -454,7 +454,7 @@ static value* prim_ceiling(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_eq(machine* m, value* args) {
+static value* prim_eq(machine* m, const value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 2);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -471,7 +471,7 @@ static value* prim_eq(machine* m, value* args) {
     return pool_new_bool(m->pool, 1);
 }
 
-static value* prim_lt(machine* m, value* args) {
+static value* prim_lt(machine* m, const value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 2);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -489,7 +489,7 @@ static value* prim_lt(machine* m, value* args) {
     return pool_new_bool(m->pool, 1);
 }
 
-static value* prim_lte(machine* m, value* args) {
+static value* prim_lte(machine* m, const value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 2);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -507,7 +507,7 @@ static value* prim_lte(machine* m, value* args) {
     return pool_new_bool(m->pool, 1);
 }
 
-static value* prim_gt(machine* m, value* args) {
+static value* prim_gt(machine* m, const value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 2);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -525,7 +525,7 @@ static value* prim_gt(machine* m, value* args) {
     return pool_new_bool(m->pool, 1);
 }
 
-static value* prim_gte(machine* m, value* args) {
+static value* prim_gte(machine* m, const value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 2);
     ASSERT_ALL_ARGS_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -543,7 +543,7 @@ static value* prim_gte(machine* m, value* args) {
     return pool_new_bool(m->pool, 1);
 }
 
-static value* prim_not(machine* m, value* args) {
+static value* prim_not(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
 
     value* arg = args->car;
@@ -555,7 +555,7 @@ static value* prim_not(machine* m, value* args) {
     }
 }
 
-static value* prim_number_q(machine* m, value* args) {
+static value* prim_number_q(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
 
     value* arg = args->car;
@@ -563,7 +563,7 @@ static value* prim_number_q(machine* m, value* args) {
     return pool_new_bool(m->pool, arg != NULL && arg->type == VALUE_NUMBER);
 }
 
-static value* prim_symbol_q(machine* m, value* args) {
+static value* prim_symbol_q(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
 
     value* arg = args->car;
@@ -571,7 +571,7 @@ static value* prim_symbol_q(machine* m, value* args) {
     return pool_new_bool(m->pool, arg != NULL && arg->type == VALUE_SYMBOL);
 }
 
-static value* prim_string_q(machine* m, value* args) {
+static value* prim_string_q(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
 
     value* arg = args->car;
@@ -579,7 +579,7 @@ static value* prim_string_q(machine* m, value* args) {
     return pool_new_bool(m->pool, arg != NULL && arg->type == VALUE_STRING);
 }
 
-static value* prim_bool_q(machine* m, value* args) {
+static value* prim_bool_q(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
 
     value* arg = args->car;
@@ -587,7 +587,7 @@ static value* prim_bool_q(machine* m, value* args) {
     return pool_new_bool(m->pool, arg != NULL && arg->type == VALUE_BOOL);
 }
 
-static value* prim_pair_q(machine* m, value* args) {
+static value* prim_pair_q(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
 
     value* arg = args->car;
@@ -595,7 +595,7 @@ static value* prim_pair_q(machine* m, value* args) {
     return pool_new_bool(m->pool, arg != NULL && arg->type == VALUE_PAIR);
 }
 
-static value* prim_list_q(machine* m, value* args) {
+static value* prim_list_q(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
 
     value* arg = args->car;
@@ -609,7 +609,7 @@ static value* prim_list_q(machine* m, value* args) {
     return pool_new_bool(m->pool, 1);
 }
 
-static value* prim_null_q(machine* m, value* args) {
+static value* prim_null_q(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
 
     value* arg = args->car;
@@ -617,7 +617,7 @@ static value* prim_null_q(machine* m, value* args) {
     return pool_new_bool(m->pool, arg == NULL);
 }
 
-static value* prim_true_q(machine* m, value* args) {
+static value* prim_true_q(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
 
     value* arg = args->car;
@@ -625,7 +625,7 @@ static value* prim_true_q(machine* m, value* args) {
     return pool_new_bool(m->pool, is_true(m->pool, arg));
 }
 
-static value* prim_false_q(machine* m, value* args) {
+static value* prim_false_q(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
 
     value* arg = args->car;
@@ -633,7 +633,7 @@ static value* prim_false_q(machine* m, value* args) {
     return pool_new_bool(m->pool, is_false(m->pool, arg));
 }
 
-static value* prim_equal_q(machine* m, value* args) {
+static value* prim_equal_q(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 2);
 
     value* v1 = args->car;
@@ -642,7 +642,7 @@ static value* prim_equal_q(machine* m, value* args) {
     return pool_new_bool(m->pool, value_equal(v1, v2));
 }
 
-static value* prim_eq_q(machine* m, value* args) {
+static value* prim_eq_q(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 2);
 
     value* v1 = args->car;
@@ -651,7 +651,7 @@ static value* prim_eq_q(machine* m, value* args) {
     return pool_new_bool(m->pool, v1 == v2);
 }
 
-static value* prim_even_q(machine* m, value* args) {
+static value* prim_even_q(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
     ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -664,7 +664,7 @@ static value* prim_even_q(machine* m, value* args) {
     }
 }
 
-static value* prim_odd_q(machine* m, value* args) {
+static value* prim_odd_q(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
     ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -677,7 +677,7 @@ static value* prim_odd_q(machine* m, value* args) {
     }
 }
 
-static value* prim_error(machine* m, value* args) {
+static value* prim_error(machine* m, const value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
     ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_STRING);
 
@@ -690,7 +690,7 @@ static value* prim_error(machine* m, value* args) {
     return pool_new_error(m->pool, buffer);
 }
 
-static value* prim_info(machine* m, value* args) {
+static value* prim_info(machine* m, const value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
     ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_STRING);
 
@@ -703,7 +703,7 @@ static value* prim_info(machine* m, value* args) {
     return pool_new_info(m->pool, buffer);
 }
 
-static value* prim_display(machine* m, value* args) {
+static value* prim_display(machine* m, const value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
 
     while (args != NULL) {
@@ -725,7 +725,7 @@ static value* prim_display(machine* m, value* args) {
     return NULL;
 }
 
-static value* prim_newline(machine* m, value* args) {
+static value* prim_newline(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 0);
 
     printf("\n");
@@ -733,7 +733,7 @@ static value* prim_newline(machine* m, value* args) {
     return NULL;
 }
 
-static value* prim_collect(machine* m, value* args) {
+static value* prim_collect(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 0);
 
     size_t values_before = m->pool->size;
@@ -749,7 +749,7 @@ static value* prim_collect(machine* m, value* args) {
         collected, percentage, values_before);
 }
 
-static value* prim_srand(machine* m, value* args) {
+static value* prim_srand(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
     ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -758,7 +758,7 @@ static value* prim_srand(machine* m, value* args) {
     return pool_new_info(m->pool, "RNG was seeded");
 }
 
-static value* prim_random(machine* m, value* args) {
+static value* prim_random(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
     ASSERT_ARG_TYPE(m->pool, args, 0, VALUE_NUMBER);
 
@@ -768,7 +768,7 @@ static value* prim_random(machine* m, value* args) {
     return pool_new_number(m->pool, result);
 }
 
-static value* prim_time(machine* m, value* args) {
+static value* prim_time(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 0);
 
     struct timespec t;
@@ -778,7 +778,7 @@ static value* prim_time(machine* m, value* args) {
     return pool_new_number(m->pool, millitime);
 }
 
-static value* prim_pretty(machine* m, value* args) {
+static value* prim_pretty(machine* m, const value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
     ASSERT_MAX_NUM_ARGS(m->pool, args, 2);
 
@@ -793,7 +793,7 @@ static value* prim_pretty(machine* m, value* args) {
     return value_new_symbol(buffer);
 }
 
-static value* prim_code(machine* m, value* args) {
+static value* prim_code(machine* m, const value* args) {
     ASSERT_MIN_NUM_ARGS(m->pool, args, 1);
     ASSERT_MAX_NUM_ARGS(m->pool, args, 3);
 
@@ -807,7 +807,7 @@ static value* prim_code(machine* m, value* args) {
     return compile(m->pool, exp, target->symbol, linkage->symbol);
 }
 
-static value* prim_compile(machine* m, value* args) {
+static value* prim_compile(machine* m, const value* args) {
     ASSERT_NUM_ARGS(m->pool, args, 1);
 
     value* exp = args->car;
@@ -921,11 +921,11 @@ void cleanup_primitives() {
     }
 }
 
-int is_primitive(char* name) {
+int is_primitive(const char* name) {
     return map_has(primitive_map, name);
 }
 
-value* get_primitive(char* name) {
+value* get_primitive(const char* name) {
     map_record* r = map_get(primitive_map, name);
 
     if (r != NULL) {

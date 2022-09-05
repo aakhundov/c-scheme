@@ -8,7 +8,7 @@
 #include "pool.h"
 #include "value.h"
 
-map_record* env_lookup(value* env, char* name, int recursive) {
+map_record* env_lookup(const value* env, const char* name, const int recursive) {
     while (env != NULL) {
         map_record* r = map_get((map*)env->ptr, name);
 
@@ -24,7 +24,7 @@ map_record* env_lookup(value* env, char* name, int recursive) {
     return NULL;
 }
 
-value* env_get_value(map_record* r) {
+value* env_get_value(const map_record* r) {
     return r->val->car;
 }
 
@@ -32,7 +32,7 @@ void env_update_value(map_record* r, value* v) {
     r->val->car = v;
 }
 
-void env_add_value(value* env, char* name, value* v, pool* p) {
+void env_add_value(value* env, const char* name, value* v, pool* p) {
     // to keep a tracable link to the val during GC
     env->car = pool_new_pair(p, v, env->car);
     map_add((map*)env->ptr, name, env->car);

@@ -7,7 +7,7 @@
 #include "const.h"
 #include "edit.h"
 
-static void recover_history(char* path_to_file) {
+static void recover_history(const char* path_to_file) {
     FILE* fp = fopen(path_to_file, "r");
 
     if (fp != NULL) {
@@ -25,7 +25,7 @@ static void recover_history(char* path_to_file) {
     }
 }
 
-hist* hist_new(char* path_to_file) {
+hist* hist_new(const char* path_to_file) {
     hist* h = malloc(sizeof(hist));
 
     recover_history(path_to_file);
@@ -48,7 +48,7 @@ void hist_dispose(hist* h) {
     free(h);
 }
 
-void hist_add(hist* h, char* input) {
+void hist_add(hist* h, const char* input) {
     HIST_ENTRY* curr = history_get(history_length);
     if (curr == NULL || strcmp(curr->line, input) != 0) {
         // add to history

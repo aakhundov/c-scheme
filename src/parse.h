@@ -3,8 +3,8 @@
 
 #include "value.h"
 
-value* parse_from_str(char* input);
-value* parse_from_file(char* path);
+value* parse_from_str(const char* input);
+value* parse_from_file(const char* path);
 
 int recover_str(value* v, char* buffer);
 

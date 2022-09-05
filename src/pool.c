@@ -120,7 +120,7 @@ void pool_collect_garbage(pool* p) {
     sweep_chain(p);
 }
 
-value* pool_new_number(pool* p, double number) {
+value* pool_new_number(pool* p, const double number) {
     value* v = value_new_number(number);
 
     add_to_chain(p, v);
@@ -128,7 +128,7 @@ value* pool_new_number(pool* p, double number) {
     return v;
 }
 
-value* pool_new_symbol(pool* p, char* symbol) {
+value* pool_new_symbol(pool* p, const char* symbol) {
     value* v = value_new_symbol(symbol);
 
     add_to_chain(p, v);
@@ -136,7 +136,7 @@ value* pool_new_symbol(pool* p, char* symbol) {
     return v;
 }
 
-value* pool_new_string(pool* p, char* string) {
+value* pool_new_string(pool* p, const char* string) {
     value* v = value_new_string(string);
 
     add_to_chain(p, v);
@@ -144,7 +144,7 @@ value* pool_new_string(pool* p, char* string) {
     return v;
 }
 
-value* pool_new_bool(pool* p, int truth) {
+value* pool_new_bool(pool* p, const int truth) {
     value* v = value_new_bool(truth);
 
     add_to_chain(p, v);
@@ -152,7 +152,7 @@ value* pool_new_bool(pool* p, int truth) {
     return v;
 }
 
-value* pool_new_primitive(pool* p, void* ptr, char* name) {
+value* pool_new_primitive(pool* p, void* ptr, const char* name) {
     value* v = value_new_primitive(ptr, name);
 
     add_to_chain(p, v);
@@ -160,7 +160,7 @@ value* pool_new_primitive(pool* p, void* ptr, char* name) {
     return v;
 }
 
-value* pool_new_error(pool* p, char* error, ...) {
+value* pool_new_error(pool* p, const char* error, ...) {
     va_list args;
     va_start(args, error);
     value* v = value_new_error_from_args(error, args);
@@ -171,7 +171,7 @@ value* pool_new_error(pool* p, char* error, ...) {
     return v;
 }
 
-value* pool_new_error_from_args(pool* p, char* error, va_list args) {
+value* pool_new_error_from_args(pool* p, const char* error, va_list args) {
     value* v = value_new_error_from_args(error, args);
 
     add_to_chain(p, v);
@@ -179,7 +179,7 @@ value* pool_new_error_from_args(pool* p, char* error, va_list args) {
     return v;
 }
 
-value* pool_new_info(pool* p, char* info, ...) {
+value* pool_new_info(pool* p, const char* info, ...) {
     va_list args;
     va_start(args, info);
     value* v = value_new_info_from_args(info, args);
@@ -190,7 +190,7 @@ value* pool_new_info(pool* p, char* info, ...) {
     return v;
 }
 
-value* pool_new_info_from_args(pool* p, char* info, va_list args) {
+value* pool_new_info_from_args(pool* p, const char* info, va_list args) {
     value* v = value_new_info_from_args(info, args);
 
     add_to_chain(p, v);
