@@ -587,11 +587,7 @@ static value* compile_sequence(pool* p, value* exp, const char* target, const ch
     }
 }
 
-static value* compile_lambda_body(pool* p, value* exp, value* proc_entry) {
-    char params[1024];
-    // the params in string form to include in the code
-    value_to_str(get_lambda_parameters(p, exp), params);
-
+static value* compile_lambda_body(pool* p, value* exp, value* entry, char* params) {
     value* pre_body_seq = make_empty_sequence(p);
 
     // proc entry + extend the env by bounding
@@ -600,7 +596,7 @@ static value* compile_lambda_body(pool* p, value* exp, value* proc_entry) {
     add_needed(p, pre_body_seq, "proc");
     add_needed(p, pre_body_seq, "argl");
     add_modified(p, pre_body_seq, "env");
-    add_code(p, pre_body_seq, "%s", proc_entry->symbol);
+    add_code(p, pre_body_seq, "%s", entry->symbol);
     add_code(p, pre_body_seq, "assign env (op compiled-environment) (reg proc)");
     add_code(
         p, pre_body_seq,
@@ -614,6 +610,10 @@ static value* compile_lambda_body(pool* p, value* exp, value* proc_entry) {
 }
 
 static value* compile_lambda(pool* p, value* exp, const char* target, const char* linkage) {
+    char params[1024];
+    // the params in string form to include in the code
+    value_to_str(get_lambda_parameters(p, exp), params);
+
     // labels to separate the body from the rest
     value* proc_entry = make_label(p, "proc-entry", 1);      // before the body
     value* after_lambda = make_label(p, "after-lambda", 0);  // after the body
@@ -629,16 +629,16 @@ static value* compile_lambda(pool* p, value* exp, const char* target, const char
     add_modified(p, assign_seq, target);
     add_code(
         p, assign_seq,
-        "assign %s (op make-compiled-procedure) (label %s) (reg env)",
-        target, proc_entry->symbol);
+        "assign %s (op make-compiled-procedure) (const %s) (label %s) (reg env)",
+        target, params, proc_entry->symbol);
 
     return append_sequences(
         p,
         tack_on_sequence(  // ignore the body's needs and modifies
             p,
-            end_with_linkage(p, lambda_linkage, assign_seq),  // assign the compiled lambda
-            compile_lambda_body(p, exp, proc_entry)),         // proc entry, extend the env, body
-        make_label_sequence(p, after_lambda));                // after label
+            end_with_linkage(p, lambda_linkage, assign_seq),   // assign the compiled lambda
+            compile_lambda_body(p, exp, proc_entry, params)),  // proc entry, extend the env, body
+        make_label_sequence(p, after_lambda));                 // after label
 }
 
 static value* compile_and(pool* p, value* exp, const char* target, const char* linkage) {

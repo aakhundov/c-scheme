@@ -353,10 +353,11 @@ static value* op_get_compiled_environment(machine* m, const value* args) {
 }
 
 static value* op_make_compiled_procedure(machine* m, const value* args) {
-    value* entry = args->car->car;
-    value* env = args->cdr->car->car;
+    value* params = args->car->car;
+    value* entry = args->cdr->car->car;
+    value* env = args->cdr->cdr->car->car;
 
-    return make_compiled_procedure(m->pool, entry, env);
+    return make_compiled_procedure(m->pool, params, entry, env);
 }
 
 static value* op_signal_error(machine* m, const value* args) {

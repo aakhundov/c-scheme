@@ -886,9 +886,9 @@ static void test_syntax(eval* e) {
     test_eval_number(e, "c", 40);
     test_eval_error(e, "f", "f is unbound");
     test_eval_info(e, "(define (f x y) x y)", "f is defined");
-    test_eval_output(e, "f", (compile_flag ? "<compiled>" : "(lambda (x y) x y)"));
+    test_eval_output(e, "f", (compile_flag ? "<compiled (x y)>" : "(lambda (x y) x y)"));
     test_eval_info(e, "(define (g) 1)", "g is defined");
-    test_eval_output(e, "g", (compile_flag ? "<compiled>" : "(lambda () 1)"));
+    test_eval_output(e, "g", (compile_flag ? "<compiled ()>" : "(lambda () 1)"));
     test_eval_error(e, "d1", "d1 is unbound");
     test_eval_info(e, "(define (df1) (define d1 10) d1)", "df1 is defined");
     test_eval_number(e, "(df1)", 10);
@@ -935,14 +935,14 @@ static void test_syntax(eval* e) {
     test_eval_error(e, "(if . 1)", "non-list structure");
 
     // lambda
-    test_eval_output(e, "(lambda x x)", (compile_flag ? "<compiled>" : "(lambda x x)"));
-    test_eval_output(e, "(lambda (. x) x)", (compile_flag ? "<compiled>" : "(lambda x x)"));
-    test_eval_output(e, "(lambda () 1)", (compile_flag ? "<compiled>" : "(lambda () 1)"));
-    test_eval_output(e, "(lambda (x) x)", (compile_flag ? "<compiled>" : "(lambda (x) x)"));
-    test_eval_output(e, "(lambda (x) x x)", (compile_flag ? "<compiled>" : "(lambda (x) x x)"));
-    test_eval_output(e, "(lambda (x y) x)", (compile_flag ? "<compiled>" : "(lambda (x y) x)"));
-    test_eval_output(e, "(lambda (x y) x y)", (compile_flag ? "<compiled>" : "(lambda (x y) x y)"));
-    test_eval_output(e, "(lambda (x . y) x y)", (compile_flag ? "<compiled>" : "(lambda (x . y) x y)"));
+    test_eval_output(e, "(lambda x x)", (compile_flag ? "<compiled x>" : "(lambda x x)"));
+    test_eval_output(e, "(lambda (. x) x)", (compile_flag ? "<compiled x>" : "(lambda x x)"));
+    test_eval_output(e, "(lambda () 1)", (compile_flag ? "<compiled ()>" : "(lambda () 1)"));
+    test_eval_output(e, "(lambda (x) x)", (compile_flag ? "<compiled (x)>" : "(lambda (x) x)"));
+    test_eval_output(e, "(lambda (x) x x)", (compile_flag ? "<compiled (x)>" : "(lambda (x) x x)"));
+    test_eval_output(e, "(lambda (x y) x)", (compile_flag ? "<compiled (x y)>" : "(lambda (x y) x)"));
+    test_eval_output(e, "(lambda (x y) x y)", (compile_flag ? "<compiled (x y)>" : "(lambda (x y) x y)"));
+    test_eval_output(e, "(lambda (x . y) x y)", (compile_flag ? "<compiled (x . y)>" : "(lambda (x . y) x y)"));
 
     // lambda errors
     test_eval_error(e, "(lambda)", "no parameters");

@@ -96,9 +96,10 @@ value* get_compound_body(pool* p, const value* proc);
 value* get_compound_environment(pool* p, const value* proc);
 value* make_compound_procedure(pool* p, value* params, value* body, value* env);
 
+value* get_compiled_parameters(pool* p, const value* proc);
 value* get_compiled_entry(pool* p, const value* proc);
 value* get_compiled_environment(pool* p, const value* proc);
-value* make_compiled_procedure(pool* p, value* entry, value* env);
+value* make_compiled_procedure(pool* p, value* params, value* entry, value* env);
 
 int format_args(const value* message, const value* args, char* buffer);
 

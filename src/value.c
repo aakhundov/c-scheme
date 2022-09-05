@@ -423,7 +423,6 @@ static int pair_to_str(value* v, char* buffer) {
 static int lambda_to_str(const value* v, char* buffer) {
     static char params[BUFFER_SIZE];
     static char body[BUFFER_SIZE];
-
     value_to_str_rec(v->car->car, params);
     value_to_str_rec(v->car->cdr, body);
 
@@ -431,6 +430,13 @@ static int lambda_to_str(const value* v, char* buffer) {
     body[strlen(body) - 1] = '\0';
 
     return sprintf(buffer, "(lambda %s %s)", params, body + 1);
+}
+
+static int compiled_to_str(const value* v, char* buffer) {
+    static char params[BUFFER_SIZE];
+    value_to_str_rec(v->car->car, params);
+
+    return sprintf(buffer, "<compiled %s>", params);
 }
 
 static int value_to_str_rec(value* v, char* buffer) {
@@ -470,6 +476,9 @@ static int value_to_str_rec(value* v, char* buffer) {
                 break;
             case VALUE_LAMBDA:
                 result = lambda_to_str(v, buffer);
+                break;
+            case VALUE_COMPILED:
+                result = compiled_to_str(v, buffer);
                 break;
             default:
                 result = sprintf(buffer, "<%s>", get_type_name(v->type));

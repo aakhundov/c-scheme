@@ -740,16 +740,26 @@ value* make_compound_procedure(pool* p, value* params, value* body, value* env) 
         env);
 }
 
+value* get_compiled_parameters(pool* p, const value* proc) {
+    return proc->car->car;
+}
+
 value* get_compiled_entry(pool* p, const value* proc) {
-    return proc->car;
+    return proc->car->cdr;
 }
 
 value* get_compiled_environment(pool* p, const value* proc) {
     return proc->cdr;
 }
 
-value* make_compiled_procedure(pool* p, value* entry, value* env) {
-    return pool_new_compiled(p, entry, env);
+value* make_compiled_procedure(pool* p, value* params, value* entry, value* env) {
+    return pool_new_compiled(
+        p,
+        pool_new_pair(
+            p,
+            params,
+            entry),
+        env);
 }
 
 int format_args(const value* message, const value* args, char* buffer) {
