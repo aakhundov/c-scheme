@@ -147,12 +147,18 @@ value* load_from_file(eval* e, const char* path, const int verbose) {
     return NULL;
 }
 
-void load_from_path_rec(eval* e, char* path, const int verbose) {
+static int compare_str(const void* s1, const void* s2) {
+    return strcmp(*((char**)s1), *((char**)s2));
+}
+
+static void load_from_path_rec(eval* e, char* path, const int verbose) {
     DIR* dir;
     if (!(dir = opendir(path))) {
+        // process the file
         value* result = load_from_file(e, path, verbose);
 
         if (result != NULL) {
+            // error while loading from the file
             static char buffer[BUFFER_SIZE];
             value_to_str(result, buffer);
             printf("error while loading from %s:\n", path);
@@ -162,27 +168,51 @@ void load_from_path_rec(eval* e, char* path, const int verbose) {
             printf("loaded from %s\n", path);
         }
     } else {
-        struct dirent** namelist;
-        int n = scandir(path, &namelist, 0, alphasort);
+        size_t count = 0;
+        size_t capacity = 10;
+        char** item_names = malloc(capacity * sizeof(char*));
 
-        if (n > 0) {
-            for (size_t i = 0; i < n; i++) {
-                struct dirent* entry = namelist[i];
-                if (strcmp(entry->d_name, ".") != 0 &&
-                    strcmp(entry->d_name, "..") != 0) {
-                    char sub_path[1024];
-                    snprintf(sub_path, sizeof(sub_path), "%s/%s", path, entry->d_name);
-                    load_from_path_rec(e, sub_path, verbose);
+        // collect the directory item names
+        struct dirent* entry;
+        while ((entry = readdir(dir)) != NULL) {
+            // ignore the . and .. names
+            if (strcmp(entry->d_name, ".") != 0 &&
+                strcmp(entry->d_name, "..") != 0) {
+                // add the name to the list
+                item_names[count] = strdup(entry->d_name);
+
+                count++;
+                if (count == capacity) {
+                    // the list capacity has been
+                    // reached: double the capacity
+                    capacity *= 2;
+                    item_names = realloc(item_names, capacity * sizeof(char*));
                 }
             }
         }
 
-        free(namelist);
         closedir(dir);
+
+        if (count > 0) {
+            // sort the directory item names
+            qsort(item_names, count, sizeof(char*), compare_str);
+
+            char sub_path[1024];
+            for (size_t i = 0; i < count; i++) {
+                // recursively load from the sub-path: path + item name
+                snprintf(sub_path, sizeof(sub_path), "%s/%s", path, item_names[i]);
+                load_from_path_rec(e, sub_path, verbose);
+                // free the item name
+                free(item_names[i]);
+            }
+        }
+
+        // free the list
+        free(item_names);
     }
 }
 
-void load_from_path(eval* e, char* path, const int verbose) {
+static void load_from_path(eval* e, char* path, const int verbose) {
     // trim after trailing space
     char* running = path;
     while (*running != '\0') {
@@ -256,9 +286,9 @@ void run_repl() {
                 break;
             case COMMAND_TRACE:
                 if ((level = set_trace(e, input)) != -1) {
-                    printf("\x1B[32mtrace level was set to %d\x1B[0m\n", level);
+                    printf("trace level was set to %d\n", level);
                 } else {
-                    printf("\x1B[31merror setting trace level\x1B[0m\n");
+                    printf("error setting trace level\n");
                 }
                 hist_add(h, input);
                 break;
@@ -266,7 +296,7 @@ void run_repl() {
                 eval_reset_env(e);
                 load_from_path(e, LIBRARY_PATH, 0);
                 load_from_path(e, TESTS_PATH, 0);
-                printf("\x1B[32menvironment was reset\x1B[0m\n");
+                printf("menvironment was reset\n");
                 hist_add(h, input);
                 break;
             case COMMAND_LOAD:
