@@ -36,6 +36,7 @@ struct machine_stats {
     long garbage_after;
     long garbage_collected_times;
     long garbage_collected_values;
+    double garbage_collection_time;
 
     int flag;
 

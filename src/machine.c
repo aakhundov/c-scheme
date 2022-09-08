@@ -232,6 +232,7 @@ static void reset_stats(machine* m) {
     s->garbage_after = 0;
     s->garbage_collected_times = 0;
     s->garbage_collected_values = 0;
+    s->garbage_collection_time = 0;
 
     s->flag = 0;
 
@@ -817,8 +818,9 @@ static void trace_report(machine* m) {
 
             printf(header, "GARBAGE");
             printf("%s", line);
-            printf(row, "collected times", s->garbage_collected_times);
+            printf(row, "times collected", s->garbage_collected_times);
             printf(row, "collected values", s->garbage_collected_values);
+            printf(row, "collection time, ms", (long)(s->garbage_collection_time * 1000));
             printf(row, "before", s->garbage_before);
             printf(row, "after", s->garbage_after);
             printf("%s", line);
@@ -881,9 +883,11 @@ static void execute_next_instruction(machine* m) {
     }
 
     if (m->pool->size >= MAX_GARBAGE_VALUES) {
-        size_t before = 0;
+        size_t pool_size_before = 0;
+        double start_time = 0;
         if (m->trace >= TRACE_GENERAL) {
-            before = m->pool->size;
+            pool_size_before = m->pool->size;
+            start_time = get_time();
         }
 
         // interim garbage collection:
@@ -893,7 +897,8 @@ static void execute_next_instruction(machine* m) {
 
         if (m->trace >= TRACE_GENERAL) {
             m->stats.garbage_collected_times += 1;
-            m->stats.garbage_collected_values += (before - m->pool->size);
+            m->stats.garbage_collected_values += (pool_size_before - m->pool->size);
+            m->stats.garbage_collection_time += (get_time() - start_time);
         }
     }
 }
