@@ -795,7 +795,6 @@ static void trace_report(machine* m) {
         printf(row, "memory, values", execution_memory);
         printf(row, "instructions", s->num_inst);
         printf("%s", line);
-        printf("\n");
 
         if (m->trace >= TRACE_SUMMARY) {
             printf("%s", line);
@@ -824,8 +823,6 @@ static void trace_report(machine* m) {
             printf(row, "before", s->garbage_before);
             printf(row, "after", s->garbage_after);
             printf("%s", line);
-
-            printf("\n");
         }
 
         if (m->trace >= TRACE_COUNTS) {
@@ -850,8 +847,6 @@ static void trace_report(machine* m) {
             printf("%s", line);
             print_counts(m->stats.cnt_label_jumps, m->labels, row);
             printf("%s", line);
-
-            printf("\n");
         }
     }
 }
@@ -986,10 +981,6 @@ void machine_run(machine* m) {
     if (m->trace >= TRACE_GENERAL) {
         m->stats.end_time = get_time();
         m->stats.garbage_after = m->pool->size;
-
-        if (m->trace >= TRACE_INSTRUCTIONS) {
-            printf("\n");
-        }
 
         trace_report(m);
     }
