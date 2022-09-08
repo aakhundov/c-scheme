@@ -1,5 +1,5 @@
 #!/bin/bash
 
-make && \
+make -j && \
 echo && \
 valgrind --leak-check=yes ./bin/c-scheme test

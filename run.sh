@@ -1,5 +1,5 @@
 #!/bin/bash
 
-make && \
+make -j && \
 echo && \
 ./bin/c-scheme
