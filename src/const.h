@@ -10,7 +10,7 @@
 
 #define HISTORY_PATH "./.history"
 #define EVALUATOR_PATH "./lib/machines/evaluator.scm"
-#define LIBRARY_PAATH "./lib/scheme/library.scm"
+#define LIBRARY_PATH "./lib/scheme/library.scm"
 #define TESTS_PATH "./lib/scheme/tests.scm"
 
 #define INDENT_SPACES 4

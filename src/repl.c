@@ -1,5 +1,6 @@
 #include "repl.h"
 
+#include <dirent.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -119,7 +120,7 @@ static void process_repl_command(eval* e, hist* h, const char* input, char* outp
     value_dispose(parsed);
 }
 
-value* load_from_path(eval* e, const char* path, const int verbose) {
+value* load_from_file(eval* e, const char* path, const int verbose) {
     static char buffer[BUFFER_SIZE];
     value* content = parse_from_file(path);
     if (content != NULL && content->type == VALUE_ERROR) {
@@ -143,10 +144,45 @@ value* load_from_path(eval* e, const char* path, const int verbose) {
 
     value_dispose(content);
 
-    return value_new_info("loaded from '%s'", path);
+    return NULL;
 }
 
-void load_external(eval* e, char* path, const int verbose) {
+void load_from_path_rec(eval* e, char* path, const int verbose) {
+    DIR* dir;
+    if (!(dir = opendir(path))) {
+        value* result = load_from_file(e, path, verbose);
+
+        if (result != NULL) {
+            static char buffer[BUFFER_SIZE];
+            value_to_str(result, buffer);
+            printf("error while loading from %s:\n", path);
+            printf("%s\n", buffer);
+            value_dispose(result);
+        } else {
+            printf("loaded from %s\n", path);
+        }
+    } else {
+        struct dirent** namelist;
+        int n = scandir(path, &namelist, 0, alphasort);
+
+        if (n > 0) {
+            for (size_t i = 0; i < n; i++) {
+                struct dirent* entry = namelist[i];
+                if (strcmp(entry->d_name, ".") != 0 &&
+                    strcmp(entry->d_name, "..") != 0) {
+                    char sub_path[1024];
+                    snprintf(sub_path, sizeof(sub_path), "%s/%s", path, entry->d_name);
+                    load_from_path_rec(e, sub_path, verbose);
+                }
+            }
+        }
+
+        free(namelist);
+        closedir(dir);
+    }
+}
+
+void load_from_path(eval* e, char* path, const int verbose) {
     // trim after trailing space
     char* running = path;
     while (*running != '\0') {
@@ -157,19 +193,7 @@ void load_external(eval* e, char* path, const int verbose) {
         running++;
     }
 
-    value* result = load_from_path(e, path, verbose);
-
-    static char buffer[BUFFER_SIZE];
-    value_to_str(result, buffer);
-    if (verbose) {
-        printf("\n");
-    }
-    if (result->type == VALUE_ERROR) {
-        printf("error while loading from %s:\n", path);
-    }
-    printf("%s\n", buffer);
-
-    value_dispose(result);
+    load_from_path_rec(e, path, verbose);
 }
 
 static machine_trace_level set_trace(eval* e, const char* input) {
@@ -216,8 +240,9 @@ void run_repl() {
     e = eval_new(EVALUATOR_PATH);
     h = hist_new(HISTORY_PATH);
 
-    load_external(e, LIBRARY_PAATH, 0);
-    load_external(e, TESTS_PATH, 0);
+    load_from_path(e, LIBRARY_PATH, 0);
+    load_from_path(e, TESTS_PATH, 0);
+
     printf("\n");
 
     while (!stop) {
@@ -239,15 +264,15 @@ void run_repl() {
                 break;
             case COMMAND_RESET:
                 eval_reset_env(e);
-                load_external(e, LIBRARY_PAATH, 0);
-                load_external(e, TESTS_PATH, 0);
+                load_from_path(e, LIBRARY_PATH, 0);
+                load_from_path(e, TESTS_PATH, 0);
                 printf("\x1B[32menvironment was reset\x1B[0m\n");
                 hist_add(h, input);
                 break;
             case COMMAND_LOAD:
                 // load "x" from "load x"
                 signal(SIGINT, signal_handler);
-                load_external(e, input + 5, 1);
+                load_from_path(e, input + 5, 1);
                 signal(SIGINT, NULL);
                 hist_add(h, input);
                 break;

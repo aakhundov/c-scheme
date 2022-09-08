@@ -35,15 +35,15 @@
 (assert-equals '(prime? 1105) false)
 (assert-equals '(prime? 1729) false)
 
-(define (expmod base exp m)
-    (cond ((= exp 0) 1)
-          ((even? exp)
+(define (expmod base expr m)
+    (cond ((= expr 0) 1)
+          ((even? expr)
            (remainder
-            (square (expmod base (/ exp 2) m))
+            (square (expmod base (/ expr 2) m))
             m))
           (else
            (remainder
-            (* base (expmod base (- exp 1) m))
+            (* base (expmod base (- expr 1) m))
             m))))
 
 (define (fermat-test n)

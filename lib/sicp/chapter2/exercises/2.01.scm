@@ -26,5 +26,5 @@
 (assert-equals '(make-rat 0 4) (cons 0 1))
 (assert-equals '(make-rat 0 -4) (cons 0 1))
 
-; this returns an error
-(print-rat (make-rat 4 0))
+; error: division by zero
+; (print-rat (make-rat 4 0))

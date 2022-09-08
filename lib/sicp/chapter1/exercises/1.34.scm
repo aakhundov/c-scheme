@@ -5,4 +5,5 @@
 (assert-equals '(f square) 4)
 (assert-equals '(f (lambda (z) (* z (+ z 1)))) 6)
 
-(f f)  ; error: "can't apply 2"
+; error: can't apply 2
+; (f f)
