@@ -881,7 +881,7 @@ static void execute_next_instruction(machine* m) {
     }
 
     if (m->pool->size >= MAX_GARBAGE_VALUES) {
-        size_t before;
+        size_t before = 0;
         if (m->trace >= TRACE_GENERAL) {
             before = m->pool->size;
         }

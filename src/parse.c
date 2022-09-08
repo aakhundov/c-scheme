@@ -383,11 +383,15 @@ value* parse_from_file(const char* path) {
         long length = ftell(file);
         fseek(file, 0, SEEK_SET);
         char* content = malloc(length + 1);
-        fread(content, 1, length, file);
-        content[length] = '\0';
 
-        // parse the full content of the file
-        value* result = parse_from_str(content);
+        value* result;
+        if (fread(content, 1, length, file)) {
+            content[length] = '\0';
+            // parse the full content of the file
+            result = parse_from_str(content);
+        } else {
+            result = value_new_error("failed to read from file: %s", path);
+        }
 
         // cleanup
         free(content);
