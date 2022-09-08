@@ -178,8 +178,9 @@ static void load_from_path_rec(eval* e, char* path, const int verbose) {
             // ignore the . and .. names
             if (strcmp(entry->d_name, ".") != 0 &&
                 strcmp(entry->d_name, "..") != 0) {
-                // add the name to the list
-                item_names[count] = strdup(entry->d_name);
+                // add the new item name to the list
+                item_names[count] = malloc(strlen(entry->d_name) + 1);
+                strcpy(item_names[count], entry->d_name);
 
                 count++;
                 if (count == capacity) {
@@ -194,7 +195,7 @@ static void load_from_path_rec(eval* e, char* path, const int verbose) {
         closedir(dir);
 
         if (count > 0) {
-            // sort the directory item names
+            // sort the directory item names in the list
             qsort(item_names, count, sizeof(char*), compare_str);
 
             char sub_path[1024];
