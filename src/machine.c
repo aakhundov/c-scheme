@@ -797,8 +797,6 @@ static void trace_report(machine* m) {
         printf("%s", line);
 
         if (m->trace >= TRACE_SUMMARY) {
-            printf("%s", line);
-
             printf(header, "INSTRUCTIONS");
             printf("%s", line);
             printf(row, "assign", s->num_inst_assign);
@@ -826,8 +824,6 @@ static void trace_report(machine* m) {
         }
 
         if (m->trace >= TRACE_COUNTS) {
-            printf("%s", line);
-
             printf(header, "OP CALLS");
             printf("%s", line);
             print_counts(m->stats.cnt_op_calls, m->ops, row);
