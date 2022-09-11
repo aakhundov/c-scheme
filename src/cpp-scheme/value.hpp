@@ -393,4 +393,8 @@ inline bool operator==(const value& v1, const value& v2) {
     return v1.equals(v2);
 }
 
+inline bool operator!=(const value& v1, const value& v2) {
+    return !operator==(v1, v2);
+}
+
 #endif  // VALUE_HPP_
