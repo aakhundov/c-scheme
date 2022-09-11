@@ -96,5 +96,65 @@ int main() {
     }
     std::cout << std::endl;
 
+    auto num1 = make_value(3.14);
+    auto num2 = make_value(3.14);
+    auto num3 = make_value(6.28);
+    std::cout << *num1 << " == " << *num1 << " --> " << (*num1 == *num1) << std::endl;
+    std::cout << *num1 << " == " << *num2 << " --> " << (*num1 == *num2) << std::endl;
+    std::cout << *num2 << " == " << *num1 << " --> " << (*num2 == *num1) << std::endl;
+    std::cout << *num2 << " == " << *num2 << " --> " << (*num2 == *num2) << std::endl;
+    std::cout << *num1 << " == " << *num3 << " --> " << (*num1 == *num3) << std::endl;
+    std::cout << *num2 << " == " << *num3 << " --> " << (*num2 == *num3) << std::endl;
+    std::cout << *num3 << " == " << *num3 << " --> " << (*num3 == *num3) << std::endl;
+    std::cout << std::endl;
+
+    auto sym1 = make_value("abc");
+    auto sym2 = make_value("abc");
+    auto sym3 = make_value("xyz");
+    std::cout << *sym1 << " == " << *sym1 << " --> " << (*sym1 == *sym1) << std::endl;
+    std::cout << *sym1 << " == " << *sym2 << " --> " << (*sym1 == *sym2) << std::endl;
+    std::cout << *sym2 << " == " << *sym1 << " --> " << (*sym2 == *sym1) << std::endl;
+    std::cout << *sym2 << " == " << *sym2 << " --> " << (*sym2 == *sym2) << std::endl;
+    std::cout << *sym1 << " == " << *sym3 << " --> " << (*sym1 == *sym3) << std::endl;
+    std::cout << *sym2 << " == " << *sym3 << " --> " << (*sym2 == *sym3) << std::endl;
+    std::cout << *sym3 << " == " << *sym3 << " --> " << (*sym3 == *sym3) << std::endl;
+    std::cout << std::endl;
+
+    auto str1 = make_value("abc"s);
+    auto str2 = make_value("abc"s);
+    auto str3 = make_value("xyz"s);
+    std::cout << *str1 << " == " << *str1 << " --> " << (*str1 == *str1) << std::endl;
+    std::cout << *str1 << " == " << *str2 << " --> " << (*str1 == *str2) << std::endl;
+    std::cout << *str2 << " == " << *str1 << " --> " << (*str2 == *str1) << std::endl;
+    std::cout << *str2 << " == " << *str2 << " --> " << (*str2 == *str2) << std::endl;
+    std::cout << *str1 << " == " << *str3 << " --> " << (*str1 == *str3) << std::endl;
+    std::cout << *str2 << " == " << *str3 << " --> " << (*str2 == *str3) << std::endl;
+    std::cout << *str3 << " == " << *str3 << " --> " << (*str3 == *str3) << std::endl;
+    std::cout << std::endl;
+
+    auto lst1 = make_value_list(1, 2, 3);
+    auto lst2 = make_value_list(1, 2, 3);
+    auto lst3 = make_value_list(1, 2, make_value_pair(3, 4));
+    std::cout << *lst1 << " == " << *lst1 << " --> " << (*lst1 == *lst1) << std::endl;
+    std::cout << *lst1 << " == " << *lst2 << " --> " << (*lst1 == *lst2) << std::endl;
+    std::cout << *lst2 << " == " << *lst1 << " --> " << (*lst2 == *lst1) << std::endl;
+    std::cout << *lst2 << " == " << *lst2 << " --> " << (*lst2 == *lst2) << std::endl;
+    std::cout << *lst1 << " == " << *lst3 << " --> " << (*lst1 == *lst3) << std::endl;
+    std::cout << *lst2 << " == " << *lst3 << " --> " << (*lst2 == *lst3) << std::endl;
+    std::cout << *lst3 << " == " << *lst3 << " --> " << (*lst3 == *lst3) << std::endl;
+    std::cout << std::endl;
+
+    auto pr1 = make_value_pair("abc"s, 1);
+    auto pr2 = make_value_pair("abc"s, 1);
+    auto pr3 = make_value_pair("abc"s, 2);
+    std::cout << *pr1 << " == " << *pr1 << " --> " << (*pr1 == *pr1) << std::endl;
+    std::cout << *pr1 << " == " << *pr2 << " --> " << (*pr1 == *pr2) << std::endl;
+    std::cout << *pr2 << " == " << *pr1 << " --> " << (*pr2 == *pr1) << std::endl;
+    std::cout << *pr2 << " == " << *pr2 << " --> " << (*pr2 == *pr2) << std::endl;
+    std::cout << *pr1 << " == " << *pr3 << " --> " << (*pr1 == *pr3) << std::endl;
+    std::cout << *pr2 << " == " << *pr3 << " --> " << (*pr2 == *pr3) << std::endl;
+    std::cout << *pr3 << " == " << *pr3 << " --> " << (*pr3 == *pr3) << std::endl;
+    std::cout << std::endl;
+
     return 0;
 }

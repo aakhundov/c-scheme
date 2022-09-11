@@ -32,7 +32,11 @@ class value {
         return (os << "value");
     };
 
-    value_t type() {
+    virtual bool equals(const value& other) const {
+        return this == &other;
+    }
+
+    value_t type() const {
         return _type;
     }
 
@@ -50,6 +54,14 @@ class value_number : public value {
     double number() const { return _number; }
 
     std::ostream& write(std::ostream& os) const override;
+
+    bool equals(const value& other) const override {
+        if (other.type() == value_t::number) {
+            return (reinterpret_cast<const value_number*>(&other)->_number == _number);
+        } else {
+            return false;
+        }
+    }
 
    private:
     double _number;
@@ -98,6 +110,17 @@ class value_string : public value {
     std::ostream& write(std::ostream& os) const override {
         // the string in quotes
         return (os << "\"" << _string << "\"");
+    }
+
+    bool equals(const value& other) const override {
+        if (other.type() == value_t::string ||
+            other.type() == value_t::format ||
+            other.type() == value_t::error ||
+            other.type() == value_t::info) {
+            return (reinterpret_cast<const value_string*>(&other)->_string == _string);
+        } else {
+            return false;
+        }
     }
 
    protected:
@@ -266,6 +289,7 @@ class value_pair : public value {
     void cdr(std::shared_ptr<value>& cdr) { _cdr = cdr; }
 
     std::ostream& write(std::ostream& os) const override;
+    bool equals(const value& other) const override;
 
     bool is_list();
     size_t length();
@@ -353,10 +377,20 @@ inline std::shared_ptr<value_info> make_info(const char* format, ...) {
     return result;
 }
 
-// helper function
+// helper functions
 
 inline std::ostream& operator<<(std::ostream& os, const value& v) {
     return v.write(os);
+}
+
+inline bool operator==(const value& v1, const value& v2) {
+    if (&v1 == &v2) {
+        return true;
+    } else if (v1.type() != v2.type()) {
+        return false;
+    }
+
+    return v1.equals(v2);
 }
 
 #endif  // VALUE_HPP_

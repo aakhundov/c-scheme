@@ -104,6 +104,28 @@ std::ostream& value_pair::write(std::ostream& os) const {
     return os;
 };
 
+bool value_pair::equals(const value& other) const {
+    if (other.type() == value_t::pair) {
+        const value* running1 = this;
+        const value* running2 = &other;
+        while (running1->type() == value_t::pair && running2->type() == value_t::pair) {
+            const value_pair* pair1 = reinterpret_cast<const value_pair*>(running1);
+            const value_pair* pair2 = reinterpret_cast<const value_pair*>(running2);
+
+            if (!pair1->_car->equals(*pair2->_car)) {
+                return false;
+            }
+
+            running1 = pair1->_cdr.get();
+            running2 = pair2->_cdr.get();
+        }
+
+        return running1->equals(*running2);
+    } else {
+        return false;
+    }
+}
+
 bool value_pair::is_list() {
     auto running{_cdr};
     while (running != nil) {
