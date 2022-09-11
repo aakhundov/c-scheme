@@ -81,7 +81,7 @@ static value* get_evaluated(eval* ev, const char* input) {
     static char output[BUFFER_SIZE];
     value_to_str(v, output);
 
-    static char formatted[BUFFER_SIZE];
+    static char formatted[2 * BUFFER_SIZE];
     sprintf(
         formatted,
         "\x1B[34m[\x1B[0m%s\x1B[34m] --> [\x1B[0m%s\x1B[34m]\x1B[0m",
