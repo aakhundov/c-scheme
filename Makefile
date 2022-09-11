@@ -1,34 +1,39 @@
 CC=gcc
-CFLAGS=-c -std=c11 -Wall -Werror -fPIC -O2 -g
+C_CFLAGS=-c -std=c11 -Wall -Werror -fPIC -O2 -g
 LDFLAGS=-g
 LDLIBS=-ledit -lm
 
 SRC_DIR=src
 BIN_DIR=bin
 
-APP=$(BIN_DIR)/c-scheme
-LIBRARY=$(APP).so
-SOURCES=$(wildcard $(SRC_DIR)/*.c)
-DRIVER_SOURCES=$(SRC_DIR)/main.c $(SRC_DIR)/test.c $(SRC_DIR)/repl.c $(SRC_DIR)/edit.c $(SRC_DIR)/hist.c
-DRIVER_OBJECTS=$(DRIVER_SOURCES:$(SRC_DIR)/%.c=$(BIN_DIR)/%.o)
-LIBRARY_SOURCES=$(filter-out $(DRIVER_SOURCES), $(SOURCES))
-LIBRARY_OBJECTS=$(LIBRARY_SOURCES:$(SRC_DIR)/%.c=$(BIN_DIR)/%.o)
+C_SRC_DIR=$(SRC_DIR)/c
+C_BIN_DIR=$(BIN_DIR)/c
 
-$(APP): $(DRIVER_OBJECTS) $(LIBRARY)
+C_DRIVER=$(C_BIN_DIR)/c-scheme
+C_LIBRARY=$(C_DRIVER).so
+C_SOURCES=$(wildcard $(C_SRC_DIR)/*.c)
+C_DRIVER_SOURCES=$(C_SRC_DIR)/main.c $(C_SRC_DIR)/test.c $(C_SRC_DIR)/repl.c $(C_SRC_DIR)/edit.c $(C_SRC_DIR)/hist.c
+C_DRIVER_OBJECTS=$(C_DRIVER_SOURCES:$(C_SRC_DIR)/%.c=$(C_BIN_DIR)/%.o)
+C_LIBRARY_SOURCES=$(filter-out $(C_DRIVER_SOURCES), $(C_SOURCES))
+C_LIBRARY_OBJECTS=$(C_LIBRARY_SOURCES:$(C_SRC_DIR)/%.c=$(C_BIN_DIR)/%.o)
+
+c: $(C_DRIVER) $(C_LIBRARY)
+
+$(C_DRIVER): $(C_DRIVER_OBJECTS) $(C_LIBRARY)
 	$(CC) $(LDFLAGS) $(LDLIBS) $^ -o $@
 
-$(DRIVER_OBJECTS): $(BIN_DIR)/%.o: $(SRC_DIR)/%.c
-	$(CC) $(CFLAGS) $< -o $@
+$(C_DRIVER_OBJECTS): $(C_BIN_DIR)/%.o: $(C_SRC_DIR)/%.c
+	$(CC) $(C_CFLAGS) $< -o $@
 
-$(LIBRARY): $(LIBRARY_OBJECTS)
+$(C_LIBRARY): $(C_LIBRARY_OBJECTS)
 	$(CC) -shared $(LDFLAGS) $^ $(LDLIBS) -o $@
 
-$(LIBRARY_OBJECTS): $(BIN_DIR)/%.o: $(SRC_DIR)/%.c
-	$(CC) $(CFLAGS) $< -o $@
+$(C_LIBRARY_OBJECTS): $(C_BIN_DIR)/%.o: $(C_SRC_DIR)/%.c
+	$(CC) $(C_CFLAGS) $< -o $@
 
 clean:
 	rm -rf $(BIN_DIR)
 
 .PHONY: clean
 
-$(shell mkdir -p $(BIN_DIR))
+$(shell mkdir -p $(C_BIN_DIR))
