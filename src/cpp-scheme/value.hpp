@@ -362,7 +362,7 @@ inline std::shared_ptr<value_pair> make_value_list(T head, Tail... tail) {
 inline std::shared_ptr<value_error> make_error(const char* format, ...) {
     va_list args;
     va_start(args, format);
-    auto result = std::make_shared<value_error>(format, args);
+    std::shared_ptr<value_error> result = std::make_shared<value_error>(format, args);
     va_end(args);
 
     return result;
@@ -371,7 +371,7 @@ inline std::shared_ptr<value_error> make_error(const char* format, ...) {
 inline std::shared_ptr<value_info> make_info(const char* format, ...) {
     va_list args;
     va_start(args, format);
-    auto result = std::make_shared<value_info>(format, args);
+    std::shared_ptr<value_info> result = std::make_shared<value_info>(format, args);
     va_end(args);
 
     return result;

@@ -86,10 +86,10 @@ void value_pair::value_iterator::_advance() {
 std::ostream& value_pair::write(std::ostream& os) const {
     os << "(";
     _car->write(os);  // write the first car
-    auto running{_cdr};
+    std::shared_ptr<value> running{_cdr};
     while (running != nil) {
         if (running->type() == value_t::pair) {
-            auto pair = reinterpret_cast<value_pair*>(running.get());
+            value_pair* pair = reinterpret_cast<value_pair*>(running.get());
             os << " ";
             pair->_car->write(os);  // write the next car
             running = pair->_cdr;   // go to the following cdr
@@ -127,11 +127,11 @@ bool value_pair::equals(const value& other) const {
 }
 
 bool value_pair::is_list() {
-    auto running{_cdr};
+    std::shared_ptr<value> running{_cdr};
     while (running != nil) {
         if (running->type() == value_t::pair) {
             // the cdr is a pair
-            auto pair = reinterpret_cast<value_pair*>(running.get());
+            value_pair* pair = reinterpret_cast<value_pair*>(running.get());
             running = pair->_cdr;  // go to the next cdr
         } else {
             // the (terminating) cdr is not a pair
@@ -146,12 +146,12 @@ size_t value_pair::length() {
     // at least one pair
     size_t result = 1;
 
-    auto running{_cdr};
+    std::shared_ptr<value> running{_cdr};
     while (running != nil) {
         result += 1;  // increment the length
         if (running->type() == value_t::pair) {
             // the cdr is a pair
-            auto pair = reinterpret_cast<value_pair*>(running.get());
+            value_pair* pair = reinterpret_cast<value_pair*>(running.get());
             running = pair->_cdr;  // go to the next cdr
         } else {
             // the (terminating) cdr is not a pair
