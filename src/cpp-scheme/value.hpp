@@ -7,6 +7,19 @@
 #include <memory>
 #include <string>
 
+enum class value_t {
+    undefined,
+    number,
+    symbol,
+    string,
+    format,
+    error,
+    info,
+    bool_,
+    nil,
+    pair,
+};
+
 // value hierarchy
 
 class value {
@@ -18,11 +31,20 @@ class value {
         // the default
         return (os << "value");
     };
+
+    value_t type() {
+        return _type;
+    }
+
+   protected:
+    value_t _type{value_t::undefined};
 };
 
 class value_number : public value {
    public:
-    value_number(double number) : _number(number) {}
+    value_number(double number) : _number(number) {
+        _type = value_t::number;
+    }
 
     // getter only
     double number() const { return _number; }
@@ -54,15 +76,21 @@ class value_symbol : public value {
 
    private:
     // can't instantiate a singleton
-    value_symbol(const std::string symbol) : _symbol(symbol) {}
+    value_symbol(const std::string symbol) : _symbol(symbol) {
+        _type = value_t::symbol;
+    }
 
     std::string _symbol;
 };
 
 class value_string : public value {
    public:
-    value_string() : _string("") {}
-    value_string(std::string string) : _string(string) {}
+    value_string() : _string("") {
+        _type = value_t::string;
+    }
+    value_string(std::string string) : _string(string) {
+        _type = value_t::string;
+    }
 
     // getter only
     const std::string& string() const { return _string; }
@@ -76,15 +104,17 @@ class value_string : public value {
     std::string _string;
 };
 
-class value_formatted : public value_string {
+class value_format : public value_string {
    public:
-    value_formatted(const char* format, va_list args);
+    // poor man's std::format
+    value_format(const char* format, va_list args);
 };
 
-class value_error : public value_formatted {
+class value_error : public value_format {
    public:
-    value_error(const char* format, va_list args)
-        : value_formatted(format, args) {}
+    value_error(const char* format, va_list args) : value_format(format, args) {
+        _type = value_t::error;
+    }
 
     std::ostream& write(std::ostream& os) const override {
         // the red/white and bold error text
@@ -92,10 +122,11 @@ class value_error : public value_formatted {
     }
 };
 
-class value_info : public value_formatted {
+class value_info : public value_format {
    public:
-    value_info(const char* format, va_list args)
-        : value_formatted(format, args) {}
+    value_info(const char* format, va_list args) : value_format(format, args) {
+        _type = value_t::info;
+    }
 
     std::ostream& write(std::ostream& os) const override {
         // the green info text
@@ -124,7 +155,9 @@ class value_bool : public value {
 
    private:
     // can't instantiate a singleton
-    value_bool(bool truth) : _truth(truth) {}
+    value_bool(bool truth) : _truth(truth) {
+        _type = value_t::bool_;
+    }
 
     bool _truth;
 };
@@ -147,7 +180,9 @@ class value_nil : public value {
 
    private:
     // can't instantiate a singleton
-    value_nil() {}
+    value_nil() {
+        _type = value_t::nil;
+    }
 };
 
 // singleton instances
@@ -212,7 +247,9 @@ class value_pair : public value {
     };
 
     // car and cdr shared ptrs are passed by copying
-    value_pair(std::shared_ptr<value> car, std::shared_ptr<value> cdr) : _car(car), _cdr(cdr) {}
+    value_pair(std::shared_ptr<value> car, std::shared_ptr<value> cdr) : _car(car), _cdr(cdr) {
+        _type = value_t::pair;
+    }
 
     value_iterator begin() {
         return value_iterator(this);
@@ -243,7 +280,7 @@ class value_pair : public value {
 template <typename T,
           typename std::enable_if<
               std::is_arithmetic<T>::value,
-              bool>::type = true>
+              bool>::type = true>  // poor man's concept
 inline std::shared_ptr<value_number> make_value(T number) {
     // from the number
     return std::make_shared<value_number>(number);

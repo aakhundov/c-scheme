@@ -32,12 +32,14 @@ const std::shared_ptr<value_symbol>& value_symbol::get(const std::string& symbol
     return val;
 }
 
-// value_formatted
+// value_format
 
-value_formatted::value_formatted(const char* format, va_list args) : value_string() {
+value_format::value_format(const char* format, va_list args) : value_string() {
     static char buffer[65536];
     vsnprintf(buffer, sizeof(buffer), format, args);
     _string = buffer;
+
+    _type = value_t::format;
 }
 
 // value_bool
@@ -62,8 +64,8 @@ const std::shared_ptr<value_nil>& value_nil::get() {
 // value_pair
 
 void value_pair::value_iterator::_advance() {
-    if (auto pair = dynamic_cast<value_pair*>(_ptr->_cdr.get())) {
-        _ptr = pair;  // cdr is a pair
+    if (_ptr->_cdr->type() == value_t::pair) {
+        _ptr = reinterpret_cast<value_pair*>(_ptr->_cdr.get());  // cdr is a pair
     } else {
         if (_ptr->_cdr == nil) {
             // the list terminates: stop here
@@ -86,7 +88,8 @@ std::ostream& value_pair::write(std::ostream& os) const {
     _car->write(os);  // write the first car
     auto running{_cdr};
     while (running != nil) {
-        if (auto pair = dynamic_cast<value_pair*>(running.get())) {
+        if (running->type() == value_t::pair) {
+            auto pair = reinterpret_cast<value_pair*>(running.get());
             os << " ";
             pair->_car->write(os);  // write the next car
             running = pair->_cdr;   // go to the following cdr
@@ -104,8 +107,9 @@ std::ostream& value_pair::write(std::ostream& os) const {
 bool value_pair::is_list() {
     auto running{_cdr};
     while (running != nil) {
-        if (auto pair = dynamic_cast<value_pair*>(running.get())) {
+        if (running->type() == value_t::pair) {
             // the cdr is a pair
+            auto pair = reinterpret_cast<value_pair*>(running.get());
             running = pair->_cdr;  // go to the next cdr
         } else {
             // the (terminating) cdr is not a pair
@@ -123,8 +127,9 @@ size_t value_pair::length() {
     auto running{_cdr};
     while (running != nil) {
         result += 1;  // increment the length
-        if (auto pair = dynamic_cast<value_pair*>(running.get())) {
+        if (running->type() == value_t::pair) {
             // the cdr is a pair
+            auto pair = reinterpret_cast<value_pair*>(running.get());
             running = pair->_cdr;  // go to the next cdr
         } else {
             // the (terminating) cdr is not a pair
