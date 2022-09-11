@@ -1,0 +1,119 @@
+#include "value.hpp"
+
+#include <cstdio>
+#include <iomanip>
+#include <iostream>
+#include <unordered_map>
+
+// value_number
+
+std::ostream& value_number::write(std::ostream& os) const {
+    auto p = std::cout.precision();  // default precision
+
+    // write with a 12-digit precision, then restore the default
+    os << std::setprecision(12) << _number << std::setprecision(p);
+
+    return os;
+}
+
+// value_symbol
+
+const std::shared_ptr<value_symbol>& value_symbol::get(const std::string& symbol) {
+    // static table of content-to-value mappings
+    static std::unordered_map<std::string, std::shared_ptr<value_symbol>> _odarray;
+
+    std::shared_ptr<value_symbol>& val = _odarray[symbol];
+
+    if (!val) {
+        // create a new value
+        val.reset(new value_symbol(symbol));
+    }
+
+    return val;
+}
+
+// value_formatted
+
+value_formatted::value_formatted(const char* format, va_list args) : value_string() {
+    static char buffer[65536];
+    vsnprintf(buffer, sizeof(buffer), format, args);
+    _string = buffer;
+}
+
+// value_bool
+
+const std::shared_ptr<value_bool>& value_bool::get(bool truth) {
+    // static singletons: true and false
+    static const std::shared_ptr<value_bool> true_ = std::shared_ptr<value_bool>(new value_bool(true));
+    static const std::shared_ptr<value_bool> false_ = std::shared_ptr<value_bool>(new value_bool(false));
+
+    return (truth ? true_ : false_);
+}
+
+// value_nil
+
+const std::shared_ptr<value_nil>& value_nil::get() {
+    // static singleton: nil
+    static const std::shared_ptr<value_nil> nil = std::shared_ptr<value_nil>(new value_nil);
+
+    return nil;
+}
+
+// value_pair
+
+void value_pair::value_iterator::_advance() {
+    if (auto pair = dynamic_cast<value_pair*>(_ptr->_cdr.get())) {
+        _ptr = pair;  // cdr is a pair
+    } else {
+        _ptr = nullptr;  // cdr is not a pair
+    }
+}
+
+std::ostream& value_pair::write(std::ostream& os) const {
+    os << "(";
+    _car->write(os);  // write the first car
+    auto running{_cdr};
+    while (running != nil) {
+        if (auto pair = dynamic_cast<value_pair*>(running.get())) {
+            os << " ";
+            pair->_car->write(os);  // write the next car
+            running = pair->_cdr;   // go to the following cdr
+        } else {
+            os << " . ";
+            running->write(os);  // write the non-pair cdr
+            break;               // and stop
+        }
+    }
+    os << ")";
+
+    return os;
+};
+
+bool value_pair::is_list() {
+    auto running{_cdr};
+    while (running != nil) {
+        if (auto pair = dynamic_cast<value_pair*>(running.get())) {
+            running = pair->_cdr;  // next cdr
+        } else {
+            return false;  // non-pair cdr
+        }
+    }
+
+    return true;
+}
+
+size_t value_pair::length() {
+    size_t result = 1;
+
+    auto running{_cdr};
+    while (running != nil) {
+        if (auto pair = dynamic_cast<value_pair*>(running.get())) {
+            result += 1;           // one more car
+            running = pair->_cdr;  // next cdr
+        } else {
+            break;  // non-pair cdr
+        }
+    }
+
+    return result;
+}
