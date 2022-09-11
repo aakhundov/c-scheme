@@ -12,8 +12,8 @@ BIN_DIR=bin
 C_SRC_DIR=$(SRC_DIR)/c-scheme
 C_BIN_DIR=$(BIN_DIR)/c-scheme
 
-C_REPL=$(C_BIN_DIR)/repl
-C_TEST=$(C_BIN_DIR)/test
+C_REPL=$(C_BIN_DIR)/c-scheme-repl
+C_TEST=$(C_BIN_DIR)/c-scheme-test
 C_LIB=$(C_BIN_DIR)/c-scheme.so
 C_SOURCES=$(wildcard $(C_SRC_DIR)/*.c)
 C_REPL_SOURCES=$(C_SRC_DIR)/repl.c $(C_SRC_DIR)/edit.c $(C_SRC_DIR)/hist.c

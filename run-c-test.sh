@@ -2,4 +2,4 @@
 
 make -j c-test && \
 echo && \
-./bin/c-scheme/test
+./bin/c-scheme/c-scheme-test
