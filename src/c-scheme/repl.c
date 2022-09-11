@@ -1,5 +1,3 @@
-#include "repl.h"
-
 #include <dirent.h>
 #include <signal.h>
 #include <stdio.h>
@@ -257,7 +255,7 @@ static void signal_handler(int signal) {
     }
 }
 
-void run_repl() {
+int main(int argc, char** argv) {
     printf("c-scheme version 0.1.0\n");
     printf("press Ctrl-C to interrupt\n");
     printf("type in \"quit\" to quit\n\n");
@@ -320,4 +318,6 @@ void run_repl() {
     cleanup_primitives();
 
     printf("\nbye!\n");
+
+    return 0;
 }

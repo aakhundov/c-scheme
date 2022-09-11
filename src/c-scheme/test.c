@@ -1,5 +1,3 @@
-#include "test.h"
-
 #include <assert.h>
 #include <math.h>
 #include <stdarg.h>
@@ -2080,7 +2078,7 @@ void test_other(eval* e) {
     test_eval_error(e, "(info 1)", "must be string, but is number");
 }
 
-void run_test() {
+int main(int argc, char** argv) {
     init_primitives();
     eval* e = eval_new(EVALUATOR_PATH);
 
@@ -2102,4 +2100,6 @@ void run_test() {
 
     eval_dispose(e);
     cleanup_primitives();
+
+    return 0;
 }

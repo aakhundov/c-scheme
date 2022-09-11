@@ -6,23 +6,34 @@ LDLIBS=-ledit -lm
 SRC_DIR=src
 BIN_DIR=bin
 
-C_SRC_DIR=$(SRC_DIR)/c
-C_BIN_DIR=$(BIN_DIR)/c
+C_SRC_DIR=$(SRC_DIR)/c-scheme
+C_BIN_DIR=$(BIN_DIR)/c-scheme
 
-C_DRIVER=$(C_BIN_DIR)/c-scheme
-C_LIBRARY=$(C_DRIVER).so
+C_REPL=$(C_BIN_DIR)/repl
+C_TEST=$(C_BIN_DIR)/test
+C_LIBRARY=$(C_BIN_DIR)/c-scheme.so
 C_SOURCES=$(wildcard $(C_SRC_DIR)/*.c)
-C_DRIVER_SOURCES=$(C_SRC_DIR)/main.c $(C_SRC_DIR)/test.c $(C_SRC_DIR)/repl.c $(C_SRC_DIR)/edit.c $(C_SRC_DIR)/hist.c
-C_DRIVER_OBJECTS=$(C_DRIVER_SOURCES:$(C_SRC_DIR)/%.c=$(C_BIN_DIR)/%.o)
-C_LIBRARY_SOURCES=$(filter-out $(C_DRIVER_SOURCES), $(C_SOURCES))
+C_REPL_SOURCES=$(C_SRC_DIR)/repl.c $(C_SRC_DIR)/edit.c $(C_SRC_DIR)/hist.c
+C_REPL_OBJECTS=$(C_REPL_SOURCES:$(C_SRC_DIR)/%.c=$(C_BIN_DIR)/%.o)
+C_TEST_SOURCES=$(C_SRC_DIR)/test.c
+C_TEST_OBJECTS=$(C_TEST_SOURCES:$(C_SRC_DIR)/%.c=$(C_BIN_DIR)/%.o)
+C_LIBRARY_SOURCES=$(filter-out $(C_REPL_SOURCES) $(C_TEST_SOURCES), $(C_SOURCES))
 C_LIBRARY_OBJECTS=$(C_LIBRARY_SOURCES:$(C_SRC_DIR)/%.c=$(C_BIN_DIR)/%.o)
 
-c: $(C_DRIVER) $(C_LIBRARY)
+c-repl: $(C_REPL)
+c-test: $(C_TEST)
+c-lib: $(C_LIBRARY)
 
-$(C_DRIVER): $(C_DRIVER_OBJECTS) $(C_LIBRARY)
+$(C_REPL): $(C_REPL_OBJECTS) $(C_LIBRARY)
 	$(CC) $(LDFLAGS) $(LDLIBS) $^ -o $@
 
-$(C_DRIVER_OBJECTS): $(C_BIN_DIR)/%.o: $(C_SRC_DIR)/%.c
+$(C_REPL_OBJECTS): $(C_BIN_DIR)/%.o: $(C_SRC_DIR)/%.c
+	$(CC) $(C_CFLAGS) $< -o $@
+
+$(C_TEST): $(C_TEST_OBJECTS) $(C_LIBRARY)
+	$(CC) $(LDFLAGS) $(LDLIBS) $^ -o $@
+
+$(C_TEST_OBJECTS): $(C_BIN_DIR)/%.o: $(C_SRC_DIR)/%.c
 	$(CC) $(C_CFLAGS) $< -o $@
 
 $(C_LIBRARY): $(C_LIBRARY_OBJECTS)
