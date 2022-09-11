@@ -171,12 +171,12 @@ class value_pair : public value {
 
         reference operator*() const {
             // shared ptr to the car
-            return _ptr->_car;
+            return (_at_cdr ? _ptr->_cdr : _ptr->_car);
         }
 
         pointer operator->() {
             // reference to a shared ptr to the car
-            return &(_ptr->_car);
+            return &(_at_cdr ? _ptr->_cdr : _ptr->_car);
         }
 
         value_iterator& operator++() {
@@ -187,23 +187,28 @@ class value_pair : public value {
 
         value_iterator operator++(int) {
             value_iterator tmp = *this;
+
             _advance();
 
             return tmp;
         }
 
         friend bool operator==(const value_iterator& a, const value_iterator b) {
-            return a._ptr == b._ptr;
+            return a._ptr == b._ptr && a._at_cdr == b._at_cdr;
         };
 
         friend bool operator!=(const value_iterator& a, const value_iterator b) {
-            return a._ptr != b._ptr;
+            return a._ptr != b._ptr || a._at_cdr != b._at_cdr;
         };
 
        private:
-        void _advance();  // go to the next value_pair (cdr)
+        // move the iterator
+        // if the terminal cdr is not a pair,
+        // return it before terminating
+        void _advance();
 
         value_pair* _ptr;
+        bool _at_cdr{false};
     };
 
     // car and cdr shared ptrs are passed by copying

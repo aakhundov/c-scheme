@@ -65,7 +65,19 @@ void value_pair::value_iterator::_advance() {
     if (auto pair = dynamic_cast<value_pair*>(_ptr->_cdr.get())) {
         _ptr = pair;  // cdr is a pair
     } else {
-        _ptr = nullptr;  // cdr is not a pair
+        if (_ptr->_cdr == nil) {
+            // the list terminates: stop here
+            _ptr = nullptr;
+        } else if (!_at_cdr) {
+            // the terminal cdr is not a pair: return it next
+            _at_cdr = true;
+        } else {
+            // already returned the cdr: stop here
+            _ptr = nullptr;
+            // reset _at_cdr to false for equivalence
+            // with end() iterator with false by default
+            _at_cdr = false;
+        }
     }
 }
 
@@ -93,9 +105,11 @@ bool value_pair::is_list() {
     auto running{_cdr};
     while (running != nil) {
         if (auto pair = dynamic_cast<value_pair*>(running.get())) {
-            running = pair->_cdr;  // next cdr
+            // the cdr is a pair
+            running = pair->_cdr;  // go to the next cdr
         } else {
-            return false;  // non-pair cdr
+            // the (terminating) cdr is not a pair
+            return false;  // this is not a list
         }
     }
 
@@ -103,15 +117,18 @@ bool value_pair::is_list() {
 }
 
 size_t value_pair::length() {
+    // at least one pair
     size_t result = 1;
 
     auto running{_cdr};
     while (running != nil) {
+        result += 1;  // increment the length
         if (auto pair = dynamic_cast<value_pair*>(running.get())) {
-            result += 1;           // one more car
-            running = pair->_cdr;  // next cdr
+            // the cdr is a pair
+            running = pair->_cdr;  // go to the next cdr
         } else {
-            break;  // non-pair cdr
+            // the (terminating) cdr is not a pair
+            break;  // stop the counting
         }
     }
 

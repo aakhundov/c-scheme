@@ -17,7 +17,7 @@ int main() {
     auto error = make_error("[%g]", 3.14);
     auto info = make_info("[%g]", 3.14);
     auto list4 = make_value_list(sym, str, error, info, nil);
-    auto nested = make_value_pair(1, make_value_pair(2, make_value_pair(3, 4)));
+    auto nested = make_value_pair(1, make_value_pair("abc", make_value_pair(3, "xxx")));
     auto nested2 = make_value_list(1, 2, make_value_pair(3, 4));
 
     std::shared_ptr<value_pair> external = nullptr;
@@ -68,6 +68,7 @@ int main() {
     std::cout << "len[ " << *nested2 << " ] = " << nested2->length() << std::endl;
     std::cout << std::endl;
 
+    std::cout << "list2" << std::endl;
     for (const auto& v : *list2) {
         std::cout << v << " -> " << *v << std::endl;
     }
@@ -77,7 +78,20 @@ int main() {
         v = make_value("xxx");
     }
 
+    std::cout << "list2 (after mutation)" << std::endl;
     for (const auto& v : *list2) {
+        std::cout << v << " -> " << *v << std::endl;
+    }
+    std::cout << std::endl;
+
+    std::cout << "nested" << std::endl;
+    for (const auto& v : *nested) {
+        std::cout << v << " -> " << *v << std::endl;
+    }
+    std::cout << std::endl;
+
+    std::cout << "nested2" << std::endl;
+    for (const auto& v : *nested2) {
         std::cout << v << " -> " << *v << std::endl;
     }
     std::cout << std::endl;
