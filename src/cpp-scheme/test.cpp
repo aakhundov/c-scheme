@@ -90,87 +90,79 @@ void report_test(std::string message) {
 
 void test_value() {
     // number
-    std::shared_ptr<value_number> num1;
+    std::shared_ptr<value_number> num1, num2;
     ASSERT_TO_STR(*(num1 = make_number(3.14)), "3.14");
     ASSERT_TRUE(num1->type() == value_t::number);
     ASSERT_EQUAL(num1->number(), 3.14);
-    std::shared_ptr<value_number> num2;
     ASSERT_TO_STR(*(num2 = make_number(3.14)), "3.14");
     ASSERT_TRUE(*num1 == *num2);
     ASSERT_FALSE(num1 == num2);
 
     // symbol
-    std::shared_ptr<value_symbol> sym1;
+    std::shared_ptr<value_symbol> sym1, sym2;
     ASSERT_TO_STR(*(sym1 = make_symbol("abc")), "abc");
     ASSERT_TRUE(sym1->type() == value_t::symbol);
     ASSERT_EQUAL(sym1->symbol(), "abc");
-    std::shared_ptr<value_symbol> sym2;
     ASSERT_TO_STR(*(sym2 = make_symbol("abc")), "abc");
     ASSERT_TRUE(*sym1 == *sym2);
     ASSERT_TRUE(sym1 == sym2);
 
     // string
-    std::shared_ptr<value_string> str1;
+    std::shared_ptr<value_string> str1, str2;
     ASSERT_TO_STR(*(str1 = make_string("abc")), "\"abc\"");
     ASSERT_TRUE(str1->type() == value_t::string);
     ASSERT_EQUAL(str1->string(), "abc");
-    std::shared_ptr<value_string> str2;
     ASSERT_TO_STR(*(str2 = make_string("abc")), "\"abc\"");
     ASSERT_TRUE(*str1 == *str2);
     ASSERT_FALSE(str1 == str2);
 
     // error
-    std::shared_ptr<value_error> err1;
-    ASSERT_TO_STR(*(err1 = make_error("hello '%g'", 3.14)), "\x1B[1;31merror:\x1B[1;37m hello '3.14'\x1B[0m");
-    ASSERT_TRUE(err1->type() == value_t::error);
-    ASSERT_EQUAL(err1->string(), "hello '3.14'");
-    std::shared_ptr<value_error> err2;
-    ASSERT_TO_STR(*(err2 = make_error("hello '%g'", 3.14)), "\x1B[1;31merror:\x1B[1;37m hello '3.14'\x1B[0m");
-    ASSERT_TRUE(*err1 == *err2);
-    ASSERT_FALSE(err1 == err2);
+    std::shared_ptr<value_error> error1, error2;
+    ASSERT_TO_STR(*(error1 = make_error("hello '%g'", 3.14)), "\x1B[1;31merror:\x1B[1;37m hello '3.14'\x1B[0m");
+    ASSERT_TRUE(error1->type() == value_t::error);
+    ASSERT_EQUAL(error1->string(), "hello '3.14'");
+    ASSERT_TO_STR(*(error2 = make_error("hello '%g'", 3.14)), "\x1B[1;31merror:\x1B[1;37m hello '3.14'\x1B[0m");
+    ASSERT_TRUE(*error1 == *error2);
+    ASSERT_FALSE(error1 == error2);
 
     // info
-    std::shared_ptr<value_info> inf1;
-    ASSERT_TO_STR(*(inf1 = make_info("hello '%g'", 3.14)), "\x1B[32mhello '3.14'\x1B[0m");
-    ASSERT_TRUE(inf1->type() == value_t::info);
-    ASSERT_EQUAL(inf1->string(), "hello '3.14'");
-    std::shared_ptr<value_info> inf2;
-    ASSERT_TO_STR(*(inf2 = make_info("hello '%g'", 3.14)), "\x1B[32mhello '3.14'\x1B[0m");
-    ASSERT_TRUE(*inf1 == *inf2);
-    ASSERT_FALSE(inf1 == inf2);
+    std::shared_ptr<value_info> info1, info2;
+    ASSERT_TO_STR(*(info1 = make_info("hello '%g'", 3.14)), "\x1B[32mhello '3.14'\x1B[0m");
+    ASSERT_TRUE(info1->type() == value_t::info);
+    ASSERT_EQUAL(info1->string(), "hello '3.14'");
+    ASSERT_TO_STR(*(info2 = make_info("hello '%g'", 3.14)), "\x1B[32mhello '3.14'\x1B[0m");
+    ASSERT_TRUE(*info1 == *info2);
+    ASSERT_FALSE(info1 == info2);
 
     // bool
-    std::shared_ptr<value_bool> bool1;
+    std::shared_ptr<value_bool> bool1, bool2;
     ASSERT_TO_STR(*(bool1 = make_bool(true)), "true");
     ASSERT_TRUE(bool1->type() == value_t::bool_);
     ASSERT_EQUAL(bool1->truth(), true);
-    std::shared_ptr<value_bool> bool2;
     ASSERT_TO_STR(*(bool2 = make_bool(true)), "true");
     ASSERT_TRUE(*bool1 == *bool2);
     ASSERT_TRUE(bool1 == bool2);
 
     // nil
-    std::shared_ptr<value_nil> nil1;
+    std::shared_ptr<value_nil> nil1, nil2;
     ASSERT_TO_STR(*(nil1 = make_nil()), "()");
     ASSERT_TRUE(nil1->type() == value_t::nil);
-    std::shared_ptr<value_nil> nil2;
     ASSERT_TO_STR(*(nil2 = make_nil()), "()");
     ASSERT_TRUE(*nil1 == *nil2);
     ASSERT_TRUE(nil1 == nil2);
 
     // pair
-    std::shared_ptr<value_pair> pair1;
+    std::shared_ptr<value_pair> pair1, pair2;
     ASSERT_TO_STR(*(pair1 = make_value_pair(3.14, "abc")), "(3.14 . abc)");
     ASSERT_TRUE(pair1->type() == value_t::pair);
     ASSERT_TO_STR(*pair1->car(), "3.14");
     ASSERT_TO_STR(*pair1->cdr(), "abc");
-    std::shared_ptr<value_pair> pair2;
     ASSERT_TO_STR(*(pair2 = make_value_pair(3.14, "abc")), "(3.14 . abc)");
     ASSERT_TRUE(*pair1 == *pair2);
     ASSERT_FALSE(pair1 == pair2);
 
     // list
-    std::shared_ptr<value_pair> list1;
+    std::shared_ptr<value_pair> list1, list2;
     ASSERT_TO_STR(*(list1 = make_value_list(3.14, "abc", nil, false)), "(3.14 abc () false)");
     ASSERT_TRUE(list1->type() == value_t::pair);
     ASSERT_TO_STR(*list1->car(), "3.14");
@@ -181,7 +173,6 @@ void test_value() {
     ASSERT_TO_STR(*list1->pcdr()->pcdr()->cdr(), "(false)");
     ASSERT_TO_STR(*list1->pcdr()->pcdr()->pcdr()->car(), "false");
     ASSERT_TO_STR(*list1->pcdr()->pcdr()->pcdr()->cdr(), "()");
-    std::shared_ptr<value_pair> list2;
     ASSERT_TO_STR(*(list2 = make_value_list(3.14, "abc", nil, false)), "(3.14 abc () false)");
     ASSERT_TRUE(*list1 == *list2);
     ASSERT_FALSE(list1 == list2);
