@@ -2,4 +2,4 @@
 
 make -j c-repl && \
 echo && \
-./bin/c-scheme/c-scheme-repl
+./bin/c/scheme-repl

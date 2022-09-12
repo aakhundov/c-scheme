@@ -8,15 +8,16 @@ REPL_LDLIBS=-ledit
 TEST_LDLIBS=
 LIB_LDLIBS=-lm
 
+APP=scheme
 SRC_DIR=src
 BIN_DIR=bin
 
-C_SRC_DIR=$(SRC_DIR)/c-scheme
-C_BIN_DIR=$(BIN_DIR)/c-scheme
+C_SRC_DIR=$(SRC_DIR)/c
+C_BIN_DIR=$(BIN_DIR)/c
 
-C_REPL=$(C_BIN_DIR)/c-scheme-repl
-C_TEST=$(C_BIN_DIR)/c-scheme-test
-C_LIB=$(C_BIN_DIR)/c-scheme.so
+C_REPL=$(C_BIN_DIR)/$(APP)-repl
+C_TEST=$(C_BIN_DIR)/$(APP)-test
+C_LIB=$(C_BIN_DIR)/$(APP).so
 
 C_SOURCES=$(wildcard $(C_SRC_DIR)/*.c)
 C_REPL_SOURCES=$(C_SRC_DIR)/repl.c $(C_SRC_DIR)/edit.c $(C_SRC_DIR)/hist.c
@@ -26,11 +27,11 @@ C_TEST_OBJECTS=$(C_TEST_SOURCES:$(C_SRC_DIR)/%.c=$(C_BIN_DIR)/%.o)
 C_LIB_SOURCES=$(filter-out $(C_REPL_SOURCES) $(C_TEST_SOURCES), $(C_SOURCES))
 C_LIB_OBJECTS=$(C_LIB_SOURCES:$(C_SRC_DIR)/%.c=$(C_BIN_DIR)/%.o)
 
-CPP_SRC_DIR=$(SRC_DIR)/cpp-scheme
-CPP_BIN_DIR=$(BIN_DIR)/cpp-scheme
+CPP_SRC_DIR=$(SRC_DIR)/cpp
+CPP_BIN_DIR=$(BIN_DIR)/cpp
 
-CPP_TEST=$(CPP_BIN_DIR)/cpp-scheme-test
-CPP_LIB=$(CPP_BIN_DIR)/cpp-scheme.so
+CPP_TEST=$(CPP_BIN_DIR)/$(APP)-test
+CPP_LIB=$(CPP_BIN_DIR)/$(APP).so
 
 CPP_SOURCES=$(wildcard $(CPP_SRC_DIR)/*.cpp)
 CPP_TEST_SOURCES=$(CPP_SRC_DIR)/test.cpp

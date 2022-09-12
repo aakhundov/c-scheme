@@ -2,4 +2,4 @@
 
 make -j cpp-test && \
 echo && \
-valgrind --leak-check=yes ./bin/cpp-scheme/cpp-scheme-test
+valgrind --leak-check=yes ./bin/cpp/scheme-test

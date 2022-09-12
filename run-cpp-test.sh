@@ -2,4 +2,4 @@
 
 make -j cpp-test && \
 echo && \
-./bin/cpp-scheme/cpp-scheme-test
+./bin/cpp/scheme-test
