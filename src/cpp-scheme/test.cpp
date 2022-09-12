@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 
+#include "const.hpp"
 #include "value.hpp"
 
 using namespace std::literals;
@@ -9,9 +10,9 @@ using namespace std::literals;
 static size_t test_counter = 0;
 
 void report_test(std::string message) {
-    std::cout << "\x1B[34m"
-              << std::setfill('0') << std::setw(5) << ++test_counter
-              << "\x1B[0m " << message << std::endl;
+    std::cout << std::setfill('0') << std::setw(5)
+              << BLUE(<< ++test_counter <<) << " "
+              << message << std::endl;
 }
 
 #define RUN_TEST_FUNCTION(fn)                                       \
@@ -22,70 +23,80 @@ void report_test(std::string message) {
         std::cout << std::endl;                                     \
     }
 
-#define ASSERT_TRUE(expr)                                                           \
-    {                                                                               \
-        report_test(                                                                \
-            "\x1B[34m[\x1B[0m" #expr "\x1B[34m] --> [\x1B[0mtrue\x1B[34m]\x1B[0m"); \
-        if (!(expr)) {                                                              \
-            std::cerr << "\x1B[31mexpected true\x1B[0m" << std::endl;               \
-            exit(1);                                                                \
-        }                                                                           \
+#define ASSERT_TRUE(expr)                                                    \
+    {                                                                        \
+        report_test(BLUE("[") #expr BLUE("] == [") GREEN("true") BLUE("]")); \
+        if (!(expr)) {                                                       \
+            std::cerr << RED("expected true") << std::endl;                  \
+            exit(1);                                                         \
+        }                                                                    \
     }
 
-#define ASSERT_FALSE(expr)                                                           \
-    {                                                                                \
-        report_test(                                                                 \
-            "\x1B[34m[\x1B[0m" #expr "\x1B[34m] --> [\x1B[0mfalse\x1B[34m]\x1B[0m"); \
-        if ((expr)) {                                                                \
-            std::cerr << "\x1B[31mexpected false\x1B[0m" << std::endl;               \
-            exit(1);                                                                 \
-        }                                                                            \
+#define ASSERT_FALSE(expr)                                                  \
+    {                                                                       \
+        report_test(BLUE("[") #expr BLUE("] == [") RED("false") BLUE("]")); \
+        if ((expr)) {                                                       \
+            std::cerr << RED("expected false") << std::endl;                \
+            exit(1);                                                        \
+        }                                                                   \
     }
 
-#define ASSERT_EQUAL(expr, expected)                                                              \
-    {                                                                                             \
-        auto result = (expr);                                                                     \
-        std::stringstream buffer;                                                                 \
-        buffer << result;                                                                         \
-        std::string str_result = buffer.str();                                                    \
-        report_test(                                                                              \
-            "\x1B[34m[\x1B[0m" #expr "\x1B[34m] --> [\x1B[0m" + str_result + "\x1B[34m]\x1B[0m"); \
-        if (result != (expected)) {                                                               \
-            std::cerr << "\x1B[31mexpected " #expected "\x1B[0m" << std::endl;                    \
-            exit(1);                                                                              \
-        }                                                                                         \
+#define ASSERT_EQUAL(expr, expected)                                          \
+    {                                                                         \
+        auto result = (expr);                                                 \
+        std::stringstream buffer;                                             \
+        buffer << result;                                                     \
+        std::string str_result = buffer.str();                                \
+        report_test(BLUE("[") #expr BLUE("] == [") + str_result + BLUE("]")); \
+        if (result != (expected)) {                                           \
+            std::cerr << RED("expected " #expected) << std::endl;             \
+            exit(1);                                                          \
+        }                                                                     \
     }
 
-#define ASSERT_TO_STR(expr, expected)                                                             \
-    {                                                                                             \
-        std::stringstream buffer;                                                                 \
-        buffer << (expr);                                                                         \
-        std::string str_result = buffer.str();                                                    \
-        report_test(                                                                              \
-            "\x1B[34m[\x1B[0m" #expr "\x1B[34m] --> [\x1B[0m" + str_result + "\x1B[34m]\x1B[0m"); \
-        if (str_result != (expected)) {                                                           \
-            std::cerr << "\x1B[31mexpected " #expected "\x1B[0m" << std::endl;                    \
-            exit(1);                                                                              \
-        }                                                                                         \
+#define ASSERT_TO_STR(expr, expected)                                          \
+    {                                                                          \
+        std::stringstream buffer;                                              \
+        buffer << (expr);                                                      \
+        std::string str_result = buffer.str();                                 \
+        report_test(BLUE("[") #expr BLUE("] --> [") + str_result + BLUE("]")); \
+        if (str_result != (expected)) {                                        \
+            std::cerr << RED("expected " #expected) << std::endl;              \
+            exit(1);                                                           \
+        }                                                                      \
     }
 
-#define ASSERT_ITERATOR(expr, expected)                                                          \
-    {                                                                                            \
-        value_pair pair = (expr);                                                                \
-        std::string str_items;                                                                   \
-        for (auto& item : pair) {                                                                \
-            std::stringstream buffer;                                                            \
-            buffer << *item;                                                                     \
-            str_items += (buffer.str() + ", ");                                                  \
-        }                                                                                        \
-        str_items.pop_back();                                                                    \
-        str_items.pop_back();                                                                    \
-        report_test(                                                                             \
-            "\x1B[34m[\x1B[0m" #expr "\x1B[34m] --> [\x1B[0m" + str_items + "\x1B[34m]\x1B[0m"); \
-        if (str_items != (expected)) {                                                           \
-            std::cerr << "\x1B[31mexpected " #expected "\x1B[0m" << std::endl;                   \
-            exit(1);                                                                             \
-        }                                                                                        \
+#define ASSERT_ITERATOR(expr, expected)                                       \
+    {                                                                         \
+        value_pair pair = (expr);                                             \
+        std::string str_items;                                                \
+        for (auto& item : pair) {                                             \
+            std::stringstream buffer;                                         \
+            buffer << *item;                                                  \
+            str_items += (buffer.str() + ", ");                               \
+        }                                                                     \
+        str_items.pop_back();                                                 \
+        str_items.pop_back();                                                 \
+        report_test(BLUE("[") #expr BLUE("] --> [") + str_items + BLUE("]")); \
+        if (str_items != (expected)) {                                        \
+            std::cerr << RED("expected " #expected) << std::endl;             \
+            exit(1);                                                          \
+        }                                                                     \
+    }
+
+#define ASSERT_EXCEPTION(code, type)                                             \
+    {                                                                            \
+        bool raised = false;                                                     \
+        try {                                                                    \
+            code                                                                 \
+        } catch (type) {                                                         \
+            raised = true;                                                       \
+        }                                                                        \
+        report_test(BLUE("[") #code BLUE("] --> [") BOLD(RED(#type)) BLUE("]")); \
+        if (!raised) {                                                           \
+            std::cerr << RED("expected " #type " exception") << std::endl;       \
+            exit(1);                                                             \
+        }                                                                        \
     }
 
 void test_value() {
@@ -118,19 +129,19 @@ void test_value() {
 
     // error
     std::shared_ptr<value_error> error1, error2;
-    ASSERT_TO_STR(*(error1 = make_error("hello '%g'", 3.14)), "\x1B[1;31merror:\x1B[1;37m hello '3.14'\x1B[0m");
+    ASSERT_TO_STR(*(error1 = make_error("hello '%g'", 3.14)), BOLD(RED("error:") " " WHITE("hello '3.14'")));
     ASSERT_TRUE(error1->type() == value_t::error);
     ASSERT_EQUAL(error1->string(), "hello '3.14'");
-    ASSERT_TO_STR(*(error2 = make_error("hello '%g'", 3.14)), "\x1B[1;31merror:\x1B[1;37m hello '3.14'\x1B[0m");
+    ASSERT_TO_STR(*(error2 = make_error("hello '%g'", 3.14)), BOLD(RED("error:") " " WHITE("hello '3.14'")));
     ASSERT_TRUE(*error1 == *error2);
     ASSERT_FALSE(error1 == error2);
 
     // info
     std::shared_ptr<value_info> info1, info2;
-    ASSERT_TO_STR(*(info1 = make_info("hello '%g'", 3.14)), "\x1B[32mhello '3.14'\x1B[0m");
+    ASSERT_TO_STR(*(info1 = make_info("hello '%g'", 3.14)), GREEN("hello '3.14'"));
     ASSERT_TRUE(info1->type() == value_t::info);
     ASSERT_EQUAL(info1->string(), "hello '3.14'");
-    ASSERT_TO_STR(*(info2 = make_info("hello '%g'", 3.14)), "\x1B[32mhello '3.14'\x1B[0m");
+    ASSERT_TO_STR(*(info2 = make_info("hello '%g'", 3.14)), GREEN("hello '3.14'"));
     ASSERT_TRUE(*info1 == *info2);
     ASSERT_FALSE(info1 == info2);
 
@@ -211,20 +222,20 @@ void test_to_str() {
     ASSERT_TO_STR(*make_value("!@#$%"s), "\"!@#$%\"");
 
     // error
-    ASSERT_TO_STR(*make_error(""), "\x1B[1;31merror:\x1B[1;37m \x1B[0m");
-    ASSERT_TO_STR(*make_error("message"), "\x1B[1;31merror:\x1B[1;37m message\x1B[0m");
-    ASSERT_TO_STR(*make_error("hello world"), "\x1B[1;31merror:\x1B[1;37m hello world\x1B[0m");
-    ASSERT_TO_STR(*make_error("hello '%s'", "world"), "\x1B[1;31merror:\x1B[1;37m hello 'world'\x1B[0m");
-    ASSERT_TO_STR(*make_error("hello '%g'", 3.14), "\x1B[1;31merror:\x1B[1;37m hello '3.14'\x1B[0m");
-    ASSERT_TO_STR(*make_error("hi %d, %d, %d bye", 1, 2, 3), "\x1B[1;31merror:\x1B[1;37m hi 1, 2, 3 bye\x1B[0m");
+    ASSERT_TO_STR(*make_error(""), BOLD(RED("error:") " " WHITE("")));
+    ASSERT_TO_STR(*make_error("message"), BOLD(RED("error:") " " WHITE("message")));
+    ASSERT_TO_STR(*make_error("hello world"), BOLD(RED("error:") " " WHITE("hello world")));
+    ASSERT_TO_STR(*make_error("hello '%s'", "world"), BOLD(RED("error:") " " WHITE("hello 'world'")));
+    ASSERT_TO_STR(*make_error("hello '%g'", 3.14), BOLD(RED("error:") " " WHITE("hello '3.14'")));
+    ASSERT_TO_STR(*make_error("hi %d, %d, %d bye", 1, 2, 3), BOLD(RED("error:") " " WHITE("hi 1, 2, 3 bye")));
 
     // info
-    ASSERT_TO_STR(*make_info(""), "\x1B[32m\x1B[0m");
-    ASSERT_TO_STR(*make_info("message"), "\x1B[32mmessage\x1B[0m");
-    ASSERT_TO_STR(*make_info("hello world"), "\x1B[32mhello world\x1B[0m");
-    ASSERT_TO_STR(*make_info("hello '%s'", "world"), "\x1B[32mhello 'world'\x1B[0m");
-    ASSERT_TO_STR(*make_info("hello '%g'", 3.14), "\x1B[32mhello '3.14'\x1B[0m");
-    ASSERT_TO_STR(*make_info("hi %d, %d, %d bye", 1, 2, 3), "\x1B[32mhi 1, 2, 3 bye\x1B[0m");
+    ASSERT_TO_STR(*make_info(""), GREEN(""));
+    ASSERT_TO_STR(*make_info("message"), GREEN("message"));
+    ASSERT_TO_STR(*make_info("hello world"), GREEN("hello world"));
+    ASSERT_TO_STR(*make_info("hello '%s'", "world"), GREEN("hello 'world'"));
+    ASSERT_TO_STR(*make_info("hello '%g'", 3.14), GREEN("hello '3.14'"));
+    ASSERT_TO_STR(*make_info("hi %d, %d, %d bye", 1, 2, 3), GREEN("hi 1, 2, 3 bye"));
 
     // bool
     ASSERT_TO_STR(*true_, "true");
@@ -323,6 +334,59 @@ void test_pair() {
         item = make_value(number->number() * number->number());
     }
     ASSERT_ITERATOR(val, "1, 4, 9, 16, 25");
+
+    // cycle
+    std::shared_ptr<value_pair> v1, v2, v3, v4;
+    v1 = make_value_pair(1, 2);
+    ASSERT_EXCEPTION({ v1->car(v1); }, cycle_error);
+    v1 = make_value_pair(1, 2);
+    v2 = make_value_pair(3, 4);
+    ASSERT_EXCEPTION({ v1->car(v2); v2->car(v1); }, cycle_error);
+    v1 = make_value_pair(1, 2);
+    v2 = make_value_pair(3, 4);
+    ASSERT_EXCEPTION({ v1->car(v2); v2->cdr(v1); }, cycle_error);
+    v1 = make_value_pair(1, 2);
+    v2 = make_value_pair(3, 4);
+    ASSERT_EXCEPTION({ v1->cdr(v2); v2->car(v1); }, cycle_error);
+    v1 = make_value_pair(1, 2);
+    v2 = make_value_pair(3, 4);
+    ASSERT_EXCEPTION({ v1->cdr(v2); v2->cdr(v1); }, cycle_error);
+    v1 = make_value_pair(1, 2);
+    v2 = make_value_pair(3, 4);
+    v3 = make_value_pair(5, 6);
+    ASSERT_EXCEPTION({ v1->car(v2); v2->car(v3); v3->car(v1); }, cycle_error);
+    v1 = make_value_pair(1, 2);
+    v2 = make_value_pair(3, 4);
+    v3 = make_value_pair(5, 6);
+    ASSERT_EXCEPTION({ v1->cdr(v2); v2->car(v3); v3->cdr(v1); }, cycle_error);
+    v1 = make_value_pair(1, 2);
+    v2 = make_value_pair(3, 4);
+    v3 = make_value_pair(5, 6);
+    ASSERT_EXCEPTION({ v1->car(v2); v2->cdr(v3); v3->car(v1); }, cycle_error);
+    v1 = make_value_pair(1, 2);
+    v2 = make_value_pair(3, 4);
+    v3 = make_value_pair(5, 6);
+    ASSERT_EXCEPTION({ v1->cdr(v2); v2->cdr(v3); v3->cdr(v1); }, cycle_error);
+    v1 = make_value_pair(1, 2);
+    v2 = make_value_pair(3, 4);
+    v3 = make_value_pair(5, 6);
+    v4 = make_value_pair(7, 8);
+    ASSERT_EXCEPTION({ v1->car(v2); v2->car(v3); v3->car(v4); v4->car(v1); }, cycle_error);
+    v1 = make_value_pair(1, 2);
+    v2 = make_value_pair(3, 4);
+    v3 = make_value_pair(5, 6);
+    v4 = make_value_pair(7, 8);
+    ASSERT_EXCEPTION({ v1->car(v2); v2->cdr(v3); v3->car(v4); v4->cdr(v1); }, cycle_error);
+    v1 = make_value_pair(1, 2);
+    v2 = make_value_pair(3, 4);
+    v3 = make_value_pair(5, 6);
+    v4 = make_value_pair(7, 8);
+    ASSERT_EXCEPTION({ v1->cdr(v2); v2->car(v3); v3->cdr(v4); v4->car(v1); }, cycle_error);
+    v1 = make_value_pair(1, 2);
+    v2 = make_value_pair(3, 4);
+    v3 = make_value_pair(5, 6);
+    v4 = make_value_pair(7, 8);
+    ASSERT_EXCEPTION({ v1->cdr(v2); v2->cdr(v3); v3->cdr(v4); v4->cdr(v1); }, cycle_error);
 }
 
 void test_equal() {

@@ -10,7 +10,8 @@
 #include <sstream>
 #include <string>
 
-#include "common.hpp"
+#include "const.hpp"
+#include "exception.hpp"
 
 enum class value_t {
     undefined,
@@ -153,7 +154,7 @@ class value_error : public value_format {
 
     std::ostream& write(std::ostream& os) const override {
         // the red/white and bold error text
-        return (os << "\x1B[1;31merror:\x1B[1;37m " << _string << "\x1B[0m");
+        return (os << BOLD(RED("error:") " " WHITE(<< _string <<)));
     }
 };
 
@@ -165,7 +166,7 @@ class value_info : public value_format {
 
     std::ostream& write(std::ostream& os) const override {
         // the green info text
-        return (os << "\x1B[32m" << _string << "\x1B[0m");
+        return (os << GREEN(<< _string <<));
     }
 };
 
