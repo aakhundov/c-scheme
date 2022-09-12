@@ -89,7 +89,7 @@ void report_test(std::string message) {
         bool raised = false;                                                     \
         try {                                                                    \
             code                                                                 \
-        } catch (type) {                                                         \
+        } catch (type&) {                                                        \
             raised = true;                                                       \
         }                                                                        \
         report_test(BLUE("[") #code BLUE("] --> [") BOLD(RED(#type)) BLUE("]")); \
