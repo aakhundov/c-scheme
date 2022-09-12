@@ -1,9 +1,31 @@
 #include "value.hpp"
 
+#include <cstdarg>
 #include <cstdio>
+#include <exception>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <unordered_map>
+
+// value_number
+
+std::ostream& value_number::write(std::ostream& os) const {
+    auto old_precision = std::cout.precision();  // default precision
+
+    // write with a 12-digit precision, then restore the default
+    return (os << std::setprecision(12)
+               << _number
+               << std::setprecision(old_precision));
+}
+
+bool value_number::equals(const value& other) const {
+    if (other.type() == value_t::number) {
+        return (reinterpret_cast<const value_number*>(&other)->_number == _number);
+    } else {
+        return false;
+    }
+}
 
 // value_symbol
 
@@ -21,6 +43,30 @@ const std::shared_ptr<value_symbol>& value_symbol::get(const std::string& symbol
     return val;
 }
 
+std::ostream& value_symbol::write(std::ostream& os) const {
+    // the symbol as is
+    return (os << _symbol);
+}
+
+// value_string
+
+std::ostream& value_string::write(std::ostream& os) const {
+    // the string in quotes
+    return (os << "\"" << _string << "\"");
+}
+
+bool value_string::equals(const value& other) const {
+    // ugly: depends on the subclasses
+    if (other.type() == value_t::string ||
+        other.type() == value_t::format ||
+        other.type() == value_t::error ||
+        other.type() == value_t::info) {
+        return (reinterpret_cast<const value_string*>(&other)->_string == _string);
+    } else {
+        return false;
+    }
+}
+
 // value_format
 
 value_format::value_format(const char* format, va_list args) : value_string() {
@@ -29,6 +75,20 @@ value_format::value_format(const char* format, va_list args) : value_string() {
     _string = buffer;
 
     _type = value_t::format;
+}
+
+// value_error
+
+std::ostream& value_error::write(std::ostream& os) const {
+    // the red/white and bold error text
+    return (os << BOLD(RED("error:") " " WHITE(<< _string <<)));
+}
+
+// value_info
+
+std::ostream& value_info::write(std::ostream& os) const {
+    // the green info text
+    return (os << GREEN(<< _string <<));
 }
 
 // value_bool
@@ -41,6 +101,11 @@ const std::shared_ptr<value_bool>& value_bool::get(bool truth) {
     return (truth ? true_ : false_);
 }
 
+std::ostream& value_bool::write(std::ostream& os) const {
+    // the corresponding bool literal
+    return (os << (_truth ? "true" : "false"));
+}
+
 // value_nil
 
 const std::shared_ptr<value_nil>& value_nil::get() {
@@ -50,7 +115,44 @@ const std::shared_ptr<value_nil>& value_nil::get() {
     return nil;
 }
 
+std::ostream& value_nil::write(std::ostream& os) const {
+    // the empty list notation for the nil
+    return (os << "()");
+};
+
 // value_pair
+
+value_pair::value_iterator::reference value_pair::value_iterator::operator*() const {
+    // shared ptr to the car
+    return (_at_cdr ? _ptr->_cdr : _ptr->_car);
+}
+
+value_pair::value_iterator::pointer value_pair::value_iterator::operator->() {
+    // reference to a shared ptr to the car
+    return &(_at_cdr ? _ptr->_cdr : _ptr->_car);
+}
+
+value_pair::value_iterator& value_pair::value_iterator::operator++() {
+    _advance();
+
+    return *this;
+}
+
+value_pair::value_iterator value_pair::value_iterator::operator++(int) {
+    value_iterator tmp = *this;
+
+    _advance();
+
+    return tmp;
+}
+
+bool operator==(const value_pair::value_iterator& a, const value_pair::value_iterator& b) {
+    return a._ptr == b._ptr && a._at_cdr == b._at_cdr;
+};
+
+bool operator!=(const value_pair::value_iterator& a, const value_pair::value_iterator& b) {
+    return a._ptr != b._ptr || a._at_cdr != b._at_cdr;
+};
 
 void value_pair::value_iterator::_advance() {
     if (_ptr->cdr()->type() == value_t::pair) {
@@ -169,4 +271,32 @@ void value_pair::_throw_on_cycle_from(const std::shared_ptr<value>& other) {
             }
         }
     }
+}
+
+// factory functions
+
+std::shared_ptr<value_error> make_error(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    std::shared_ptr<value_error> result = std::make_shared<value_error>(format, args);
+    va_end(args);
+
+    return result;
+}
+
+std::shared_ptr<value_info> make_info(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    std::shared_ptr<value_info> result = std::make_shared<value_info>(format, args);
+    va_end(args);
+
+    return result;
+}
+
+// exceptions
+
+cycle_error::cycle_error(const value_pair* from) : exception_with_buffer() {
+    std::stringstream s;
+    s << "cycle from " << *from << " (" << from << ")";
+    write_to_buffer(s.str().c_str());
 }

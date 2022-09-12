@@ -2,15 +2,12 @@
 #define VALUE_HPP_
 
 #include <cassert>
-#include <cstdarg>
-#include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <memory>
-#include <sstream>
 #include <string>
 
-#include "const.hpp"
+#include "constants.hpp"
 #include "exception.hpp"
 
 enum class value_t {
@@ -59,22 +56,8 @@ class value_number : public value {
     // getter only
     double number() const { return _number; }
 
-    std::ostream& write(std::ostream& os) const override {
-        auto old_precision = std::cout.precision();  // default precision
-
-        // write with a 12-digit precision, then restore the default
-        return (os << std::setprecision(12)
-                   << _number
-                   << std::setprecision(old_precision));
-    }
-
-    bool equals(const value& other) const override {
-        if (other.type() == value_t::number) {
-            return (reinterpret_cast<const value_number*>(&other)->_number == _number);
-        } else {
-            return false;
-        }
-    }
+    std::ostream& write(std::ostream& os) const override;
+    bool equals(const value& other) const override;
 
    private:
     double _number;
@@ -94,10 +77,7 @@ class value_symbol : public value {
     value_symbol(value_symbol&&) = delete;
     void operator=(value_symbol&&) = delete;
 
-    std::ostream& write(std::ostream& os) const override {
-        // the symbol as is
-        return (os << _symbol);
-    }
+    std::ostream& write(std::ostream& os) const override;
 
    private:
     // can't instantiate a singleton
@@ -120,21 +100,8 @@ class value_string : public value {
     // getter only
     const std::string& string() const { return _string; }
 
-    std::ostream& write(std::ostream& os) const override {
-        // the string in quotes
-        return (os << "\"" << _string << "\"");
-    }
-
-    bool equals(const value& other) const override {
-        if (other.type() == value_t::string ||
-            other.type() == value_t::format ||
-            other.type() == value_t::error ||
-            other.type() == value_t::info) {
-            return (reinterpret_cast<const value_string*>(&other)->_string == _string);
-        } else {
-            return false;
-        }
-    }
+    std::ostream& write(std::ostream& os) const override;
+    bool equals(const value& other) const override;
 
    protected:
     std::string _string;
@@ -152,10 +119,7 @@ class value_error : public value_format {
         _type = value_t::error;
     }
 
-    std::ostream& write(std::ostream& os) const override {
-        // the red/white and bold error text
-        return (os << BOLD(RED("error:") " " WHITE(<< _string <<)));
-    }
+    std::ostream& write(std::ostream& os) const override;
 };
 
 class value_info : public value_format {
@@ -164,10 +128,7 @@ class value_info : public value_format {
         _type = value_t::info;
     }
 
-    std::ostream& write(std::ostream& os) const override {
-        // the green info text
-        return (os << GREEN(<< _string <<));
-    }
+    std::ostream& write(std::ostream& os) const override;
 };
 
 class value_bool : public value {
@@ -184,10 +145,7 @@ class value_bool : public value {
     value_bool(value_bool&&) = delete;
     void operator=(value_bool&&) = delete;
 
-    std::ostream& write(std::ostream& os) const override {
-        // the corresponding bool literal
-        return (os << (_truth ? "true" : "false"));
-    }
+    std::ostream& write(std::ostream& os) const override;
 
    private:
     // can't instantiate a singleton
@@ -209,10 +167,7 @@ class value_nil : public value {
     value_nil(value_nil&&) = delete;
     void operator=(value_nil&&) = delete;
 
-    std::ostream& write(std::ostream& os) const override {
-        // the empty list notation for the nil
-        return (os << "()");
-    };
+    std::ostream& write(std::ostream& os) const override;
 
    private:
     // can't instantiate a singleton
@@ -237,40 +192,15 @@ class value_pair : public value {
         using pointer = std::shared_ptr<value>*;
         using reference = std::shared_ptr<value>&;
 
-        // stores a value_pair* internally
         value_iterator(value_pair* ptr) : _ptr(ptr) {}
 
-        reference operator*() const {
-            // shared ptr to the car
-            return (_at_cdr ? _ptr->_cdr : _ptr->_car);
-        }
+        reference operator*() const;
+        pointer operator->();
+        value_iterator& operator++();
+        value_iterator operator++(int);
 
-        pointer operator->() {
-            // reference to a shared ptr to the car
-            return &(_at_cdr ? _ptr->_cdr : _ptr->_car);
-        }
-
-        value_iterator& operator++() {
-            _advance();
-
-            return *this;
-        }
-
-        value_iterator operator++(int) {
-            value_iterator tmp = *this;
-
-            _advance();
-
-            return tmp;
-        }
-
-        friend bool operator==(const value_iterator& a, const value_iterator& b) {
-            return a._ptr == b._ptr && a._at_cdr == b._at_cdr;
-        };
-
-        friend bool operator!=(const value_iterator& a, const value_iterator& b) {
-            return a._ptr != b._ptr || a._at_cdr != b._at_cdr;
-        };
+        friend bool operator==(const value_iterator& a, const value_iterator& b);
+        friend bool operator!=(const value_iterator& a, const value_iterator& b);
 
        private:
         // move the iterator
@@ -339,7 +269,7 @@ class value_pair : public value {
 
 template <typename T,
           typename std::enable_if<
-              std::is_arithmetic<T>::value,
+              std::is_convertible<T, double>::value,
               bool>::type = true>  // poor man's concept
 inline std::shared_ptr<value_number> make_value(T number) {
     // from the number
@@ -348,7 +278,7 @@ inline std::shared_ptr<value_number> make_value(T number) {
 
 template <typename T,
           typename std::enable_if<
-              std::is_arithmetic<T>::value,
+              std::is_convertible<T, double>::value,
               bool>::type = true>  // poor man's concept
 inline std::shared_ptr<value_number> make_number(T number) {
     return make_value(number);
@@ -405,7 +335,7 @@ inline std::shared_ptr<value>& make_value(std::shared_ptr<value>&& val) {
 }
 
 template <typename T1, typename T2>
-inline std::shared_ptr<value_pair> make_value_pair(T1&& car, T2&& cdr) {
+std::shared_ptr<value_pair> make_value_pair(T1&& car, T2&& cdr) {
     // from two separate universal references: car and cdr
     return std::make_shared<value_pair>(
         make_value(std::forward<T1>(car)),
@@ -413,7 +343,7 @@ inline std::shared_ptr<value_pair> make_value_pair(T1&& car, T2&& cdr) {
 }
 
 template <typename Head, typename... Tail>
-inline std::shared_ptr<value_pair> make_value_list(Head&& first, Tail&&... rest) {
+std::shared_ptr<value_pair> make_value_list(Head&& first, Tail&&... rest) {
     if constexpr (sizeof...(rest) > 0) {
         return make_value_pair(
             make_value(std::forward<Head>(first)),          // the head
@@ -425,23 +355,8 @@ inline std::shared_ptr<value_pair> make_value_list(Head&& first, Tail&&... rest)
     }
 }
 
-inline std::shared_ptr<value_error> make_error(const char* format, ...) {
-    va_list args;
-    va_start(args, format);
-    std::shared_ptr<value_error> result = std::make_shared<value_error>(format, args);
-    va_end(args);
-
-    return result;
-}
-
-inline std::shared_ptr<value_info> make_info(const char* format, ...) {
-    va_list args;
-    va_start(args, format);
-    std::shared_ptr<value_info> result = std::make_shared<value_info>(format, args);
-    va_end(args);
-
-    return result;
-}
+std::shared_ptr<value_error> make_error(const char* format, ...);
+std::shared_ptr<value_info> make_info(const char* format, ...);
 
 // helper functions
 
@@ -450,28 +365,18 @@ inline std::ostream& operator<<(std::ostream& os, const value& v) {
 }
 
 inline bool operator==(const value& v1, const value& v2) {
-    if (&v1 == &v2) {
-        return true;
-    } else if (v1.type() != v2.type()) {
-        return false;
-    }
-
-    return v1.equals(v2);
+    return (&v1 == &v2 || v1.equals(v2));
 }
 
 inline bool operator!=(const value& v1, const value& v2) {
-    return !operator==(v1, v2);
+    return (&v1 != &v2 && !v1.equals(v2));
 }
 
 // exceptions
 
 class cycle_error : public exception_with_buffer {
    public:
-    cycle_error(const value_pair* from) : exception_with_buffer() {
-        std::stringstream s;
-        s << "cycle from " << *from << " (" << from << ")";
-        write_to_buffer(s.str().c_str());
-    }
+    cycle_error(const value_pair* from);
 };
 
 #endif  // VALUE_HPP_

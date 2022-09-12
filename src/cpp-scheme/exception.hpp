@@ -1,7 +1,6 @@
 #ifndef COMMON_HPP_
 #define COMMON_HPP_
 
-#include <cstring>
 #include <exception>
 
 class exception_with_buffer : public std::exception {
@@ -29,43 +28,16 @@ class exception_with_buffer : public std::exception {
         return *this;
     }
 
-    // move constructor
-    exception_with_buffer(exception_with_buffer&& other) : exception_with_buffer() {
-        if (_buffer != nullptr) {
-            delete[] _buffer;
-        }
-
-        _buffer = other._buffer;
-        other._buffer = nullptr;
-    }
-
-    // move assignment
-    exception_with_buffer& operator=(exception_with_buffer&& other) {
-        if (_buffer != nullptr) {
-            delete[] _buffer;
-        }
-
-        _buffer = other._buffer;
-        other._buffer = nullptr;
-
-        return *this;
-    }
+    // move constructor and assignment
+    exception_with_buffer(exception_with_buffer&& other);
+    exception_with_buffer& operator=(exception_with_buffer&& other);
 
     const char* what() const noexcept override {
         return _buffer;
     }
 
    protected:
-    void write_to_buffer(const char* buffer) {
-        if (buffer != nullptr) {
-            if (_buffer == nullptr) {
-                // in case of a moved-out object
-                _buffer = new char[_buffer_size];
-            }
-
-            strncpy(_buffer, buffer, _buffer_size);
-        }
-    }
+    void write_to_buffer(const char* buffer);
 
    private:
     static const size_t _buffer_size = 65536;
