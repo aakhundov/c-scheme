@@ -7,7 +7,10 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <sstream>
 #include <string>
+
+#include "common.hpp"
 
 enum class value_t {
     undefined,
@@ -309,8 +312,14 @@ class value_pair : public value {
     }
 
     // setters
-    void car(std::shared_ptr<value> car) { _car = car; }
-    void cdr(std::shared_ptr<value> cdr) { _cdr = cdr; }
+    void car(std::shared_ptr<value> car) {
+        _throw_on_cycle_from(car);
+        _car = std::move(car);
+    }
+    void cdr(std::shared_ptr<value> cdr) {
+        _throw_on_cycle_from(cdr);
+        _cdr = std::move(cdr);
+    }
 
     std::ostream& write(std::ostream& os) const override;
     bool equals(const value& other) const override;
@@ -319,6 +328,8 @@ class value_pair : public value {
     size_t length() const;
 
    private:
+    void _throw_on_cycle_from(const std::shared_ptr<value>& other);
+
     std::shared_ptr<value> _car;
     std::shared_ptr<value> _cdr;
 };
@@ -416,7 +427,7 @@ inline std::shared_ptr<value_pair> make_value_list(Head&& first, Tail&&... rest)
 inline std::shared_ptr<value_error> make_error(const char* format, ...) {
     va_list args;
     va_start(args, format);
-    auto result = std::make_shared<value_error>(format, args);
+    std::shared_ptr<value_error> result = std::make_shared<value_error>(format, args);
     va_end(args);
 
     return result;
@@ -425,7 +436,7 @@ inline std::shared_ptr<value_error> make_error(const char* format, ...) {
 inline std::shared_ptr<value_info> make_info(const char* format, ...) {
     va_list args;
     va_start(args, format);
-    auto result = std::make_shared<value_info>(format, args);
+    std::shared_ptr<value_info> result = std::make_shared<value_info>(format, args);
     va_end(args);
 
     return result;
@@ -450,5 +461,16 @@ inline bool operator==(const value& v1, const value& v2) {
 inline bool operator!=(const value& v1, const value& v2) {
     return !operator==(v1, v2);
 }
+
+// exceptions
+
+class cycle_error : public exception_with_buffer {
+   public:
+    cycle_error(const value_pair* from) : exception_with_buffer() {
+        std::stringstream s;
+        s << "cycle from " << *from << " (" << from << ")";
+        write_to_buffer(s.str().c_str());
+    }
+};
 
 #endif  // VALUE_HPP_

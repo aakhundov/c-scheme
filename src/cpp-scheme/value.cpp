@@ -78,7 +78,7 @@ std::ostream& value_pair::write(std::ostream& os) const {
     std::shared_ptr<value> running{cdr()};
     while (running != nil) {
         if (running->type() == value_t::pair) {
-            value_pair* pair = reinterpret_cast<value_pair*>(running.get());
+            const value_pair* pair = reinterpret_cast<value_pair*>(running.get());
             os << " ";
             pair->car()->write(os);  // write the next car
             running = pair->cdr();   // go to the following cdr
@@ -120,7 +120,7 @@ bool value_pair::is_list() const {
     while (running != nil) {
         if (running->type() == value_t::pair) {
             // the cdr is a pair
-            value_pair* pair = reinterpret_cast<value_pair*>(running.get());
+            const value_pair* pair = reinterpret_cast<value_pair*>(running.get());
             running = pair->cdr();  // go to the next cdr
         } else {
             // the (terminating) cdr is not a pair
@@ -140,7 +140,7 @@ size_t value_pair::length() const {
         result += 1;  // increment the length
         if (running->type() == value_t::pair) {
             // the cdr is a pair
-            value_pair* pair = reinterpret_cast<value_pair*>(running.get());
+            const value_pair* pair = reinterpret_cast<value_pair*>(running.get());
             running = pair->cdr();  // go to the next cdr
         } else {
             // the (terminating) cdr is not a pair
@@ -149,4 +149,24 @@ size_t value_pair::length() const {
     }
 
     return result;
+}
+
+void value_pair::_throw_on_cycle_from(const std::shared_ptr<value>& other) {
+    if (other->type() == value_t::pair) {
+        std::shared_ptr<value> running{other};
+        while (running != nil) {
+            if (running->type() == value_t::pair) {
+                const value_pair* pair = reinterpret_cast<value_pair*>(running.get());
+
+                if (pair == this) {
+                    throw cycle_error(this);
+                }
+
+                _throw_on_cycle_from(pair->car());
+                running = pair->cdr();
+            } else {
+                break;
+            }
+        }
+    }
 }

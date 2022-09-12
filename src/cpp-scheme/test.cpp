@@ -319,7 +319,7 @@ void test_pair() {
     value_pair val = *make_value_list(1, 2, 3, 4, 5);
     ASSERT_ITERATOR(val, "1, 2, 3, 4, 5");
     for (auto& item : val) {
-        auto number = reinterpret_cast<value_number*>(item.get());
+        value_number* number = reinterpret_cast<value_number*>(item.get());
         item = make_value(number->number() * number->number());
     }
     ASSERT_ITERATOR(val, "1, 4, 9, 16, 25");
