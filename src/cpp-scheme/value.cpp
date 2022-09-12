@@ -5,17 +5,6 @@
 #include <iostream>
 #include <unordered_map>
 
-// value_number
-
-std::ostream& value_number::write(std::ostream& os) const {
-    auto p = std::cout.precision();  // default precision
-
-    // write with a 12-digit precision, then restore the default
-    os << std::setprecision(12) << _number << std::setprecision(p);
-
-    return os;
-}
-
 // value_symbol
 
 const std::shared_ptr<value_symbol>& value_symbol::get(const std::string& symbol) {
@@ -64,10 +53,10 @@ const std::shared_ptr<value_nil>& value_nil::get() {
 // value_pair
 
 void value_pair::value_iterator::_advance() {
-    if (_ptr->_cdr->type() == value_t::pair) {
-        _ptr = reinterpret_cast<value_pair*>(_ptr->_cdr.get());  // cdr is a pair
+    if (_ptr->cdr()->type() == value_t::pair) {
+        _ptr = reinterpret_cast<value_pair*>(_ptr->cdr().get());  // cdr is a pair
     } else {
-        if (_ptr->_cdr == nil) {
+        if (_ptr->cdr() == nil) {
             // the list terminates: stop here
             _ptr = nullptr;
         } else if (!_at_cdr) {
@@ -85,14 +74,14 @@ void value_pair::value_iterator::_advance() {
 
 std::ostream& value_pair::write(std::ostream& os) const {
     os << "(";
-    _car->write(os);  // write the first car
-    std::shared_ptr<value> running{_cdr};
+    car()->write(os);  // write the first car
+    std::shared_ptr<value> running{cdr()};
     while (running != nil) {
         if (running->type() == value_t::pair) {
             value_pair* pair = reinterpret_cast<value_pair*>(running.get());
             os << " ";
-            pair->_car->write(os);  // write the next car
-            running = pair->_cdr;   // go to the following cdr
+            pair->car()->write(os);  // write the next car
+            running = pair->cdr();   // go to the following cdr
         } else {
             os << " . ";
             running->write(os);  // write the non-pair cdr
@@ -112,12 +101,12 @@ bool value_pair::equals(const value& other) const {
             const value_pair* pair1 = reinterpret_cast<const value_pair*>(running1);
             const value_pair* pair2 = reinterpret_cast<const value_pair*>(running2);
 
-            if (!pair1->_car->equals(*pair2->_car)) {
+            if (!pair1->car()->equals(*pair2->car())) {
                 return false;
             }
 
-            running1 = pair1->_cdr.get();
-            running2 = pair2->_cdr.get();
+            running1 = pair1->cdr().get();
+            running2 = pair2->cdr().get();
         }
 
         return running1->equals(*running2);
@@ -126,13 +115,13 @@ bool value_pair::equals(const value& other) const {
     }
 }
 
-bool value_pair::is_list() {
-    std::shared_ptr<value> running{_cdr};
+bool value_pair::is_list() const {
+    std::shared_ptr<value> running{cdr()};
     while (running != nil) {
         if (running->type() == value_t::pair) {
             // the cdr is a pair
             value_pair* pair = reinterpret_cast<value_pair*>(running.get());
-            running = pair->_cdr;  // go to the next cdr
+            running = pair->cdr();  // go to the next cdr
         } else {
             // the (terminating) cdr is not a pair
             return false;  // this is not a list
@@ -142,17 +131,17 @@ bool value_pair::is_list() {
     return true;
 }
 
-size_t value_pair::length() {
+size_t value_pair::length() const {
     // at least one pair
     size_t result = 1;
 
-    std::shared_ptr<value> running{_cdr};
+    std::shared_ptr<value> running{cdr()};
     while (running != nil) {
         result += 1;  // increment the length
         if (running->type() == value_t::pair) {
             // the cdr is a pair
             value_pair* pair = reinterpret_cast<value_pair*>(running.get());
-            running = pair->_cdr;  // go to the next cdr
+            running = pair->cdr();  // go to the next cdr
         } else {
             // the (terminating) cdr is not a pair
             break;  // stop the counting

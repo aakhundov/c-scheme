@@ -14,7 +14,7 @@ void report_test(std::string message) {
               << "\x1B[0m " << message << std::endl;
 }
 
-#define run_test_function(fn)                                       \
+#define RUN_TEST_FUNCTION(fn)                                       \
     {                                                               \
         std::cout << "[" << #fn << "]" << std::endl;                \
         std::cout << "==============================" << std::endl; \
@@ -22,56 +22,56 @@ void report_test(std::string message) {
         std::cout << std::endl;                                     \
     }
 
-#define assert_true(expr)                                                           \
+#define ASSERT_TRUE(expr)                                                           \
     {                                                                               \
         report_test(                                                                \
             "\x1B[34m[\x1B[0m" #expr "\x1B[34m] --> [\x1B[0mtrue\x1B[34m]\x1B[0m"); \
-        if (!expr) {                                                                \
-            std::cout << "expected true" << std::endl;                              \
+        if (!(expr)) {                                                              \
+            std::cerr << "\x1B[31mexpected true\x1B[0m" << std::endl;               \
             exit(1);                                                                \
         }                                                                           \
     }
 
-#define assert_false(expr)                                                           \
+#define ASSERT_FALSE(expr)                                                           \
     {                                                                                \
         report_test(                                                                 \
             "\x1B[34m[\x1B[0m" #expr "\x1B[34m] --> [\x1B[0mfalse\x1B[34m]\x1B[0m"); \
-        if (expr) {                                                                  \
-            std::cout << "expected false" << std::endl;                              \
+        if ((expr)) {                                                                \
+            std::cerr << "\x1B[31mexpected false\x1B[0m" << std::endl;               \
             exit(1);                                                                 \
         }                                                                            \
     }
 
-#define assert_equal(expr, expected)                                                              \
+#define ASSERT_EQUAL(expr, expected)                                                              \
     {                                                                                             \
-        auto result = expr;                                                                       \
+        auto result = (expr);                                                                     \
         std::stringstream buffer;                                                                 \
         buffer << result;                                                                         \
         std::string str_result = buffer.str();                                                    \
         report_test(                                                                              \
             "\x1B[34m[\x1B[0m" #expr "\x1B[34m] --> [\x1B[0m" + str_result + "\x1B[34m]\x1B[0m"); \
-        if (result != expected) {                                                                 \
-            std::cout << "expected: " << expected << std::endl;                                   \
+        if (result != (expected)) {                                                               \
+            std::cerr << "\x1B[31mexpected " #expected "\x1B[0m" << std::endl;                    \
             exit(1);                                                                              \
         }                                                                                         \
     }
 
-#define assert_to_str(expr, expected)                                                             \
+#define ASSERT_TO_STR(expr, expected)                                                             \
     {                                                                                             \
         std::stringstream buffer;                                                                 \
-        buffer << expr;                                                                           \
+        buffer << (expr);                                                                         \
         std::string str_result = buffer.str();                                                    \
         report_test(                                                                              \
             "\x1B[34m[\x1B[0m" #expr "\x1B[34m] --> [\x1B[0m" + str_result + "\x1B[34m]\x1B[0m"); \
-        if (str_result != expected) {                                                             \
-            std::cout << "expected: " << expected << std::endl;                                   \
+        if (str_result != (expected)) {                                                           \
+            std::cerr << "\x1B[31mexpected " #expected "\x1B[0m" << std::endl;                    \
             exit(1);                                                                              \
         }                                                                                         \
     }
 
-#define assert_iterator(expr, expected)                                                          \
+#define ASSERT_ITERATOR(expr, expected)                                                          \
     {                                                                                            \
-        value_pair pair = expr;                                                                  \
+        value_pair pair = (expr);                                                                \
         std::string str_items;                                                                   \
         for (auto& item : pair) {                                                                \
             std::stringstream buffer;                                                            \
@@ -82,312 +82,412 @@ void report_test(std::string message) {
         str_items.pop_back();                                                                    \
         report_test(                                                                             \
             "\x1B[34m[\x1B[0m" #expr "\x1B[34m] --> [\x1B[0m" + str_items + "\x1B[34m]\x1B[0m"); \
-        if (str_items != expected) {                                                             \
-            std::cout << "expected: \"" << expected << "\"" << std::endl;                        \
+        if (str_items != (expected)) {                                                           \
+            std::cerr << "\x1B[31mexpected " #expected "\x1B[0m" << std::endl;                   \
             exit(1);                                                                             \
         }                                                                                        \
     }
 
-void test_to_str() {
+void test_value() {
     // number
-    assert_to_str(*make_value(0), "0");
-    assert_to_str(*make_value(1), "1");
-    assert_to_str(*make_value(-1), "-1");
-    assert_to_str(*make_value(3.14), "3.14");
-    assert_to_str(*make_value(-3.14), "-3.14");
-    assert_to_str(*make_value(1e-20), "1e-20");
-    assert_to_str(*make_value(1e+20), "1e+20");
-    assert_to_str(*make_value(3.14e2), "314");
-    assert_to_str(*make_value(3.14e-2), "0.0314");
-    assert_to_str(*make_value(123'456'789'012), "123456789012");
-    assert_to_str(*make_value(1'234'567'890'123), "1.23456789012e+12");
-    assert_to_str(*make_value(123'456.789'012), "123456.789012");
-    assert_to_str(*make_value(123'456.789'012'3), "123456.789012");
-    assert_to_str(*make_value(0.123'456'789'012), "0.123456789012");
-    assert_to_str(*make_value(0.123'456'789'012'3), "0.123456789012");
+    std::shared_ptr<value_number> num1;
+    ASSERT_TO_STR(*(num1 = make_number(3.14)), "3.14");
+    ASSERT_TRUE(num1->type() == value_t::number);
+    ASSERT_EQUAL(num1->number(), 3.14);
+    std::shared_ptr<value_number> num2;
+    ASSERT_TO_STR(*(num2 = make_number(3.14)), "3.14");
+    ASSERT_TRUE(*num1 == *num2);
+    ASSERT_FALSE(num1 == num2);
 
     // symbol
-    assert_to_str(*make_value(""), "");
-    assert_to_str(*make_value("a"), "a");
-    assert_to_str(*make_value("abc"), "abc");
-    assert_to_str(*make_value("xxx"), "xxx");
-    assert_to_str(*make_value("!@#$%"), "!@#$%");
+    std::shared_ptr<value_symbol> sym1;
+    ASSERT_TO_STR(*(sym1 = make_symbol("abc")), "abc");
+    ASSERT_TRUE(sym1->type() == value_t::symbol);
+    ASSERT_EQUAL(sym1->symbol(), "abc");
+    std::shared_ptr<value_symbol> sym2;
+    ASSERT_TO_STR(*(sym2 = make_symbol("abc")), "abc");
+    ASSERT_TRUE(*sym1 == *sym2);
+    ASSERT_TRUE(sym1 == sym2);
 
     // string
-    assert_to_str(*make_value(""s), "\"\"");
-    assert_to_str(*make_value("a"s), "\"a\"");
-    assert_to_str(*make_value("abc"s), "\"abc\"");
-    assert_to_str(*make_value("xxx"s), "\"xxx\"");
-    assert_to_str(*make_value("!@#$%"s), "\"!@#$%\"");
+    std::shared_ptr<value_string> str1;
+    ASSERT_TO_STR(*(str1 = make_string("abc")), "\"abc\"");
+    ASSERT_TRUE(str1->type() == value_t::string);
+    ASSERT_EQUAL(str1->string(), "abc");
+    std::shared_ptr<value_string> str2;
+    ASSERT_TO_STR(*(str2 = make_string("abc")), "\"abc\"");
+    ASSERT_TRUE(*str1 == *str2);
+    ASSERT_FALSE(str1 == str2);
 
     // error
-    assert_to_str(*make_error(""), "\x1B[1;31merror:\x1B[1;37m \x1B[0m");
-    assert_to_str(*make_error("message"), "\x1B[1;31merror:\x1B[1;37m message\x1B[0m");
-    assert_to_str(*make_error("hello world"), "\x1B[1;31merror:\x1B[1;37m hello world\x1B[0m");
-    assert_to_str(*make_error("hello '%s'", "world"), "\x1B[1;31merror:\x1B[1;37m hello 'world'\x1B[0m");
-    assert_to_str(*make_error("hello '%g'", 3.14), "\x1B[1;31merror:\x1B[1;37m hello '3.14'\x1B[0m");
-    assert_to_str(*make_error("hi %d, %d, %d bye", 1, 2, 3), "\x1B[1;31merror:\x1B[1;37m hi 1, 2, 3 bye\x1B[0m");
+    std::shared_ptr<value_error> err1;
+    ASSERT_TO_STR(*(err1 = make_error("hello '%g'", 3.14)), "\x1B[1;31merror:\x1B[1;37m hello '3.14'\x1B[0m");
+    ASSERT_TRUE(err1->type() == value_t::error);
+    ASSERT_EQUAL(err1->string(), "hello '3.14'");
+    std::shared_ptr<value_error> err2;
+    ASSERT_TO_STR(*(err2 = make_error("hello '%g'", 3.14)), "\x1B[1;31merror:\x1B[1;37m hello '3.14'\x1B[0m");
+    ASSERT_TRUE(*err1 == *err2);
+    ASSERT_FALSE(err1 == err2);
 
     // info
-    assert_to_str(*make_info(""), "\x1B[32m\x1B[0m");
-    assert_to_str(*make_info("message"), "\x1B[32mmessage\x1B[0m");
-    assert_to_str(*make_info("hello world"), "\x1B[32mhello world\x1B[0m");
-    assert_to_str(*make_info("hello '%s'", "world"), "\x1B[32mhello 'world'\x1B[0m");
-    assert_to_str(*make_info("hello '%g'", 3.14), "\x1B[32mhello '3.14'\x1B[0m");
-    assert_to_str(*make_info("hi %d, %d, %d bye", 1, 2, 3), "\x1B[32mhi 1, 2, 3 bye\x1B[0m");
+    std::shared_ptr<value_info> inf1;
+    ASSERT_TO_STR(*(inf1 = make_info("hello '%g'", 3.14)), "\x1B[32mhello '3.14'\x1B[0m");
+    ASSERT_TRUE(inf1->type() == value_t::info);
+    ASSERT_EQUAL(inf1->string(), "hello '3.14'");
+    std::shared_ptr<value_info> inf2;
+    ASSERT_TO_STR(*(inf2 = make_info("hello '%g'", 3.14)), "\x1B[32mhello '3.14'\x1B[0m");
+    ASSERT_TRUE(*inf1 == *inf2);
+    ASSERT_FALSE(inf1 == inf2);
 
     // bool
-    assert_to_str(*true_, "true");
-    assert_to_str(*make_value(true), "true");
-    assert_to_str(*false_, "false");
-    assert_to_str(*make_value(false), "false");
+    std::shared_ptr<value_bool> bool1;
+    ASSERT_TO_STR(*(bool1 = make_bool(true)), "true");
+    ASSERT_TRUE(bool1->type() == value_t::bool_);
+    ASSERT_EQUAL(bool1->truth(), true);
+    std::shared_ptr<value_bool> bool2;
+    ASSERT_TO_STR(*(bool2 = make_bool(true)), "true");
+    ASSERT_TRUE(*bool1 == *bool2);
+    ASSERT_TRUE(bool1 == bool2);
 
-    // bool
-    assert_to_str(*nil, "()");
-    assert_to_str(*make_nil(), "()");
-
-    // identity
-    assert_to_str(*make_value(make_value(1)), "1");
-    assert_to_str(*make_value(make_value("abc")), "abc");
-    assert_to_str(*make_value(make_value("abc"s)), "\"abc\"");
-    assert_to_str(*make_value(true_), "true");
-    assert_to_str(*make_value(nil), "()");
+    // nil
+    std::shared_ptr<value_nil> nil1;
+    ASSERT_TO_STR(*(nil1 = make_nil()), "()");
+    ASSERT_TRUE(nil1->type() == value_t::nil);
+    std::shared_ptr<value_nil> nil2;
+    ASSERT_TO_STR(*(nil2 = make_nil()), "()");
+    ASSERT_TRUE(*nil1 == *nil2);
+    ASSERT_TRUE(nil1 == nil2);
 
     // pair
-    assert_to_str(*make_value_pair(1, 1), "(1 . 1)");
-    assert_to_str(*make_value_pair(1, 2), "(1 . 2)");
-    assert_to_str(*make_value_pair(1, "abc"), "(1 . abc)");
-    assert_to_str(*make_value_pair("xyz"s, 3.14), "(\"xyz\" . 3.14)");
-    assert_to_str(*make_value_pair(true_, false_), "(true . false)");
-    assert_to_str(*make_value_pair(1, nil), "(1)");
-    assert_to_str(*make_value_pair(nil, 2), "(() . 2)");
-    assert_to_str(*make_value_pair(nil, nil), "(())");
+    std::shared_ptr<value_pair> pair1;
+    ASSERT_TO_STR(*(pair1 = make_value_pair(3.14, "abc")), "(3.14 . abc)");
+    ASSERT_TRUE(pair1->type() == value_t::pair);
+    ASSERT_TO_STR(*pair1->car(), "3.14");
+    ASSERT_TO_STR(*pair1->cdr(), "abc");
+    std::shared_ptr<value_pair> pair2;
+    ASSERT_TO_STR(*(pair2 = make_value_pair(3.14, "abc")), "(3.14 . abc)");
+    ASSERT_TRUE(*pair1 == *pair2);
+    ASSERT_FALSE(pair1 == pair2);
 
     // list
-    assert_to_str(*make_value_list(1), "(1)");
-    assert_to_str(*make_value_list(1, 2, 3), "(1 2 3)");
-    assert_to_str(*make_value_list(3.14, "abc", "xyz"s, true_, nil, false_), "(3.14 abc \"xyz\" true () false)");
-    assert_to_str(*make_value_list(1, 2, make_value_list(3, 4, 5), 6), "(1 2 (3 4 5) 6)");
-    assert_to_str(*make_value_list(1, 2, make_value_pair(3, 4)), "(1 2 (3 . 4))");
-    assert_to_str(*make_value_pair(1, make_value_pair(2, make_value_pair(3, 4))), "(1 2 3 . 4)");
-    assert_to_str(*make_value_list(make_value_list(make_value_list(1))), "(((1)))");
+    std::shared_ptr<value_pair> list1;
+    ASSERT_TO_STR(*(list1 = make_value_list(3.14, "abc", nil, false)), "(3.14 abc () false)");
+    ASSERT_TRUE(list1->type() == value_t::pair);
+    ASSERT_TO_STR(*list1->car(), "3.14");
+    ASSERT_TO_STR(*list1->cdr(), "(abc () false)");
+    ASSERT_TO_STR(*list1->pcdr()->car(), "abc");
+    ASSERT_TO_STR(*list1->pcdr()->cdr(), "(() false)");
+    ASSERT_TO_STR(*list1->pcdr()->pcdr()->car(), "()");
+    ASSERT_TO_STR(*list1->pcdr()->pcdr()->cdr(), "(false)");
+    ASSERT_TO_STR(*list1->pcdr()->pcdr()->pcdr()->car(), "false");
+    ASSERT_TO_STR(*list1->pcdr()->pcdr()->pcdr()->cdr(), "()");
+    std::shared_ptr<value_pair> list2;
+    ASSERT_TO_STR(*(list2 = make_value_list(3.14, "abc", nil, false)), "(3.14 abc () false)");
+    ASSERT_TRUE(*list1 == *list2);
+    ASSERT_FALSE(list1 == list2);
+}
+
+void test_to_str() {
+    // number
+    ASSERT_TO_STR(*make_value(0), "0");
+    ASSERT_TO_STR(*make_value(1), "1");
+    ASSERT_TO_STR(*make_value(-1), "-1");
+    ASSERT_TO_STR(*make_value(3.14), "3.14");
+    ASSERT_TO_STR(*make_value(-3.14), "-3.14");
+    ASSERT_TO_STR(*make_value(1e-20), "1e-20");
+    ASSERT_TO_STR(*make_value(1e+20), "1e+20");
+    ASSERT_TO_STR(*make_value(3.14e2), "314");
+    ASSERT_TO_STR(*make_value(3.14e-2), "0.0314");
+    ASSERT_TO_STR(*make_value(123'456'789'012), "123456789012");
+    ASSERT_TO_STR(*make_value(1'234'567'890'123), "1.23456789012e+12");
+    ASSERT_TO_STR(*make_value(123'456.789'012), "123456.789012");
+    ASSERT_TO_STR(*make_value(123'456.789'012'3), "123456.789012");
+    ASSERT_TO_STR(*make_value(0.123'456'789'012), "0.123456789012");
+    ASSERT_TO_STR(*make_value(0.123'456'789'012'3), "0.123456789012");
+
+    // symbol
+    ASSERT_TO_STR(*make_value(""), "");
+    ASSERT_TO_STR(*make_value("a"), "a");
+    ASSERT_TO_STR(*make_value("abc"), "abc");
+    ASSERT_TO_STR(*make_value("xxx"), "xxx");
+    ASSERT_TO_STR(*make_value("!@#$%"), "!@#$%");
+
+    // string
+    ASSERT_TO_STR(*make_value(""s), "\"\"");
+    ASSERT_TO_STR(*make_value("a"s), "\"a\"");
+    ASSERT_TO_STR(*make_value("abc"s), "\"abc\"");
+    ASSERT_TO_STR(*make_value("xxx"s), "\"xxx\"");
+    ASSERT_TO_STR(*make_value("!@#$%"s), "\"!@#$%\"");
+
+    // error
+    ASSERT_TO_STR(*make_error(""), "\x1B[1;31merror:\x1B[1;37m \x1B[0m");
+    ASSERT_TO_STR(*make_error("message"), "\x1B[1;31merror:\x1B[1;37m message\x1B[0m");
+    ASSERT_TO_STR(*make_error("hello world"), "\x1B[1;31merror:\x1B[1;37m hello world\x1B[0m");
+    ASSERT_TO_STR(*make_error("hello '%s'", "world"), "\x1B[1;31merror:\x1B[1;37m hello 'world'\x1B[0m");
+    ASSERT_TO_STR(*make_error("hello '%g'", 3.14), "\x1B[1;31merror:\x1B[1;37m hello '3.14'\x1B[0m");
+    ASSERT_TO_STR(*make_error("hi %d, %d, %d bye", 1, 2, 3), "\x1B[1;31merror:\x1B[1;37m hi 1, 2, 3 bye\x1B[0m");
+
+    // info
+    ASSERT_TO_STR(*make_info(""), "\x1B[32m\x1B[0m");
+    ASSERT_TO_STR(*make_info("message"), "\x1B[32mmessage\x1B[0m");
+    ASSERT_TO_STR(*make_info("hello world"), "\x1B[32mhello world\x1B[0m");
+    ASSERT_TO_STR(*make_info("hello '%s'", "world"), "\x1B[32mhello 'world'\x1B[0m");
+    ASSERT_TO_STR(*make_info("hello '%g'", 3.14), "\x1B[32mhello '3.14'\x1B[0m");
+    ASSERT_TO_STR(*make_info("hi %d, %d, %d bye", 1, 2, 3), "\x1B[32mhi 1, 2, 3 bye\x1B[0m");
+
+    // bool
+    ASSERT_TO_STR(*true_, "true");
+    ASSERT_TO_STR(*make_value(true), "true");
+    ASSERT_TO_STR(*false_, "false");
+    ASSERT_TO_STR(*make_value(false), "false");
+
+    // bool
+    ASSERT_TO_STR(*nil, "()");
+    ASSERT_TO_STR(*make_nil(), "()");
+
+    // identity
+    ASSERT_TO_STR(*make_value(make_value(1)), "1");
+    ASSERT_TO_STR(*make_value(make_value("abc")), "abc");
+    ASSERT_TO_STR(*make_value(make_value("abc"s)), "\"abc\"");
+    ASSERT_TO_STR(*make_value(true_), "true");
+    ASSERT_TO_STR(*make_value(nil), "()");
+
+    // pair
+    ASSERT_TO_STR(*make_value_pair(1, 1), "(1 . 1)");
+    ASSERT_TO_STR(*make_value_pair(1, 2), "(1 . 2)");
+    ASSERT_TO_STR(*make_value_pair(1, "abc"), "(1 . abc)");
+    ASSERT_TO_STR(*make_value_pair("xyz"s, 3.14), "(\"xyz\" . 3.14)");
+    ASSERT_TO_STR(*make_value_pair(true_, false_), "(true . false)");
+    ASSERT_TO_STR(*make_value_pair(1, nil), "(1)");
+    ASSERT_TO_STR(*make_value_pair(nil, 2), "(() . 2)");
+    ASSERT_TO_STR(*make_value_pair(nil, nil), "(())");
+
+    // list
+    ASSERT_TO_STR(*make_value_list(1), "(1)");
+    ASSERT_TO_STR(*make_value_list(1, 2, 3), "(1 2 3)");
+    ASSERT_TO_STR(*make_value_list(3.14, "abc", "xyz"s, true_, nil, false_), "(3.14 abc \"xyz\" true () false)");
+    ASSERT_TO_STR(*make_value_list(1, 2, make_value_list(3, 4, 5), 6), "(1 2 (3 4 5) 6)");
+    ASSERT_TO_STR(*make_value_list(1, 2, make_value_pair(3, 4)), "(1 2 (3 . 4))");
+    ASSERT_TO_STR(*make_value_pair(1, make_value_pair(2, make_value_pair(3, 4))), "(1 2 3 . 4)");
+    ASSERT_TO_STR(*make_value_list(make_value_list(make_value_list(1))), "(((1)))");
 }
 
 void test_pair() {
     // is_list
-    assert_true(make_value_pair(1, nil)->is_list());
-    assert_false(make_value_pair(nil, 2)->is_list());
-    assert_true(make_value_pair(nil, nil)->is_list());
-    assert_false(make_value_pair(1, 2)->is_list());
-    assert_true(make_value_pair(1, make_value_pair(2, nil))->is_list());
-    assert_false(make_value_pair(1, make_value_pair(2, 3))->is_list());
-    assert_true(make_value_list(1)->is_list());
-    assert_true(make_value_list(1, 2)->is_list());
-    assert_true(make_value_list(1, 2, 3)->is_list());
-    assert_true(make_value_list(1, 2, make_value_pair(3, 4))->is_list());
-    assert_true(make_value_list(make_value_pair(1, 2), make_value_pair(3, 4))->is_list());
-    assert_true(make_value_list(1, 2, nil)->is_list());
-    assert_true(make_value_list(1, nil, nil)->is_list());
-    assert_true(make_value_list(nil, nil, nil)->is_list());
+    ASSERT_TRUE(make_value_pair(1, nil)->is_list());
+    ASSERT_FALSE(make_value_pair(nil, 2)->is_list());
+    ASSERT_TRUE(make_value_pair(nil, nil)->is_list());
+    ASSERT_FALSE(make_value_pair(1, 2)->is_list());
+    ASSERT_TRUE(make_value_pair(1, make_value_pair(2, nil))->is_list());
+    ASSERT_FALSE(make_value_pair(1, make_value_pair(2, 3))->is_list());
+    ASSERT_TRUE(make_value_list(1)->is_list());
+    ASSERT_TRUE(make_value_list(1, 2)->is_list());
+    ASSERT_TRUE(make_value_list(1, 2, 3)->is_list());
+    ASSERT_TRUE(make_value_list(1, 2, make_value_pair(3, 4))->is_list());
+    ASSERT_TRUE(make_value_list(make_value_pair(1, 2), make_value_pair(3, 4))->is_list());
+    ASSERT_TRUE(make_value_list(1, 2, nil)->is_list());
+    ASSERT_TRUE(make_value_list(1, nil, nil)->is_list());
+    ASSERT_TRUE(make_value_list(nil, nil, nil)->is_list());
 
     // length
-    assert_equal(make_value_pair(1, nil)->length(), 1);
-    assert_equal(make_value_pair(nil, 2)->length(), 2);
-    assert_equal(make_value_pair(nil, nil)->length(), 1);
-    assert_equal(make_value_pair(1, 2)->length(), 2);
-    assert_equal(make_value_pair(1, make_value_pair(2, nil))->length(), 2);
-    assert_equal(make_value_pair(1, make_value_pair(2, 3))->length(), 3);
-    assert_equal(make_value_list(1)->length(), 1);
-    assert_equal(make_value_list(1, 2)->length(), 2);
-    assert_equal(make_value_list(1, 2, 3)->length(), 3);
-    assert_equal(make_value_list(1, 2, make_value_pair(3, 4))->length(), 3);
-    assert_equal(make_value_list(make_value_pair(1, 2), make_value_pair(3, 4))->length(), 2);
-    assert_equal(make_value_list(1, 2, nil)->length(), 3);
-    assert_equal(make_value_list(1, nil, nil)->length(), 3);
-    assert_equal(make_value_list(nil, nil, nil)->length(), 3);
+    ASSERT_EQUAL(make_value_pair(1, nil)->length(), 1);
+    ASSERT_EQUAL(make_value_pair(nil, 2)->length(), 2);
+    ASSERT_EQUAL(make_value_pair(nil, nil)->length(), 1);
+    ASSERT_EQUAL(make_value_pair(1, 2)->length(), 2);
+    ASSERT_EQUAL(make_value_pair(1, make_value_pair(2, nil))->length(), 2);
+    ASSERT_EQUAL(make_value_pair(1, make_value_pair(2, 3))->length(), 3);
+    ASSERT_EQUAL(make_value_list(1)->length(), 1);
+    ASSERT_EQUAL(make_value_list(1, 2)->length(), 2);
+    ASSERT_EQUAL(make_value_list(1, 2, 3)->length(), 3);
+    ASSERT_EQUAL(make_value_list(1, 2, make_value_pair(3, 4))->length(), 3);
+    ASSERT_EQUAL(make_value_list(make_value_pair(1, 2), make_value_pair(3, 4))->length(), 2);
+    ASSERT_EQUAL(make_value_list(1, 2, nil)->length(), 3);
+    ASSERT_EQUAL(make_value_list(1, nil, nil)->length(), 3);
+    ASSERT_EQUAL(make_value_list(nil, nil, nil)->length(), 3);
 
     // iterator
-    assert_iterator(*make_value_pair(1, nil), "1");
-    assert_iterator(*make_value_pair(nil, 2), "(), 2");
-    assert_iterator(*make_value_pair(nil, nil), "()");
-    assert_iterator(*make_value_pair(1, 2), "1, 2");
-    assert_iterator(*make_value_pair(1, make_value_pair(2, nil)), "1, 2");
-    assert_iterator(*make_value_pair(1, make_value_pair(2, 3)), "1, 2, 3");
-    assert_iterator(*make_value_list(1), "1");
-    assert_iterator(*make_value_list(1, 2), "1, 2");
-    assert_iterator(*make_value_list(1, 2, 3), "1, 2, 3");
-    assert_iterator(*make_value_list(1, 2, make_value_pair(3, 4)), "1, 2, (3 . 4)");
-    assert_iterator(*make_value_list(make_value_pair(1, 2), make_value_pair(3, 4)), "(1 . 2), (3 . 4)");
-    assert_iterator(*make_value_list(1, 2, nil), "1, 2, ()");
-    assert_iterator(*make_value_list(1, nil, nil), "1, (), ()");
-    assert_iterator(*make_value_list(nil, nil, nil), "(), (), ()");
+    ASSERT_ITERATOR(*make_value_pair(1, nil), "1");
+    ASSERT_ITERATOR(*make_value_pair(nil, 2), "(), 2");
+    ASSERT_ITERATOR(*make_value_pair(nil, nil), "()");
+    ASSERT_ITERATOR(*make_value_pair(1, 2), "1, 2");
+    ASSERT_ITERATOR(*make_value_pair(1, make_value_pair(2, nil)), "1, 2");
+    ASSERT_ITERATOR(*make_value_pair(1, make_value_pair(2, 3)), "1, 2, 3");
+    ASSERT_ITERATOR(*make_value_pair(1, "2"), "1, 2");
+    ASSERT_ITERATOR(*make_value_pair(1, "2"s), "1, \"2\"");
+    ASSERT_ITERATOR(*make_value_list(1), "1");
+    ASSERT_ITERATOR(*make_value_list(1, 2), "1, 2");
+    ASSERT_ITERATOR(*make_value_list(1, 2, 3), "1, 2, 3");
+    ASSERT_ITERATOR(*make_value_list(1, 2, make_value_pair(3, 4)), "1, 2, (3 . 4)");
+    ASSERT_ITERATOR(*make_value_list(make_value_pair(1, 2), make_value_pair(3, 4)), "(1 . 2), (3 . 4)");
+    ASSERT_ITERATOR(*make_value_list(1, 2, nil), "1, 2, ()");
+    ASSERT_ITERATOR(*make_value_list(1, nil, nil), "1, (), ()");
+    ASSERT_ITERATOR(*make_value_list(nil, nil, nil), "(), (), ()");
+    ASSERT_ITERATOR(*make_value_list(1, "2", "3"s, make_value_pair(nil, false)), "1, 2, \"3\", (() . false)");
 
     // iterator mutation
     value_pair val = *make_value_list(1, 2, 3, 4, 5);
-    assert_iterator(val, "1, 2, 3, 4, 5");
+    ASSERT_ITERATOR(val, "1, 2, 3, 4, 5");
     for (auto& item : val) {
         auto number = reinterpret_cast<value_number*>(item.get());
         item = make_value(number->number() * number->number());
     }
-    assert_iterator(val, "1, 4, 9, 16, 25");
+    ASSERT_ITERATOR(val, "1, 4, 9, 16, 25");
 }
 
-void prev() {
-    auto num = make_value(1e+20);
-    auto sym = make_value("abc");
-    auto str = make_value("xyz"s);
-    auto bool_ = make_value(true);
-    auto pair = make_value_pair(num, sym);
-    auto empty = make_value_list(nil);
-    auto list1 = make_value_list(1, 2, 3);
-    auto list2 = make_value_list(1e+20, "abc", "xyz"s, false, make_value_list(num, sym, 0, 1, 2, 3), 4);
-    auto list3 = make_value_list(num, sym, str, bool_, "abc", "abc", "def", "def", "xyz"s, "zyx"s, "zyx"s);
-    auto error = make_error("[%g]", 3.14);
-    auto info = make_info("[%g]", 3.14);
-    auto list4 = make_value_list(sym, str, error, info, nil);
-    auto nested = make_value_pair(1, make_value_pair("abc", make_value_pair(3, "xxx")));
-    auto nested2 = make_value_list(1, 2, make_value_pair(3, 4));
+void test_equal() {
+    // number
+    std::shared_ptr<value> num1, num2, num3;
+    ASSERT_TO_STR(*(num1 = make_value(3.14)), "3.14");
+    ASSERT_TO_STR(*(num2 = make_value(3.14)), "3.14");
+    ASSERT_TO_STR(*(num3 = make_value(6.28)), "6.28");
 
-    std::shared_ptr<value_pair> external = nullptr;
+    ASSERT_TRUE(*num1 == *num1);
+    ASSERT_TRUE(*num1 == *num2);
+    ASSERT_FALSE(*num1 == *num3);
+    ASSERT_TRUE(*num2 == *num1);
+    ASSERT_TRUE(*num2 == *num2);
+    ASSERT_FALSE(*num2 == *num3);
+    ASSERT_FALSE(*num3 == *num1);
+    ASSERT_FALSE(*num3 == *num2);
+    ASSERT_TRUE(*num3 == *num3);
 
-    {
-        auto x = make_value(true);
-        auto y = make_value(false);
-        auto z = make_value(3.14);
+    ASSERT_FALSE(num1 == num2);
+    ASSERT_FALSE(num2 == num3);
+    ASSERT_FALSE(num1 == num3);
 
-        external = make_value_pair(x, y);
-    }
+    // symbol
+    std::shared_ptr<value> sym1, sym2, sym3;
+    ASSERT_TO_STR(*(sym1 = make_value("abc")), "abc");
+    ASSERT_TO_STR(*(sym2 = make_value("abc")), "abc");
+    ASSERT_TO_STR(*(sym3 = make_value("ab")), "ab");
 
-    std::cout << nil << " " << *nil << std::endl;
-    std::cout << num << " " << *num << std::endl;
-    std::cout << sym << " " << *sym << std::endl;
-    std::cout << str << " " << *str << std::endl;
-    std::cout << bool_ << " " << *bool_ << std::endl;
-    std::cout << pair << " " << *pair << std::endl;
-    std::cout << empty << " " << *empty << std::endl;
-    std::cout << list1 << " " << *list1 << std::endl;
-    std::cout << list2 << " " << *list2 << std::endl;
-    std::cout << list3 << " " << *list3 << std::endl;
-    std::cout << external << " " << *external << std::endl;
-    std::cout << error << " " << *error << std::endl;
-    std::cout << info << " " << *info << std::endl;
-    std::cout << list4 << " " << *list4 << std::endl;
-    std::cout << nested << " " << *nested << std::endl;
-    std::cout << nested2 << " " << *nested2 << std::endl;
-    std::cout << std::endl;
+    ASSERT_TRUE(*sym1 == *sym1);
+    ASSERT_TRUE(*sym1 == *sym2);
+    ASSERT_FALSE(*sym1 == *sym3);
+    ASSERT_TRUE(*sym2 == *sym1);
+    ASSERT_TRUE(*sym2 == *sym2);
+    ASSERT_FALSE(*sym2 == *sym3);
+    ASSERT_FALSE(*sym3 == *sym1);
+    ASSERT_FALSE(*sym3 == *sym2);
+    ASSERT_TRUE(*sym3 == *sym3);
 
-    std::cout << *pair << " is " << (pair->is_list() ? "" : "not ") << "a list" << std::endl;
-    std::cout << *external << " is " << (external->is_list() ? "" : "not ") << "a list" << std::endl;
-    std::cout << *list1 << " is " << (list1->is_list() ? "" : "not ") << "a list" << std::endl;
-    std::cout << *list3 << " is " << (list2->is_list() ? "" : "not ") << "a list" << std::endl;
-    std::cout << *list2 << " is " << (list3->is_list() ? "" : "not ") << "a list" << std::endl;
-    std::cout << *list4 << " is " << (list4->is_list() ? "" : "not ") << "a list" << std::endl;
-    std::cout << *nested << " is " << (nested->is_list() ? "" : "not ") << "a list" << std::endl;
-    std::cout << *nested2 << " is " << (nested2->is_list() ? "" : "not ") << "a list" << std::endl;
-    std::cout << std::endl;
+    ASSERT_TRUE(sym1 == sym2);  // singleton
+    ASSERT_FALSE(sym2 == sym3);
+    ASSERT_FALSE(sym1 == sym3);
 
-    std::cout << "len[ " << *pair << " ] = " << pair->length() << std::endl;
-    std::cout << "len[ " << *external << " ] = " << external->length() << std::endl;
-    std::cout << "len[ " << *list1 << " ] = " << list1->length() << std::endl;
-    std::cout << "len[ " << *list2 << " ] = " << list2->length() << std::endl;
-    std::cout << "len[ " << *list3 << " ] = " << list3->length() << std::endl;
-    std::cout << "len[ " << *list4 << " ] = " << list4->length() << std::endl;
-    std::cout << "len[ " << *nested << " ] = " << nested->length() << std::endl;
-    std::cout << "len[ " << *nested2 << " ] = " << nested2->length() << std::endl;
-    std::cout << std::endl;
+    // string
+    std::shared_ptr<value> str1, str2, str3;
+    ASSERT_TO_STR(*(str1 = make_value("abc"s)), "\"abc\"");
+    ASSERT_TO_STR(*(str2 = make_value("abc"s)), "\"abc\"");
+    ASSERT_TO_STR(*(str3 = make_value("ab"s)), "\"ab\"");
 
-    std::cout << "list2" << std::endl;
-    for (const auto& v : *list2) {
-        std::cout << v << " -> " << *v << std::endl;
-    }
-    std::cout << std::endl;
+    ASSERT_TRUE(*str1 == *str1);
+    ASSERT_TRUE(*str1 == *str2);
+    ASSERT_FALSE(*str1 == *str3);
+    ASSERT_TRUE(*str2 == *str1);
+    ASSERT_TRUE(*str2 == *str2);
+    ASSERT_FALSE(*str2 == *str3);
+    ASSERT_FALSE(*str3 == *str1);
+    ASSERT_FALSE(*str3 == *str2);
+    ASSERT_TRUE(*str3 == *str3);
 
-    for (auto& v : *list2) {
-        v = make_value("xxx");
-    }
+    ASSERT_FALSE(str1 == str2);
+    ASSERT_FALSE(str2 == str3);
+    ASSERT_FALSE(str1 == str3);
 
-    std::cout << "list2 (after mutation)" << std::endl;
-    for (const auto& v : *list2) {
-        std::cout << v << " -> " << *v << std::endl;
-    }
-    std::cout << std::endl;
+    // bool
+    std::shared_ptr<value> bool1, bool2, bool3;
+    ASSERT_TO_STR(*(bool1 = make_value(true)), "true");
+    ASSERT_TO_STR(*(bool2 = make_value(true)), "true");
+    ASSERT_TO_STR(*(bool3 = make_value(false)), "false");
 
-    std::cout << "nested" << std::endl;
-    for (const auto& v : *nested) {
-        std::cout << v << " -> " << *v << std::endl;
-    }
-    std::cout << std::endl;
+    ASSERT_TRUE(*bool1 == *bool1);
+    ASSERT_TRUE(*bool1 == *bool2);
+    ASSERT_FALSE(*bool1 == *bool3);
+    ASSERT_TRUE(*bool2 == *bool1);
+    ASSERT_TRUE(*bool2 == *bool2);
+    ASSERT_FALSE(*bool2 == *bool3);
+    ASSERT_FALSE(*bool3 == *bool1);
+    ASSERT_FALSE(*bool3 == *bool2);
+    ASSERT_TRUE(*bool3 == *bool3);
 
-    std::cout << "nested2" << std::endl;
-    for (const auto& v : *nested2) {
-        std::cout << v << " -> " << *v << std::endl;
-    }
-    std::cout << std::endl;
+    ASSERT_TRUE(bool1 == bool2);  // singleton
+    ASSERT_FALSE(bool2 == bool3);
+    ASSERT_FALSE(bool1 == bool3);
 
-    auto num1 = make_value(3.14);
-    auto num2 = make_value(3.14);
-    auto num3 = make_value(6.28);
-    std::cout << *num1 << " == " << *num1 << " --> " << (*num1 == *num1) << std::endl;
-    std::cout << *num1 << " == " << *num2 << " --> " << (*num1 == *num2) << std::endl;
-    std::cout << *num2 << " == " << *num1 << " --> " << (*num2 == *num1) << std::endl;
-    std::cout << *num2 << " == " << *num2 << " --> " << (*num2 == *num2) << std::endl;
-    std::cout << *num1 << " == " << *num3 << " --> " << (*num1 == *num3) << std::endl;
-    std::cout << *num2 << " == " << *num3 << " --> " << (*num2 == *num3) << std::endl;
-    std::cout << *num3 << " == " << *num3 << " --> " << (*num3 == *num3) << std::endl;
-    std::cout << std::endl;
+    ASSERT_TRUE(bool1 == true_);   // predefined
+    ASSERT_TRUE(bool2 == true_);   // predefined
+    ASSERT_TRUE(bool3 == false_);  // predefined
 
-    auto sym1 = make_value("abc");
-    auto sym2 = make_value("abc");
-    auto sym3 = make_value("xyz");
-    std::cout << *sym1 << " == " << *sym1 << " --> " << (*sym1 == *sym1) << std::endl;
-    std::cout << *sym1 << " == " << *sym2 << " --> " << (*sym1 == *sym2) << std::endl;
-    std::cout << *sym2 << " == " << *sym1 << " --> " << (*sym2 == *sym1) << std::endl;
-    std::cout << *sym2 << " == " << *sym2 << " --> " << (*sym2 == *sym2) << std::endl;
-    std::cout << *sym1 << " == " << *sym3 << " --> " << (*sym1 == *sym3) << std::endl;
-    std::cout << *sym2 << " == " << *sym3 << " --> " << (*sym2 == *sym3) << std::endl;
-    std::cout << *sym3 << " == " << *sym3 << " --> " << (*sym3 == *sym3) << std::endl;
-    std::cout << std::endl;
+    // nil
+    std::shared_ptr<value> nil1, nil2, nil3;
+    ASSERT_TO_STR(*(nil1 = make_nil()), "()");
+    ASSERT_TO_STR(*(nil2 = make_nil()), "()");
+    ASSERT_TO_STR(*(nil3 = nil), "()");
 
-    auto str1 = make_value("abc"s);
-    auto str2 = make_value("abc"s);
-    auto str3 = make_value("xyz"s);
-    std::cout << *str1 << " == " << *str1 << " --> " << (*str1 == *str1) << std::endl;
-    std::cout << *str1 << " == " << *str2 << " --> " << (*str1 == *str2) << std::endl;
-    std::cout << *str2 << " == " << *str1 << " --> " << (*str2 == *str1) << std::endl;
-    std::cout << *str2 << " == " << *str2 << " --> " << (*str2 == *str2) << std::endl;
-    std::cout << *str1 << " == " << *str3 << " --> " << (*str1 == *str3) << std::endl;
-    std::cout << *str2 << " == " << *str3 << " --> " << (*str2 == *str3) << std::endl;
-    std::cout << *str3 << " == " << *str3 << " --> " << (*str3 == *str3) << std::endl;
-    std::cout << std::endl;
+    ASSERT_TRUE(*nil1 == *nil1);
+    ASSERT_TRUE(*nil1 == *nil2);
+    ASSERT_TRUE(*nil1 == *nil3);
+    ASSERT_TRUE(*nil2 == *nil1);
+    ASSERT_TRUE(*nil2 == *nil2);
+    ASSERT_TRUE(*nil2 == *nil3);
+    ASSERT_TRUE(*nil3 == *nil1);
+    ASSERT_TRUE(*nil3 == *nil2);
+    ASSERT_TRUE(*nil3 == *nil3);
 
-    auto lst1 = make_value_list(1, 2, 3);
-    auto lst2 = make_value_list(1, 2, 3);
-    auto lst3 = make_value_list(1, 2, make_value_pair(3, 4));
-    std::cout << *lst1 << " == " << *lst1 << " --> " << (*lst1 == *lst1) << std::endl;
-    std::cout << *lst1 << " == " << *lst2 << " --> " << (*lst1 == *lst2) << std::endl;
-    std::cout << *lst2 << " == " << *lst1 << " --> " << (*lst2 == *lst1) << std::endl;
-    std::cout << *lst2 << " == " << *lst2 << " --> " << (*lst2 == *lst2) << std::endl;
-    std::cout << *lst1 << " == " << *lst3 << " --> " << (*lst1 == *lst3) << std::endl;
-    std::cout << *lst2 << " == " << *lst3 << " --> " << (*lst2 == *lst3) << std::endl;
-    std::cout << *lst3 << " == " << *lst3 << " --> " << (*lst3 == *lst3) << std::endl;
-    std::cout << std::endl;
+    ASSERT_TRUE(nil1 == nil2);
+    ASSERT_TRUE(nil2 == nil3);
 
-    auto pr1 = make_value_pair("abc"s, 1);
-    auto pr2 = make_value_pair("abc"s, 1);
-    auto pr3 = make_value_pair("abc"s, 2);
-    std::cout << *pr1 << " == " << *pr1 << " --> " << (*pr1 == *pr1) << std::endl;
-    std::cout << *pr1 << " == " << *pr2 << " --> " << (*pr1 == *pr2) << std::endl;
-    std::cout << *pr2 << " == " << *pr1 << " --> " << (*pr2 == *pr1) << std::endl;
-    std::cout << *pr2 << " == " << *pr2 << " --> " << (*pr2 == *pr2) << std::endl;
-    std::cout << *pr1 << " == " << *pr3 << " --> " << (*pr1 == *pr3) << std::endl;
-    std::cout << *pr2 << " == " << *pr3 << " --> " << (*pr2 == *pr3) << std::endl;
-    std::cout << *pr3 << " == " << *pr3 << " --> " << (*pr3 == *pr3) << std::endl;
-    std::cout << std::endl;
+    ASSERT_TRUE(nil1 == nil);  // predefined
+    ASSERT_TRUE(nil2 == nil);  // predefined
+    ASSERT_TRUE(nil3 == nil);  // predefined
+
+    // pair
+    std::shared_ptr<value> pair1, pair2, pair3;
+    ASSERT_TO_STR(*(pair1 = make_value_pair(3.14, "abc")), "(3.14 . abc)");
+    ASSERT_TO_STR(*(pair2 = make_value_pair(3.14, "abc")), "(3.14 . abc)");
+    ASSERT_TO_STR(*(pair3 = make_value_pair(3.14, "abc"s)), "(3.14 . \"abc\")");
+
+    ASSERT_TRUE(*pair1 == *pair1);
+    ASSERT_TRUE(*pair1 == *pair2);
+    ASSERT_FALSE(*pair1 == *pair3);
+    ASSERT_TRUE(*pair2 == *pair1);
+    ASSERT_TRUE(*pair2 == *pair2);
+    ASSERT_FALSE(*pair2 == *pair3);
+    ASSERT_FALSE(*pair3 == *pair1);
+    ASSERT_FALSE(*pair3 == *pair2);
+    ASSERT_TRUE(*pair3 == *pair3);
+
+    ASSERT_FALSE(pair1 == pair2);
+    ASSERT_FALSE(pair2 == pair3);
+    ASSERT_FALSE(pair1 == pair3);
+
+    // list
+    std::shared_ptr<value> list1, list2, list3;
+    ASSERT_TO_STR(*(list1 = make_value_list(1, "2", make_value_pair("3"s, 4))), "(1 2 (\"3\" . 4))");
+    ASSERT_TO_STR(*(list2 = make_value_list(1, "2", make_value_pair("3"s, 4))), "(1 2 (\"3\" . 4))");
+    ASSERT_TO_STR(*(list3 = make_value_list(1, "2", "3"s, 4)), "(1 2 \"3\" 4)");
+
+    ASSERT_TRUE(*list1 == *list1);
+    ASSERT_TRUE(*list1 == *list2);
+    ASSERT_FALSE(*list1 == *list3);
+    ASSERT_TRUE(*list2 == *list1);
+    ASSERT_TRUE(*list2 == *list2);
+    ASSERT_FALSE(*list2 == *list3);
+    ASSERT_FALSE(*list3 == *list1);
+    ASSERT_FALSE(*list3 == *list2);
+    ASSERT_TRUE(*list3 == *list3);
+
+    ASSERT_FALSE(list1 == list2);
+    ASSERT_FALSE(list2 == list3);
+    ASSERT_FALSE(list1 == list3);
 }
 
 int main() {
-    run_test_function(test_to_str);
-    run_test_function(test_pair);
+    RUN_TEST_FUNCTION(test_value);
+    RUN_TEST_FUNCTION(test_to_str);
+    RUN_TEST_FUNCTION(test_pair);
+    RUN_TEST_FUNCTION(test_equal);
 
     std::cout << "all tests have been passed!" << std::endl;
 

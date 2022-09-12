@@ -1,7 +1,9 @@
 #ifndef VALUE_HPP_
 #define VALUE_HPP_
 
+#include <cassert>
 #include <cstdarg>
+#include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <memory>
@@ -24,23 +26,23 @@ enum class value_t {
 
 class value {
    public:
-    value() {}           // default constructor
     virtual ~value() {}  // virtual destructor
 
-    virtual std::ostream& write(std::ostream& os) const {
-        // the default
-        return (os << "value");
-    };
+    // write the value to a stream (pure virtual)
+    virtual std::ostream& write(std::ostream& os) const = 0;
 
+    // equals to another value?
     virtual bool equals(const value& other) const {
         return this == &other;
     }
 
+    // get the value's type
     value_t type() const {
         return _type;
     }
 
    protected:
+    // for efficient type checking
     value_t _type{value_t::undefined};
 };
 
@@ -53,7 +55,14 @@ class value_number : public value {
     // getter only
     double number() const { return _number; }
 
-    std::ostream& write(std::ostream& os) const override;
+    std::ostream& write(std::ostream& os) const override {
+        auto old_precision = std::cout.precision();  // default precision
+
+        // write with a 12-digit precision, then restore the default
+        return (os << std::setprecision(12)
+                   << _number
+                   << std::setprecision(old_precision));
+    }
 
     bool equals(const value& other) const override {
         if (other.type() == value_t::number) {
@@ -285,17 +294,29 @@ class value_pair : public value {
         return value_iterator(nullptr);
     }
 
-    // getters and setters
+    // getters
     const std::shared_ptr<value>& car() const { return _car; }
-    void car(std::shared_ptr<value> car) { _car = car; }
     const std::shared_ptr<value>& cdr() const { return _cdr; }
+
+    // pair getters
+    const std::shared_ptr<value_pair> pcar() const {
+        assert(_car->type() == value_t::pair);
+        return std::reinterpret_pointer_cast<value_pair>(_car);
+    }
+    const std::shared_ptr<value_pair> pcdr() const {
+        assert(_cdr->type() == value_t::pair);
+        return std::reinterpret_pointer_cast<value_pair>(_cdr);
+    }
+
+    // setters
+    void car(std::shared_ptr<value> car) { _car = car; }
     void cdr(std::shared_ptr<value> cdr) { _cdr = cdr; }
 
     std::ostream& write(std::ostream& os) const override;
     bool equals(const value& other) const override;
 
-    bool is_list();
-    size_t length();
+    bool is_list() const;
+    size_t length() const;
 
    private:
     std::shared_ptr<value> _car;
@@ -313,9 +334,25 @@ inline std::shared_ptr<value_number> make_value(T number) {
     return std::make_shared<value_number>(number);
 }
 
+template <typename T,
+          typename std::enable_if<
+              std::is_arithmetic<T>::value,
+              bool>::type = true>  // poor man's concept
+inline std::shared_ptr<value_number> make_number(T number) {
+    return make_value(number);
+}
+
 inline const std::shared_ptr<value_symbol>& make_value(const char* symbol) {
     // from the singleton table
     return value_symbol::get(symbol);
+}
+
+inline const std::shared_ptr<value_symbol>& make_symbol(const char* symbol) {
+    return make_value(symbol);
+}
+
+inline const std::shared_ptr<value_symbol>& make_symbol(const std::string& symbol) {
+    return make_value(symbol.c_str());
 }
 
 inline std::shared_ptr<value_string> make_value(const std::string& string) {
@@ -323,9 +360,21 @@ inline std::shared_ptr<value_string> make_value(const std::string& string) {
     return std::make_shared<value_string>(string);
 }
 
+inline std::shared_ptr<value_string> make_string(const char* string) {
+    return make_value(std::string(string));
+}
+
+inline std::shared_ptr<value_string> make_string(const std::string& string) {
+    return make_value(string);
+}
+
 inline const std::shared_ptr<value_bool>& make_value(bool truth) {
     // from the singletons
     return (truth ? true_ : false_);
+}
+
+inline const std::shared_ptr<value_bool>& make_bool(bool truth) {
+    return make_value(truth);
 }
 
 inline const std::shared_ptr<value_nil>& make_nil() {
@@ -367,7 +416,7 @@ inline std::shared_ptr<value_pair> make_value_list(Head&& first, Tail&&... rest)
 inline std::shared_ptr<value_error> make_error(const char* format, ...) {
     va_list args;
     va_start(args, format);
-    std::shared_ptr<value_error> result = std::make_shared<value_error>(format, args);
+    auto result = std::make_shared<value_error>(format, args);
     va_end(args);
 
     return result;
@@ -376,7 +425,7 @@ inline std::shared_ptr<value_error> make_error(const char* format, ...) {
 inline std::shared_ptr<value_info> make_info(const char* format, ...) {
     va_list args;
     va_start(args, format);
-    std::shared_ptr<value_info> result = std::make_shared<value_info>(format, args);
+    auto result = std::make_shared<value_info>(format, args);
     va_end(args);
 
     return result;
