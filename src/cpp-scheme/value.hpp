@@ -100,7 +100,7 @@ class value_string : public value {
     value_string() : _string("") {
         _type = value_t::string;
     }
-    value_string(std::string string) : _string(string) {
+    value_string(const std::string& string) : _string(string) {
         _type = value_t::string;
     }
 
@@ -251,11 +251,11 @@ class value_pair : public value {
             return tmp;
         }
 
-        friend bool operator==(const value_iterator& a, const value_iterator b) {
+        friend bool operator==(const value_iterator& a, const value_iterator& b) {
             return a._ptr == b._ptr && a._at_cdr == b._at_cdr;
         };
 
-        friend bool operator!=(const value_iterator& a, const value_iterator b) {
+        friend bool operator!=(const value_iterator& a, const value_iterator& b) {
             return a._ptr != b._ptr || a._at_cdr != b._at_cdr;
         };
 
@@ -270,7 +270,10 @@ class value_pair : public value {
     };
 
     // car and cdr shared ptrs are passed by copying
-    value_pair(std::shared_ptr<value> car, std::shared_ptr<value> cdr) : _car(car), _cdr(cdr) {
+    value_pair(
+        const std::shared_ptr<value>& car,
+        const std::shared_ptr<value>& cdr)
+        : _car(car), _cdr(cdr) {
         _type = value_t::pair;
     }
 
@@ -284,9 +287,9 @@ class value_pair : public value {
 
     // getters and setters
     const std::shared_ptr<value>& car() const { return _car; }
-    void car(std::shared_ptr<value>& car) { _car = car; }
+    void car(std::shared_ptr<value> car) { _car = car; }
     const std::shared_ptr<value>& cdr() const { return _cdr; }
-    void cdr(std::shared_ptr<value>& cdr) { _cdr = cdr; }
+    void cdr(std::shared_ptr<value> cdr) { _cdr = cdr; }
 
     std::ostream& write(std::ostream& os) const override;
     bool equals(const value& other) const override;
@@ -310,12 +313,12 @@ inline std::shared_ptr<value_number> make_value(T number) {
     return std::make_shared<value_number>(number);
 }
 
-inline const std::shared_ptr<value_symbol> make_value(const char* symbol) {
+inline const std::shared_ptr<value_symbol>& make_value(const char* symbol) {
     // from the singleton table
     return value_symbol::get(symbol);
 }
 
-inline std::shared_ptr<value_string> make_value(const std::string string) {
+inline std::shared_ptr<value_string> make_value(const std::string& string) {
     // from the string
     return std::make_shared<value_string>(string);
 }
@@ -343,19 +346,21 @@ inline std::shared_ptr<value>& make_value(std::shared_ptr<value>&& val) {
 template <typename T1, typename T2>
 inline std::shared_ptr<value_pair> make_value_pair(T1&& car, T2&& cdr) {
     // from two separate universal references: car and cdr
-    return std::make_shared<value_pair>(make_value(car), make_value(cdr));
+    return std::make_shared<value_pair>(
+        make_value(std::forward<T1>(car)),
+        make_value(std::forward<T2>(cdr)));
 }
 
-template <typename T, typename... Tail>
-inline std::shared_ptr<value_pair> make_value_list(T head, Tail... tail) {
-    if constexpr (sizeof...(tail) > 0) {
+template <typename Head, typename... Tail>
+inline std::shared_ptr<value_pair> make_value_list(Head&& first, Tail&&... rest) {
+    if constexpr (sizeof...(rest) > 0) {
         return make_value_pair(
-            make_value(head),           // the head
-            make_value_list(tail...));  // the rest
+            make_value(std::forward<Head>(first)),          // the head
+            make_value_list(std::forward<Tail>(rest)...));  // the rest
     } else {
         return make_value_pair(
-            make_value(head),  // the tail
-            nil);              // terminating nil
+            make_value(std::forward<Head>(first)),  // the tail
+            nil);                                   // terminating nil
     }
 }
 
