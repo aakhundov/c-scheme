@@ -374,9 +374,13 @@ inline bool operator!=(const value& v1, const value& v2) {
 
 // exceptions
 
-class cycle_error : public exception_with_buffer {
+class cycle_error : public str_exception {
    public:
-    cycle_error(const value_pair* from);
+    cycle_error(const value_pair* from)
+        : str_exception(_make_message(from)) {}
+
+   private:
+    std::string _make_message(const value_pair* from);
 };
 
 #endif  // VALUE_HPP_

@@ -44,7 +44,7 @@ void report_test(std::string message) {
 #define ASSERT_EQUAL(expr, expected)                                          \
     {                                                                         \
         auto result = (expr);                                                 \
-        std::stringstream buffer;                                             \
+        std::ostringstream buffer;                                            \
         buffer << result;                                                     \
         std::string str_result = buffer.str();                                \
         report_test(BLUE("[") #expr BLUE("] == [") + str_result + BLUE("]")); \
@@ -56,7 +56,7 @@ void report_test(std::string message) {
 
 #define ASSERT_TO_STR(expr, expected)                                          \
     {                                                                          \
-        std::stringstream buffer;                                              \
+        std::ostringstream buffer;                                             \
         buffer << (expr);                                                      \
         std::string str_result = buffer.str();                                 \
         report_test(BLUE("[") #expr BLUE("] --> [") + str_result + BLUE("]")); \
@@ -71,7 +71,7 @@ void report_test(std::string message) {
         value_pair pair = (expr);                                             \
         std::string str_items;                                                \
         for (auto& item : pair) {                                             \
-            std::stringstream buffer;                                         \
+            std::ostringstream buffer;                                        \
             buffer << *item;                                                  \
             str_items += (buffer.str() + ", ");                               \
         }                                                                     \

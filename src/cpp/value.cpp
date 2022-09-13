@@ -295,8 +295,9 @@ std::shared_ptr<value_info> make_info(const char* format, ...) {
 
 // exceptions
 
-cycle_error::cycle_error(const value_pair* from) : exception_with_buffer() {
-    std::stringstream s;
+std::string cycle_error::_make_message(const value_pair* from) {
+    std::ostringstream s;
     s << "cycle from " << *from << " (" << from << ")";
-    write_to_buffer(s.str().c_str());
+
+    return s.str();
 }
