@@ -1,7 +1,5 @@
 #include "value.hpp"
 
-#include <cstdarg>
-#include <cstdio>
 #include <exception>
 #include <iomanip>
 #include <iostream>
@@ -61,16 +59,6 @@ bool value_string::equals(const value& other) const {
     } else {
         return false;
     }
-}
-
-// value_format
-
-value_format::value_format(const char* format, va_list args) : value_string() {
-    static char buffer[65536];
-    vsnprintf(buffer, sizeof(buffer), format, args);
-    _string = buffer;
-
-    _type = value_t::format;
 }
 
 // value_error
@@ -267,26 +255,6 @@ void value_pair::_throw_on_cycle_from(const std::shared_ptr<value>& other) {
             }
         }
     }
-}
-
-// factory functions
-
-std::shared_ptr<value_error> make_error(const char* format, ...) {
-    va_list args;
-    va_start(args, format);
-    std::shared_ptr<value_error> result = std::make_shared<value_error>(format, args);
-    va_end(args);
-
-    return result;
-}
-
-std::shared_ptr<value_info> make_info(const char* format, ...) {
-    va_list args;
-    va_start(args, format);
-    std::shared_ptr<value_info> result = std::make_shared<value_info>(format, args);
-    va_end(args);
-
-    return result;
 }
 
 // helper functions

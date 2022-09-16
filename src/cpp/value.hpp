@@ -2,6 +2,7 @@
 #define VALUE_HPP_
 
 #include <cassert>
+#include <cstdio>
 #include <iostream>
 #include <iterator>
 #include <memory>
@@ -111,12 +112,26 @@ class value_string : public value {
 class value_format : public value_string {
    public:
     // poor man's std::format
-    value_format(const char* format, va_list args);
+    template <typename... Args>
+    value_format(const char* format, Args&&... args) {
+        static char buffer[65536];
+
+        if constexpr (sizeof...(args) > 0) {
+            snprintf(buffer, sizeof(buffer), format, std::forward<Args>(args)...);
+        } else {
+            snprintf(buffer, sizeof(buffer), "%s", format);
+        }
+
+        _string = buffer;
+        _type = value_t::format;
+    }
 };
 
 class value_error : public value_format {
    public:
-    value_error(const char* format, va_list args) : value_format(format, args) {
+    template <typename... Args>
+    value_error(const char* format, Args&&... args)
+        : value_format(format, std::forward<Args>(args)...) {
         _type = value_t::error;
     }
 
@@ -125,7 +140,9 @@ class value_error : public value_format {
 
 class value_info : public value_format {
    public:
-    value_info(const char* format, va_list args) : value_format(format, args) {
+    template <typename... Args>
+    value_info(const char* format, Args&&... args)
+        : value_format(format, std::forward<Args>(args)...) {
         _type = value_t::info;
     }
 
@@ -356,8 +373,15 @@ std::shared_ptr<value_pair> make_value_list(Head&& first, Tail&&... rest) {
     }
 }
 
-std::shared_ptr<value_error> make_error(const char* format, ...);
-std::shared_ptr<value_info> make_info(const char* format, ...);
+template <typename... Args>
+inline std::shared_ptr<value_error> make_error(const char* format, Args... args) {
+    return std::make_shared<value_error>(format, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+inline std::shared_ptr<value_info> make_info(const char* format, Args... args) {
+    return std::make_shared<value_info>(format, std::forward<Args>(args)...);
+}
 
 // helper functions
 
