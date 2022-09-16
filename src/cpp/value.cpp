@@ -289,6 +289,47 @@ std::shared_ptr<value_info> make_info(const char* format, ...) {
     return result;
 }
 
+// helper functions
+
+std::ostream& operator<<(std::ostream& os, const value_t& t) {
+    switch (t) {
+        case value_t::undefined:
+            os << "undefined";
+            break;
+        case value_t::number:
+            os << "number";
+            break;
+        case value_t::symbol:
+            os << "symbol";
+            break;
+        case value_t::string:
+            os << "string";
+            break;
+        case value_t::format:
+            os << "format";
+            break;
+        case value_t::error:
+            os << "error";
+            break;
+        case value_t::info:
+            os << "info";
+            break;
+        case value_t::bool_:
+            os << "bool";
+            break;
+        case value_t::nil:
+            os << "nil";
+            break;
+        case value_t::pair:
+            os << "pair";
+            break;
+        default:
+            os << "unknown";
+    }
+
+    return os;
+}
+
 // exceptions
 
 std::string cycle_error::_make_message(const value_pair* from) {

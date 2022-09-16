@@ -90,9 +90,6 @@ class value_symbol : public value {
 
 class value_string : public value {
    public:
-    value_string() : _string("") {
-        _type = value_t::string;
-    }
     value_string(const std::string& string) : _string(string) {
         _type = value_t::string;
     }
@@ -104,6 +101,10 @@ class value_string : public value {
     bool equals(const value& other) const override;
 
    protected:
+    value_string() {
+        _type = value_t::string;
+    }
+
     std::string _string;
 };
 
@@ -371,6 +372,8 @@ inline bool operator==(const value& v1, const value& v2) {
 inline bool operator!=(const value& v1, const value& v2) {
     return (&v1 != &v2 && !v1.equals(v2));
 }
+
+std::ostream& operator<<(std::ostream& os, const value_t& t);
 
 // exceptions
 
