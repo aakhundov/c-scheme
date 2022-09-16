@@ -1,6 +1,8 @@
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 #include "constants.hpp"
 #include "value.hpp"
@@ -12,22 +14,22 @@ static size_t test_counter = 0;
 void report_test(std::string message) {
     std::cout << std::setfill('0') << std::setw(5)
               << BLUE(<< ++test_counter <<) << " "
-              << message << std::endl;
+              << message << '\n';
 }
 
-#define RUN_TEST_FUNCTION(fn)                                       \
-    {                                                               \
-        std::cout << "[" << #fn << "]" << std::endl;                \
-        std::cout << "==============================" << std::endl; \
-        fn();                                                       \
-        std::cout << std::endl;                                     \
+#define RUN_TEST_FUNCTION(fn)                            \
+    {                                                    \
+        std::cout << "[" << #fn << "]\n";                \
+        std::cout << "==============================\n"; \
+        fn();                                            \
+        std::cout << '\n';                               \
     }
 
 #define ASSERT_TRUE(expr)                                                    \
     {                                                                        \
         report_test(BLUE("[") #expr BLUE("] == [") GREEN("true") BLUE("]")); \
         if (!(expr)) {                                                       \
-            std::cerr << RED("expected true") << std::endl;                  \
+            std::cerr << RED("expected true") << '\n';                       \
             exit(1);                                                         \
         }                                                                    \
     }
@@ -36,7 +38,7 @@ void report_test(std::string message) {
     {                                                                       \
         report_test(BLUE("[") #expr BLUE("] == [") RED("false") BLUE("]")); \
         if ((expr)) {                                                       \
-            std::cerr << RED("expected false") << std::endl;                \
+            std::cerr << RED("expected false") << '\n';                     \
             exit(1);                                                        \
         }                                                                   \
     }
@@ -49,7 +51,7 @@ void report_test(std::string message) {
         std::string str_result = buffer.str();                                \
         report_test(BLUE("[") #expr BLUE("] == [") + str_result + BLUE("]")); \
         if (result != (expected)) {                                           \
-            std::cerr << RED("expected " #expected) << std::endl;             \
+            std::cerr << RED("expected " #expected) << '\n';                  \
             exit(1);                                                          \
         }                                                                     \
     }
@@ -61,7 +63,7 @@ void report_test(std::string message) {
         std::string str_result = buffer.str();                                 \
         report_test(BLUE("[") #expr BLUE("] --> [") + str_result + BLUE("]")); \
         if (str_result != (expected)) {                                        \
-            std::cerr << RED("expected " #expected) << std::endl;              \
+            std::cerr << RED("expected " #expected) << '\n';                   \
             exit(1);                                                           \
         }                                                                      \
     }
@@ -79,7 +81,7 @@ void report_test(std::string message) {
         str_items.pop_back();                                                 \
         report_test(BLUE("[") #expr BLUE("] --> [") + str_items + BLUE("]")); \
         if (str_items != (expected)) {                                        \
-            std::cerr << RED("expected " #expected) << std::endl;             \
+            std::cerr << RED("expected " #expected) << '\n';                  \
             exit(1);                                                          \
         }                                                                     \
     }
@@ -94,7 +96,7 @@ void report_test(std::string message) {
         }                                                                        \
         report_test(BLUE("[") #code BLUE("] --> [") BOLD(RED(#type)) BLUE("]")); \
         if (!raised) {                                                           \
-            std::cerr << RED("expected " #type " exception") << std::endl;       \
+            std::cerr << RED("expected " #type " exception") << '\n';            \
             exit(1);                                                             \
         }                                                                        \
     }
@@ -544,7 +546,7 @@ int main() {
     RUN_TEST_FUNCTION(test_pair);
     RUN_TEST_FUNCTION(test_equal);
 
-    std::cout << "all tests have been passed!" << std::endl;
+    std::cout << "all tests have been passed!\n";
 
     return 0;
 }

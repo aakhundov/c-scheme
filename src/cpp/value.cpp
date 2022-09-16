@@ -11,12 +11,8 @@
 // value_number
 
 std::ostream& value_number::write(std::ostream& os) const {
-    auto old_precision = std::cout.precision();  // default precision
-
     // write with a 12-digit precision, then restore the default
-    return (os << std::setprecision(12)
-               << _number
-               << std::setprecision(old_precision));
+    return (os << std::setprecision(12) << _number << std::defaultfloat);
 }
 
 bool value_number::equals(const value& other) const {
