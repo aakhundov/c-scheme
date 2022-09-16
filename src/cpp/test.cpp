@@ -626,6 +626,29 @@ void test_parse() {
     ASSERT_PARSE_TO_STR("1 2 '(3 4 '(5 6 7))", "(1 2 (quote (3 4 (quote (5 6 7)))))");
     ASSERT_PARSE_TO_STR("''(1 2 3)", "((quote (quote (1 2 3))))");
 
+    // dot
+    ASSERT_PARSE_TO_STR(".", "(.)");
+    ASSERT_PARSE_TO_STR(". . . . .", "(. . . . .)");
+    ASSERT_PARSE_TO_STR("1 . 2 . 3", "(1 . 2 . 3)");
+    ASSERT_PARSE_TO_STR("(1 2) . 3 . (4 5)", "((1 2) . 3 . (4 5))");
+    ASSERT_PARSE_TO_STR("(1 . 2)", "((1 . 2))");
+    ASSERT_PARSE_TO_STR("(1 2 . 3)", "((1 2 . 3))");
+    ASSERT_PARSE_TO_STR("(1 (2 . 3) . 4)", "((1 (2 . 3) . 4))");
+    ASSERT_PARSE_TO_STR("(1 (2 (3 . 4) . 5) . 6)", "((1 (2 (3 . 4) . 5) . 6))");
+    ASSERT_PARSE_TO_STR("(1 (2 . 3))", "((1 (2 . 3)))");
+    ASSERT_PARSE_TO_STR("((1 2) . 3)", "(((1 2) . 3))");
+    ASSERT_PARSE_TO_STR("((1 . 2) . 3)", "(((1 . 2) . 3))");
+    ASSERT_PARSE_TO_STR("(1 . (2 3))", "((1 2 3))");
+    ASSERT_PARSE_TO_STR("(1 2 3 . (4 5 6))", "((1 2 3 4 5 6))");
+    ASSERT_PARSE_TO_STR("(. 1)", "(1)");
+    ASSERT_PARSE_TO_STR("(. (1 2))", "((1 2))");
+    ASSERT_PARSE_TO_STR("(. (1 . 2))", "((1 . 2))");
+    ASSERT_PARSE_TO_STR("(.1 . 2.)", "((0.1 . 2))");
+    ASSERT_PARSE_TO_STR("(1.2 . 3.4)", "((1.2 . 3.4))");
+    ASSERT_PARSE_TO_STR("(1 2 3 . 4)", "((1 2 3 . 4))");
+    ASSERT_PARSE_TO_STR("'(1 . 2)", "((quote (1 . 2)))");
+    ASSERT_PARSE_TO_STR("'(. 2)", "((quote 2))");
+
     // comment
     ASSERT_PARSE_TO_STR("(1 2 3); comment", "((1 2 3))");
     ASSERT_PARSE_TO_STR("(1 2 3); (4 5 \" 6 7", "((1 2 3))");
@@ -659,6 +682,14 @@ void test_parse() {
     ASSERT_PARSE_ERROR("( 1 (2", "unterminated list");
     ASSERT_PARSE_ERROR("'", "unfollowed quote");
     ASSERT_PARSE_ERROR("'  a '  ", "unfollowed quote");
+    ASSERT_PARSE_ERROR("(1 .)", "unfollowed . in (1 .)");
+    ASSERT_PARSE_ERROR("(1 2 3 .)", "unfollowed . in (1 2 3 .)");
+    ASSERT_PARSE_ERROR("(1 . 2 3)", "2+ items after . in (1 . 2 3)");
+    ASSERT_PARSE_ERROR("(. 2 3)", "2+ items after . in (. 2 3)");
+    ASSERT_PARSE_ERROR("(1 . .)", ". followed by . in (1 . .)");
+    ASSERT_PARSE_ERROR("(. . 1)", "2+ items after . in (. . 1)");
+    ASSERT_PARSE_ERROR("(. .)", ". followed by . in (. .)");
+    ASSERT_PARSE_ERROR("(. . . .)", "2+ items after . in (. . . .)");
     ASSERT_PARSE_ERROR("\"", "unterminated string");
     ASSERT_PARSE_ERROR("\"xyz", "unterminated string");
     ASSERT_PARSE_ERROR(" \" xyz ", "unterminated string");

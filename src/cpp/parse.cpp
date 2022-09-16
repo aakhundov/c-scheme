@@ -20,6 +20,7 @@ const char quote_char{'\''};
 const char string_delim_char{'"'};
 
 const std::string quote_symbol{"quote"};
+const std::string dot_symbol{"."};
 
 const std::unordered_set<char> non_alnum_symbol_chars{
     '_', '!', '?', '.', '#', '+', '-', '*', '/',
@@ -129,6 +130,58 @@ void add_to_list(
     tail = pair;  // move the tail
 }
 
+std::shared_ptr<value> replace_dots_in_list(std::shared_ptr<value> v) {
+    std::shared_ptr<value> running = v;
+    std::shared_ptr<value_pair> previous = nullptr;
+
+    while (running != nil) {
+        // iterate over the items of the list v
+        auto pair = std::reinterpret_pointer_cast<value_pair>(running);
+        if (pair->car()->type() == value_t::symbol) {
+            // current item is a symbol
+            auto current_item = std::reinterpret_pointer_cast<value_symbol>(pair->car());
+            if (current_item->symbol() == dot_symbol) {
+                // current item is a dot
+                if (pair->cdr() == nil) {
+                    // no next item: (x .)
+                    throw parsing_error("unfollowed %s in %s", dot_symbol.c_str(), v->str().c_str());
+                }
+                auto cdr = std::reinterpret_pointer_cast<value_pair>(pair->cdr());
+                if (cdr->cdr() != nil) {
+                    // 2+ next items: (x . y z)
+                    throw parsing_error("2+ items after %s in %s", dot_symbol.c_str(), v->str().c_str());
+                }
+                if (cdr->car()->type() == value_t::symbol) {
+                    // next item is a symbol
+                    auto next_item = std::reinterpret_pointer_cast<value_symbol>(cdr->car());
+                    if (next_item->symbol() == dot_symbol) {
+                        // next item is a dot: (x . .)
+                        throw parsing_error(
+                            "%s followed by %s in %s",
+                            dot_symbol.c_str(), dot_symbol.c_str(), v->str().c_str());
+                    }
+                }
+
+                if (!previous) {
+                    // (. then x) -> x
+                    return cdr->car();
+                } else {
+                    // (x then . then y) -> (x . y)
+                    // (x then y then . then z) -> (x y . z)
+                    previous->cdr(cdr->car());
+                }
+
+                break;
+            }
+        }
+
+        previous = pair;        // remember the current pair
+        running = pair->cdr();  // move to the next pair
+    }
+
+    return v;
+}
+
 std::shared_ptr<value> parse_list(std::istream& is) {
     std::shared_ptr<value_pair> head = nullptr;
     std::shared_ptr<value_pair> tail = nullptr;
@@ -198,7 +251,13 @@ std::shared_ptr<value> parse_list(std::istream& is) {
         return nil;
     } else {
         // non-empty list
-        return head;
+        if (is) {
+            // buffer is not empty: inner list
+            return replace_dots_in_list(head);
+        } else {
+            // buffer is empty: outermost list
+            return head;
+        }
     }
 }
 
