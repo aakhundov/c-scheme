@@ -1,6 +1,7 @@
 #ifndef EXCEPTION_HPP_
 #define EXCEPTION_HPP_
 
+#include <cstdarg>
 #include <exception>
 #include <string>
 
@@ -12,8 +13,19 @@ class str_exception : public std::exception {
         return _message.c_str();
     }
 
-   private:
+   protected:
+    str_exception() {}
+
     std::string _message;
+};
+
+class format_exception : public str_exception {
+   public:
+    format_exception(const char* format, ...);
+    format_exception(const char* format, va_list args);
+
+   protected:
+    format_exception() {}
 };
 
 #endif  // EXCEPTION_HPP_
