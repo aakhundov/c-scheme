@@ -1,10 +1,12 @@
 #include <filesystem>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <vector>
 
 #include "constants.hpp"
+#include "parse.hpp"
 #include "value.hpp"
 
 using namespace std::literals;
@@ -99,6 +101,39 @@ void report_test(std::string message) {
             std::cerr << RED("expected " #type " exception") << '\n';            \
             exit(1);                                                             \
         }                                                                        \
+    }
+
+#define ASSERT_PARSE_TO_STR(text, expected)                                    \
+    {                                                                          \
+        std::istringstream is{text};                                           \
+        std::shared_ptr<value> v = parse_values(is);                           \
+        std::ostringstream os;                                                 \
+        os << *v;                                                              \
+        std::string str_result = os.str();                                     \
+        report_test(BLUE("[") #text BLUE("] --> [") + str_result + BLUE("]")); \
+        if (str_result != (expected)) {                                        \
+            std::cerr << RED("expected " #expected) << '\n';                   \
+            exit(1);                                                           \
+        }                                                                      \
+    }
+
+#define ASSERT_PARSE_ERROR(text, expected)                                              \
+    {                                                                                   \
+        std::istringstream is{text};                                                    \
+        std::shared_ptr<value> v = parse_values(is);                                    \
+        std::ostringstream os;                                                          \
+        os << *v;                                                                       \
+        std::string str_result = os.str();                                              \
+        report_test(BLUE("[") #text BLUE("] --> [") + str_result + BLUE("]"));          \
+        if (v->type() != value_t::error) {                                              \
+            std::cerr << RED("expected error") << '\n';                                 \
+            exit(1);                                                                    \
+        }                                                                               \
+        std::shared_ptr<value_error> e = std::reinterpret_pointer_cast<value_error>(v); \
+        if (e->string().find(expected) == std::string::npos) {                          \
+            std::cerr << RED("expected error with " #expected) << '\n';                 \
+            exit(1);                                                                    \
+        }                                                                               \
     }
 
 void test_value() {
@@ -540,11 +575,119 @@ void test_equal() {
     ASSERT_FALSE(list1 == list3);
 }
 
+void test_parse() {
+    // brackets
+    ASSERT_PARSE_TO_STR("", "()");
+    ASSERT_PARSE_TO_STR("()()", "(() ())");
+    ASSERT_PARSE_TO_STR("() ()", "(() ())");
+    ASSERT_PARSE_TO_STR(" ()  ()  ", "(() ())");
+    ASSERT_PARSE_TO_STR("(()())", "((() ()))");
+    ASSERT_PARSE_TO_STR("()", "(())");
+    ASSERT_PARSE_TO_STR("(  )", "(())");
+    ASSERT_PARSE_TO_STR("  (  )   ", "(())");
+    ASSERT_PARSE_TO_STR("(() ((()) () ())) ()", "((() ((()) () ())) ())");
+    ASSERT_PARSE_TO_STR(" ( () ( (( )) ()  () ) )  () ", "((() ((()) () ())) ())");
+
+    // integers
+    ASSERT_PARSE_TO_STR("1", "(1)");
+    ASSERT_PARSE_TO_STR("1 2", "(1 2)");
+    ASSERT_PARSE_TO_STR("123", "(123)");
+    ASSERT_PARSE_TO_STR("123456789", "(123456789)");
+    ASSERT_PARSE_TO_STR("1234 56789", "(1234 56789)");
+    ASSERT_PARSE_TO_STR("(1)", "((1))");
+    ASSERT_PARSE_TO_STR("(1 2)", "((1 2))");
+    ASSERT_PARSE_TO_STR("((1))", "(((1)))");
+    ASSERT_PARSE_TO_STR("((1) (2))", "(((1) (2)))");
+    ASSERT_PARSE_TO_STR("(1 () 2)", "((1 () 2))");
+    ASSERT_PARSE_TO_STR("1 2 3", "(1 2 3)");
+    ASSERT_PARSE_TO_STR("(1 2 3)", "((1 2 3))");
+    ASSERT_PARSE_TO_STR("  (  1    2 3 )  ", "((1 2 3))");
+    ASSERT_PARSE_TO_STR("1 (2 3 (4) 5 ((6 7) 8 9) 10)", "(1 (2 3 (4) 5 ((6 7) 8 9) 10))");
+    ASSERT_PARSE_TO_STR("  1  (  2 3 (4  ) 5 (( 6  7 )))", "(1 (2 3 (4) 5 ((6 7))))");
+    ASSERT_PARSE_TO_STR("(() 1 (() 2) (3 ()) 4 (5 (()) 6) 7 ())", "((() 1 (() 2) (3 ()) 4 (5 (()) 6) 7 ()))");
+    ASSERT_PARSE_TO_STR("1 (23 (4) 5 ((67) 89) 10)", "(1 (23 (4) 5 ((67) 89) 10))");
+
+    // decimals
+    ASSERT_PARSE_TO_STR(".456 1. 2.0 3.14 -4. -5.67 -.123", "(0.456 1 2 3.14 -4 -5.67 -0.123)");
+    ASSERT_PARSE_TO_STR("1e10 1e2 1e1 1e0 1e-1 1e-2 1e-10", "(10000000000 100 10 1 0.1 0.01 1e-10)");
+
+    // symbols
+    ASSERT_PARSE_TO_STR("x", "(x)");
+    ASSERT_PARSE_TO_STR("x y", "(x y)");
+    ASSERT_PARSE_TO_STR("abc xyz", "(abc xyz)");
+    ASSERT_PARSE_TO_STR("!?_ */- \\%^", "(!?_ */- \\%^)");
+    ASSERT_PARSE_TO_STR("x y z", "(x y z)");
+    ASSERT_PARSE_TO_STR("x 1 y 2 z", "(x 1 y 2 z)");
+    ASSERT_PARSE_TO_STR("xyz a1 abc 2b def", "(xyz a1 abc 2b def)");
+
+    // quote
+    ASSERT_PARSE_TO_STR("'1", "((quote 1))");
+    ASSERT_PARSE_TO_STR("  '1", "((quote 1))");
+    ASSERT_PARSE_TO_STR("  '  1", "((quote 1))");
+    ASSERT_PARSE_TO_STR("  '  1  ", "((quote 1))");
+    ASSERT_PARSE_TO_STR("'1 2", "((quote 1) 2)");
+    ASSERT_PARSE_TO_STR("'1 '2", "((quote 1) (quote 2))");
+    ASSERT_PARSE_TO_STR("''1", "((quote (quote 1)))");
+    ASSERT_PARSE_TO_STR("'''1", "((quote (quote (quote 1))))");
+    ASSERT_PARSE_TO_STR("1 2 ' (3 4 (5 6 7))", "(1 2 (quote (3 4 (5 6 7))))");
+    ASSERT_PARSE_TO_STR("'1 2 ' (3 4 (5 '6 7))", "((quote 1) 2 (quote (3 4 (5 (quote 6) 7))))");
+    ASSERT_PARSE_TO_STR("1 2 '(3 4 '(5 6 7))", "(1 2 (quote (3 4 (quote (5 6 7)))))");
+    ASSERT_PARSE_TO_STR("''(1 2 3)", "((quote (quote (1 2 3))))");
+
+    // comment
+    ASSERT_PARSE_TO_STR("(1 2 3); comment", "((1 2 3))");
+    ASSERT_PARSE_TO_STR("(1 2 3); (4 5 \" 6 7", "((1 2 3))");
+    ASSERT_PARSE_TO_STR("(1 2 3)   ;   comment  ", "((1 2 3))");
+    ASSERT_PARSE_TO_STR("\n(1 2 3)   ;   comment  \n  (4 5)", "((1 2 3) (4 5))");
+    ASSERT_PARSE_TO_STR(" ; comment\n(1 2 3)   ;   comment  \n  (4 5)", "((1 2 3) (4 5))");
+
+    // string
+    ASSERT_PARSE_TO_STR("\"abc\"", "(\"abc\")");
+    ASSERT_PARSE_TO_STR("\"\"", "(\"\")");
+    ASSERT_PARSE_TO_STR("\"x\" \"y\" \"z\"", "(\"x\" \"y\" \"z\")");
+    ASSERT_PARSE_TO_STR("\"a\\tb\"", "(\"a\\tb\")");
+    ASSERT_PARSE_TO_STR("\"a\tb\"", "(\"a\tb\")");
+    ASSERT_PARSE_TO_STR("\"a\\nb\"", "(\"a\\nb\")");
+    ASSERT_PARSE_TO_STR("\"\na\nb\"", "(\"\na\nb\")");
+    ASSERT_PARSE_TO_STR("'\"abc\"", "((quote \"abc\"))");
+    ASSERT_PARSE_TO_STR("\"'abc\"", "(\"'abc\")");
+    ASSERT_PARSE_TO_STR("'\"x\" \"y\" \"z\"", "((quote \"x\") \"y\" \"z\")");
+    ASSERT_PARSE_TO_STR("'(\"x\" \"y\" \"z\")", "((quote (\"x\" \"y\" \"z\")))");
+
+    // special symbols
+    ASSERT_PARSE_TO_STR("nil", "(())");
+    ASSERT_PARSE_TO_STR("true", "(true)");
+    ASSERT_PARSE_TO_STR("false", "(false)");
+    ASSERT_PARSE_TO_STR("#t", "(true)");
+    ASSERT_PARSE_TO_STR("#f", "(false)");
+
+    // parsing errors
+    ASSERT_PARSE_ERROR("(1 2", "unterminated list");
+    ASSERT_PARSE_ERROR("1 2)", "premature end of list");
+    ASSERT_PARSE_ERROR("( 1 (2", "unterminated list");
+    ASSERT_PARSE_ERROR("'", "unfollowed quote");
+    ASSERT_PARSE_ERROR("'  a '  ", "unfollowed quote");
+    ASSERT_PARSE_ERROR("\"", "unterminated string");
+    ASSERT_PARSE_ERROR("\"xyz", "unterminated string");
+    ASSERT_PARSE_ERROR(" \" xyz ", "unterminated string");
+    ASSERT_PARSE_ERROR("\"xyz\" \"a", "unterminated string");
+    ASSERT_PARSE_ERROR("@", "unexpected character: '@'");
+    ASSERT_PARSE_ERROR("  @", "unexpected character: '@'");
+    ASSERT_PARSE_ERROR("  @  ", "unexpected character: '@'");
+    ASSERT_PARSE_ERROR("\n\n@", "unexpected character: '@'");
+    ASSERT_PARSE_ERROR(" a bc\nde \n f@", "unexpected character: '@'");
+    ASSERT_PARSE_ERROR(" a bc\nde \n f@ g h\n\ni j ", "unexpected character: '@'");
+    ASSERT_PARSE_ERROR("@(1 (2 \n 3) (4\n 5  6\n 7)\n)", "unexpected character: '@'");
+    ASSERT_PARSE_ERROR("(1 (2 \n 3) (4\n 5 @ 6\n 7)\n)", "unexpected character: '@'");
+    ASSERT_PARSE_ERROR("(1 (2 \n 3) (4\n 5  6\n 7)\n)@", "unexpected character: '@'");
+}
+
 int main() {
     RUN_TEST_FUNCTION(test_value);
     RUN_TEST_FUNCTION(test_to_str);
     RUN_TEST_FUNCTION(test_pair);
     RUN_TEST_FUNCTION(test_equal);
+    RUN_TEST_FUNCTION(test_parse);
 
     std::cout << "all tests have been passed!\n";
 

@@ -37,15 +37,10 @@ const std::unordered_map<std::string, std::shared_ptr<value>> special_symbols{
 
 class parsing_error : public format_exception {
    public:
-    parsing_error(const char* format, ...);
+    template <typename... Args>
+    parsing_error(const char* format, Args&&... args)
+        : format_exception(format, std::forward<Args>(args)...) {}
 };
-
-parsing_error::parsing_error(const char* format, ...) {
-    va_list args;
-    va_start(args, format);
-    format_exception(format, args);
-    va_end(args);
-}
 
 // functions
 
@@ -58,8 +53,16 @@ inline bool is_special_symbol(std::string& symbol) {
 }
 
 std::shared_ptr<value_number> convert_to_number(std::string& symbol) {
+    size_t pos;
+
     try {
-        return make_number(std::stod(symbol));
+        double number = std::stod(symbol, &pos);
+
+        if (pos == symbol.length()) {
+            return make_number(number);
+        } else {
+            return nullptr;
+        }
     } catch (std::invalid_argument&) {
         return nullptr;
     }
@@ -107,7 +110,9 @@ std::shared_ptr<value_string> parse_string(std::istream& is) {
 
 void quote_item(std::shared_ptr<value>& item) {
     // transform an item x to the list (quote x)
-    item = make_value_pair(quote_symbol, make_value_pair(item, nil));
+    item = make_value_pair(
+        make_symbol(quote_symbol),
+        make_value_pair(item, nil));
 }
 
 void add_to_list(
