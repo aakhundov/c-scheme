@@ -60,9 +60,7 @@ void report_test(std::string message) {
 
 #define ASSERT_TO_STR(expr, expected)                                          \
     {                                                                          \
-        std::ostringstream buffer;                                             \
-        buffer << (expr);                                                      \
-        std::string str_result = buffer.str();                                 \
+        std::string str_result = (expr).str();                                 \
         report_test(BLUE("[") #expr BLUE("] --> [") + str_result + BLUE("]")); \
         if (str_result != (expected)) {                                        \
             std::cerr << RED("expected " #expected) << '\n';                   \
@@ -75,9 +73,7 @@ void report_test(std::string message) {
         value_pair pair = (expr);                                             \
         std::string str_items;                                                \
         for (auto& item : pair) {                                             \
-            std::ostringstream buffer;                                        \
-            buffer << *item;                                                  \
-            str_items += (buffer.str() + ", ");                               \
+            str_items += ((item->str()) + ", ");                              \
         }                                                                     \
         str_items.pop_back();                                                 \
         str_items.pop_back();                                                 \
@@ -107,9 +103,7 @@ void report_test(std::string message) {
     {                                                                          \
         std::istringstream is{text};                                           \
         std::shared_ptr<value> v = parse_values(is);                           \
-        std::ostringstream os;                                                 \
-        os << *v;                                                              \
-        std::string str_result = os.str();                                     \
+        std::string str_result = v->str();                                     \
         report_test(BLUE("[") #text BLUE("] --> [") + str_result + BLUE("]")); \
         if (str_result != (expected)) {                                        \
             std::cerr << RED("expected " #expected) << '\n';                   \
@@ -121,9 +115,7 @@ void report_test(std::string message) {
     {                                                                                   \
         std::istringstream is{text};                                                    \
         std::shared_ptr<value> v = parse_values(is);                                    \
-        std::ostringstream os;                                                          \
-        os << *v;                                                                       \
-        std::string str_result = os.str();                                              \
+        std::string str_result = v->str();                                              \
         report_test(BLUE("[") #text BLUE("] --> [") + str_result + BLUE("]"));          \
         if (v->type() != value_t::error) {                                              \
             std::cerr << RED("expected error") << '\n';                                 \

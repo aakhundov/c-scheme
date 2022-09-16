@@ -6,6 +6,7 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <sstream>
 #include <string>
 
 #include "constants.hpp"
@@ -32,6 +33,14 @@ class value {
 
     // write the value to a stream (pure virtual)
     virtual std::ostream& write(std::ostream& os) const = 0;
+
+    // convert to string
+    std::string str() {
+        std::ostringstream s;
+        write(s);
+
+        return s.str();
+    }
 
     // equals to another value?
     virtual bool equals(const value& other) const {
