@@ -2,6 +2,8 @@
 
 #include <cctype>
 #include <exception>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <unordered_map>
@@ -146,7 +148,7 @@ std::shared_ptr<value> replace_dots_in_list(std::shared_ptr<value> v) {
                     // no next item: (x .)
                     throw parsing_error("unfollowed %s in %s", dot_symbol.c_str(), v->str().c_str());
                 }
-                auto cdr = std::reinterpret_pointer_cast<value_pair>(pair->cdr());
+                auto cdr = pair->pcdr();
                 if (cdr->cdr() != nil) {
                     // 2+ next items: (x . y z)
                     throw parsing_error("2+ items after %s in %s", dot_symbol.c_str(), v->str().c_str());
@@ -278,4 +280,30 @@ std::shared_ptr<value> parse_values(std::istream& is) {
         // something has gone wrong
         return make_error(e.what());
     }
+}
+
+std::shared_ptr<value> parse_values(const std::string& str) {
+    std::istringstream s{str};
+
+    return parse_values(s);
+}
+
+std::shared_ptr<value> parse_values(const char* str) {
+    return parse_values(std::string(str));
+}
+
+std::shared_ptr<value> parse_values(const std::filesystem::path& p) {
+    if (!std::filesystem::exists(p)) {
+        return make_error("the path does not exist: '%s'", p.c_str());
+    } else if (!std::filesystem::is_regular_file(p)) {
+        return make_error("the path is not a file: '%s'", p.c_str());
+    }
+
+    std::ifstream f{p};
+
+    if (!f) {
+        return make_error("can't open the file: '%s'", p.c_str());
+    }
+
+    return parse_values(f);
 }

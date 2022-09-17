@@ -101,8 +101,7 @@ void report_test(std::string message) {
 
 #define ASSERT_PARSE_TO_STR(text, expected)                                    \
     {                                                                          \
-        std::istringstream is{text};                                           \
-        std::shared_ptr<value> v = parse_values(is);                           \
+        std::shared_ptr<value> v = parse_values(text);                         \
         std::string str_result = v->str();                                     \
         report_test(BLUE("[") #text BLUE("] --> [") + str_result + BLUE("]")); \
         if (str_result != (expected)) {                                        \
@@ -113,8 +112,7 @@ void report_test(std::string message) {
 
 #define ASSERT_PARSE_ERROR(text, expected)                                              \
     {                                                                                   \
-        std::istringstream is{text};                                                    \
-        std::shared_ptr<value> v = parse_values(is);                                    \
+        std::shared_ptr<value> v = parse_values(text);                                  \
         std::string str_result = v->str();                                              \
         report_test(BLUE("[") #text BLUE("] --> [") + str_result + BLUE("]"));          \
         if (v->type() != value_t::error) {                                              \
