@@ -369,7 +369,7 @@ inline std::shared_ptr<value>& make_value(std::shared_ptr<value>&& val) {
 }
 
 template <typename T1, typename T2>
-std::shared_ptr<value_pair> make_value_pair(T1&& car, T2&& cdr) {
+std::shared_ptr<value_pair> make_vpair(T1&& car, T2&& cdr) {
     // from two separate universal references: car and cdr
     return std::make_shared<value_pair>(
         make_value(std::forward<T1>(car)),
@@ -377,13 +377,13 @@ std::shared_ptr<value_pair> make_value_pair(T1&& car, T2&& cdr) {
 }
 
 template <typename Head, typename... Tail>
-std::shared_ptr<value_pair> make_value_list(Head&& first, Tail&&... rest) {
+std::shared_ptr<value_pair> make_list(Head&& first, Tail&&... rest) {
     if constexpr (sizeof...(rest) > 0) {
-        return make_value_pair(
-            make_value(std::forward<Head>(first)),          // the head
-            make_value_list(std::forward<Tail>(rest)...));  // the rest
+        return make_vpair(
+            make_value(std::forward<Head>(first)),    // the head
+            make_list(std::forward<Tail>(rest)...));  // the rest
     } else {
-        return make_value_pair(
+        return make_vpair(
             make_value(std::forward<Head>(first)),  // the tail
             nil);                                   // terminating nil
     }

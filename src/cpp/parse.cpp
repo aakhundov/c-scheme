@@ -113,9 +113,9 @@ std::shared_ptr<value_string> parse_string(std::istream& is) {
 
 void quote_item(std::shared_ptr<value>& item) {
     // transform an item x to the list (quote x)
-    item = make_value_pair(
+    item = make_vpair(
         make_symbol(quote_symbol),
-        make_value_pair(item, nil));
+        make_vpair(item, nil));
 }
 
 void add_to_list(
@@ -123,7 +123,7 @@ void add_to_list(
     std::shared_ptr<value_pair>& tail,
     std::shared_ptr<value>& item) {
     // make a new pair with the item as car
-    auto pair = make_value_pair(item, nil);
+    auto pair = make_vpair(item, nil);
     if (!head) {
         head = pair;  // first item: set the head
     } else {

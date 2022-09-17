@@ -99,6 +99,19 @@ void report_test(std::string message) {
         }                                                                        \
     }
 
+#define ASSERT_PARSE(text, ...)                                                \
+    {                                                                          \
+        std::shared_ptr<value> v = parse_values(text);                         \
+        std::shared_ptr<value_pair> expected = make_list(__VA_ARGS__);         \
+        std::string str_result = v->str();                                     \
+        std::string str_expected = expected->str();                            \
+        report_test(BLUE("[") #text BLUE("] --> [") + str_result + BLUE("]")); \
+        if (*v != *expected) {                                                 \
+            std::cerr << RED("expected ") << str_expected << '\n';             \
+            exit(1);                                                           \
+        }                                                                      \
+    }
+
 #define ASSERT_PARSE_TO_STR(text, expected)                                    \
     {                                                                          \
         std::shared_ptr<value> v = parse_values(text);                         \
@@ -198,18 +211,18 @@ void test_value() {
 
     // pair
     std::shared_ptr<value_pair> pair1, pair2;
-    ASSERT_TO_STR(*(pair1 = make_value_pair(3.14, "abc")), "(3.14 . abc)");
+    ASSERT_TO_STR(*(pair1 = make_vpair(3.14, "abc")), "(3.14 . abc)");
     ASSERT_TRUE(pair1->type() == value_t::pair);
     ASSERT_TRUE(pair1->compound());
     ASSERT_TO_STR(*pair1->car(), "3.14");
     ASSERT_TO_STR(*pair1->cdr(), "abc");
-    ASSERT_TO_STR(*(pair2 = make_value_pair(3.14, "abc")), "(3.14 . abc)");
+    ASSERT_TO_STR(*(pair2 = make_vpair(3.14, "abc")), "(3.14 . abc)");
     ASSERT_TRUE(*pair1 == *pair2);
     ASSERT_FALSE(pair1 == pair2);
 
     // list
     std::shared_ptr<value_pair> list1, list2;
-    ASSERT_TO_STR(*(list1 = make_value_list(3.14, "abc", nil, false)), "(3.14 abc () false)");
+    ASSERT_TO_STR(*(list1 = make_list(3.14, "abc", nil, false)), "(3.14 abc () false)");
     ASSERT_TRUE(list1->type() == value_t::pair);
     ASSERT_TRUE(list1->compound());
     ASSERT_TO_STR(*list1->car(), "3.14");
@@ -220,150 +233,65 @@ void test_value() {
     ASSERT_TO_STR(*list1->pcdr()->pcdr()->cdr(), "(false)");
     ASSERT_TO_STR(*list1->pcdr()->pcdr()->pcdr()->car(), "false");
     ASSERT_TO_STR(*list1->pcdr()->pcdr()->pcdr()->cdr(), "()");
-    ASSERT_TO_STR(*(list2 = make_value_list(3.14, "abc", nil, false)), "(3.14 abc () false)");
+    ASSERT_TO_STR(*(list2 = make_list(3.14, "abc", nil, false)), "(3.14 abc () false)");
     ASSERT_TRUE(*list1 == *list2);
     ASSERT_FALSE(list1 == list2);
 }
 
-void test_to_str() {
-    // number
-    ASSERT_TO_STR(*make_value(0), "0");
-    ASSERT_TO_STR(*make_value(1), "1");
-    ASSERT_TO_STR(*make_value(-1), "-1");
-    ASSERT_TO_STR(*make_value(3.14), "3.14");
-    ASSERT_TO_STR(*make_value(-3.14), "-3.14");
-    ASSERT_TO_STR(*make_value(1e-20), "1e-20");
-    ASSERT_TO_STR(*make_value(1e+20), "1e+20");
-    ASSERT_TO_STR(*make_value(3.14e2), "314");
-    ASSERT_TO_STR(*make_value(3.14e-2), "0.0314");
-    ASSERT_TO_STR(*make_value(123'456'789'012), "123456789012");
-    ASSERT_TO_STR(*make_value(1'234'567'890'123), "1.23456789012e+12");
-    ASSERT_TO_STR(*make_value(123'456.789'012), "123456.789012");
-    ASSERT_TO_STR(*make_value(123'456.789'012'3), "123456.789012");
-    ASSERT_TO_STR(*make_value(0.123'456'789'012), "0.123456789012");
-    ASSERT_TO_STR(*make_value(0.123'456'789'012'3), "0.123456789012");
-
-    // symbol
-    ASSERT_TO_STR(*make_value(""), "");
-    ASSERT_TO_STR(*make_value("a"), "a");
-    ASSERT_TO_STR(*make_value("abc"), "abc");
-    ASSERT_TO_STR(*make_value("xxx"), "xxx");
-    ASSERT_TO_STR(*make_value("!@#$%"), "!@#$%");
-
-    // string
-    ASSERT_TO_STR(*make_value(""s), "\"\"");
-    ASSERT_TO_STR(*make_value("a"s), "\"a\"");
-    ASSERT_TO_STR(*make_value("abc"s), "\"abc\"");
-    ASSERT_TO_STR(*make_value("xxx"s), "\"xxx\"");
-    ASSERT_TO_STR(*make_value("!@#$%"s), "\"!@#$%\"");
-
-    // error
-    ASSERT_TO_STR(*make_error(""), BOLD(RED("error:") " " WHITE("")));
-    ASSERT_TO_STR(*make_error("message"), BOLD(RED("error:") " " WHITE("message")));
-    ASSERT_TO_STR(*make_error("hello world"), BOLD(RED("error:") " " WHITE("hello world")));
-    ASSERT_TO_STR(*make_error("hello '%s'", "world"), BOLD(RED("error:") " " WHITE("hello 'world'")));
-    ASSERT_TO_STR(*make_error("hello '%g'", 3.14), BOLD(RED("error:") " " WHITE("hello '3.14'")));
-    ASSERT_TO_STR(*make_error("hi %d, %d, %d bye", 1, 2, 3), BOLD(RED("error:") " " WHITE("hi 1, 2, 3 bye")));
-
-    // info
-    ASSERT_TO_STR(*make_info(""), GREEN(""));
-    ASSERT_TO_STR(*make_info("message"), GREEN("message"));
-    ASSERT_TO_STR(*make_info("hello world"), GREEN("hello world"));
-    ASSERT_TO_STR(*make_info("hello '%s'", "world"), GREEN("hello 'world'"));
-    ASSERT_TO_STR(*make_info("hello '%g'", 3.14), GREEN("hello '3.14'"));
-    ASSERT_TO_STR(*make_info("hi %d, %d, %d bye", 1, 2, 3), GREEN("hi 1, 2, 3 bye"));
-
-    // bool
-    ASSERT_TO_STR(*true_, "true");
-    ASSERT_TO_STR(*make_value(true), "true");
-    ASSERT_TO_STR(*false_, "false");
-    ASSERT_TO_STR(*make_value(false), "false");
-
-    // bool
-    ASSERT_TO_STR(*nil, "()");
-    ASSERT_TO_STR(*make_nil(), "()");
-
-    // identity
-    ASSERT_TO_STR(*make_value(make_value(1)), "1");
-    ASSERT_TO_STR(*make_value(make_value("abc")), "abc");
-    ASSERT_TO_STR(*make_value(make_value("abc"s)), "\"abc\"");
-    ASSERT_TO_STR(*make_value(true_), "true");
-    ASSERT_TO_STR(*make_value(nil), "()");
-
-    // pair
-    ASSERT_TO_STR(*make_value_pair(1, 1), "(1 . 1)");
-    ASSERT_TO_STR(*make_value_pair(1, 2), "(1 . 2)");
-    ASSERT_TO_STR(*make_value_pair(1, "abc"), "(1 . abc)");
-    ASSERT_TO_STR(*make_value_pair("xyz"s, 3.14), "(\"xyz\" . 3.14)");
-    ASSERT_TO_STR(*make_value_pair(true_, false_), "(true . false)");
-    ASSERT_TO_STR(*make_value_pair(1, nil), "(1)");
-    ASSERT_TO_STR(*make_value_pair(nil, 2), "(() . 2)");
-    ASSERT_TO_STR(*make_value_pair(nil, nil), "(())");
-
-    // list
-    ASSERT_TO_STR(*make_value_list(1), "(1)");
-    ASSERT_TO_STR(*make_value_list(1, 2, 3), "(1 2 3)");
-    ASSERT_TO_STR(*make_value_list(3.14, "abc", "xyz"s, true_, nil, false_), "(3.14 abc \"xyz\" true () false)");
-    ASSERT_TO_STR(*make_value_list(1, 2, make_value_list(3, 4, 5), 6), "(1 2 (3 4 5) 6)");
-    ASSERT_TO_STR(*make_value_list(1, 2, make_value_pair(3, 4)), "(1 2 (3 . 4))");
-    ASSERT_TO_STR(*make_value_pair(1, make_value_pair(2, make_value_pair(3, 4))), "(1 2 3 . 4)");
-    ASSERT_TO_STR(*make_value_list(make_value_list(make_value_list(1))), "(((1)))");
-}
-
 void test_pair() {
     // is_list
-    ASSERT_TRUE(make_value_pair(1, nil)->is_list());
-    ASSERT_FALSE(make_value_pair(nil, 2)->is_list());
-    ASSERT_TRUE(make_value_pair(nil, nil)->is_list());
-    ASSERT_FALSE(make_value_pair(1, 2)->is_list());
-    ASSERT_TRUE(make_value_pair(1, make_value_pair(2, nil))->is_list());
-    ASSERT_FALSE(make_value_pair(1, make_value_pair(2, 3))->is_list());
-    ASSERT_TRUE(make_value_list(1)->is_list());
-    ASSERT_TRUE(make_value_list(1, 2)->is_list());
-    ASSERT_TRUE(make_value_list(1, 2, 3)->is_list());
-    ASSERT_TRUE(make_value_list(1, 2, make_value_pair(3, 4))->is_list());
-    ASSERT_TRUE(make_value_list(make_value_pair(1, 2), make_value_pair(3, 4))->is_list());
-    ASSERT_TRUE(make_value_list(1, 2, nil)->is_list());
-    ASSERT_TRUE(make_value_list(1, nil, nil)->is_list());
-    ASSERT_TRUE(make_value_list(nil, nil, nil)->is_list());
+    ASSERT_TRUE(make_vpair(1, nil)->is_list());
+    ASSERT_FALSE(make_vpair(nil, 2)->is_list());
+    ASSERT_TRUE(make_vpair(nil, nil)->is_list());
+    ASSERT_FALSE(make_vpair(1, 2)->is_list());
+    ASSERT_TRUE(make_vpair(1, make_vpair(2, nil))->is_list());
+    ASSERT_FALSE(make_vpair(1, make_vpair(2, 3))->is_list());
+    ASSERT_TRUE(make_list(1)->is_list());
+    ASSERT_TRUE(make_list(1, 2)->is_list());
+    ASSERT_TRUE(make_list(1, 2, 3)->is_list());
+    ASSERT_TRUE(make_list(1, 2, make_vpair(3, 4))->is_list());
+    ASSERT_TRUE(make_list(make_vpair(1, 2), make_vpair(3, 4))->is_list());
+    ASSERT_TRUE(make_list(1, 2, nil)->is_list());
+    ASSERT_TRUE(make_list(1, nil, nil)->is_list());
+    ASSERT_TRUE(make_list(nil, nil, nil)->is_list());
 
     // length
-    ASSERT_EQUAL(make_value_pair(1, nil)->length(), 1);
-    ASSERT_EQUAL(make_value_pair(nil, 2)->length(), 2);
-    ASSERT_EQUAL(make_value_pair(nil, nil)->length(), 1);
-    ASSERT_EQUAL(make_value_pair(1, 2)->length(), 2);
-    ASSERT_EQUAL(make_value_pair(1, make_value_pair(2, nil))->length(), 2);
-    ASSERT_EQUAL(make_value_pair(1, make_value_pair(2, 3))->length(), 3);
-    ASSERT_EQUAL(make_value_list(1)->length(), 1);
-    ASSERT_EQUAL(make_value_list(1, 2)->length(), 2);
-    ASSERT_EQUAL(make_value_list(1, 2, 3)->length(), 3);
-    ASSERT_EQUAL(make_value_list(1, 2, make_value_pair(3, 4))->length(), 3);
-    ASSERT_EQUAL(make_value_list(make_value_pair(1, 2), make_value_pair(3, 4))->length(), 2);
-    ASSERT_EQUAL(make_value_list(1, 2, nil)->length(), 3);
-    ASSERT_EQUAL(make_value_list(1, nil, nil)->length(), 3);
-    ASSERT_EQUAL(make_value_list(nil, nil, nil)->length(), 3);
+    ASSERT_EQUAL(make_vpair(1, nil)->length(), 1);
+    ASSERT_EQUAL(make_vpair(nil, 2)->length(), 2);
+    ASSERT_EQUAL(make_vpair(nil, nil)->length(), 1);
+    ASSERT_EQUAL(make_vpair(1, 2)->length(), 2);
+    ASSERT_EQUAL(make_vpair(1, make_vpair(2, nil))->length(), 2);
+    ASSERT_EQUAL(make_vpair(1, make_vpair(2, 3))->length(), 3);
+    ASSERT_EQUAL(make_list(1)->length(), 1);
+    ASSERT_EQUAL(make_list(1, 2)->length(), 2);
+    ASSERT_EQUAL(make_list(1, 2, 3)->length(), 3);
+    ASSERT_EQUAL(make_list(1, 2, make_vpair(3, 4))->length(), 3);
+    ASSERT_EQUAL(make_list(make_vpair(1, 2), make_vpair(3, 4))->length(), 2);
+    ASSERT_EQUAL(make_list(1, 2, nil)->length(), 3);
+    ASSERT_EQUAL(make_list(1, nil, nil)->length(), 3);
+    ASSERT_EQUAL(make_list(nil, nil, nil)->length(), 3);
 
     // iterator
-    ASSERT_ITERATOR(*make_value_pair(1, nil), "1");
-    ASSERT_ITERATOR(*make_value_pair(nil, 2), "(), 2");
-    ASSERT_ITERATOR(*make_value_pair(nil, nil), "()");
-    ASSERT_ITERATOR(*make_value_pair(1, 2), "1, 2");
-    ASSERT_ITERATOR(*make_value_pair(1, make_value_pair(2, nil)), "1, 2");
-    ASSERT_ITERATOR(*make_value_pair(1, make_value_pair(2, 3)), "1, 2, 3");
-    ASSERT_ITERATOR(*make_value_pair(1, "2"), "1, 2");
-    ASSERT_ITERATOR(*make_value_pair(1, "2"s), "1, \"2\"");
-    ASSERT_ITERATOR(*make_value_list(1), "1");
-    ASSERT_ITERATOR(*make_value_list(1, 2), "1, 2");
-    ASSERT_ITERATOR(*make_value_list(1, 2, 3), "1, 2, 3");
-    ASSERT_ITERATOR(*make_value_list(1, 2, make_value_pair(3, 4)), "1, 2, (3 . 4)");
-    ASSERT_ITERATOR(*make_value_list(make_value_pair(1, 2), make_value_pair(3, 4)), "(1 . 2), (3 . 4)");
-    ASSERT_ITERATOR(*make_value_list(1, 2, nil), "1, 2, ()");
-    ASSERT_ITERATOR(*make_value_list(1, nil, nil), "1, (), ()");
-    ASSERT_ITERATOR(*make_value_list(nil, nil, nil), "(), (), ()");
-    ASSERT_ITERATOR(*make_value_list(1, "2", "3"s, make_value_pair(nil, false)), "1, 2, \"3\", (() . false)");
+    ASSERT_ITERATOR(*make_vpair(1, nil), "1");
+    ASSERT_ITERATOR(*make_vpair(nil, 2), "(), 2");
+    ASSERT_ITERATOR(*make_vpair(nil, nil), "()");
+    ASSERT_ITERATOR(*make_vpair(1, 2), "1, 2");
+    ASSERT_ITERATOR(*make_vpair(1, make_vpair(2, nil)), "1, 2");
+    ASSERT_ITERATOR(*make_vpair(1, make_vpair(2, 3)), "1, 2, 3");
+    ASSERT_ITERATOR(*make_vpair(1, "2"), "1, 2");
+    ASSERT_ITERATOR(*make_vpair(1, "2"s), "1, \"2\"");
+    ASSERT_ITERATOR(*make_list(1), "1");
+    ASSERT_ITERATOR(*make_list(1, 2), "1, 2");
+    ASSERT_ITERATOR(*make_list(1, 2, 3), "1, 2, 3");
+    ASSERT_ITERATOR(*make_list(1, 2, make_vpair(3, 4)), "1, 2, (3 . 4)");
+    ASSERT_ITERATOR(*make_list(make_vpair(1, 2), make_vpair(3, 4)), "(1 . 2), (3 . 4)");
+    ASSERT_ITERATOR(*make_list(1, 2, nil), "1, 2, ()");
+    ASSERT_ITERATOR(*make_list(1, nil, nil), "1, (), ()");
+    ASSERT_ITERATOR(*make_list(nil, nil, nil), "(), (), ()");
+    ASSERT_ITERATOR(*make_list(1, "2", "3"s, make_vpair(nil, false)), "1, 2, \"3\", (() . false)");
 
     // iterator mutation
-    value_pair val = *make_value_list(1, 2, 3, 4, 5);
+    value_pair val = *make_list(1, 2, 3, 4, 5);
     ASSERT_ITERATOR(val, "1, 2, 3, 4, 5");
     for (auto& item : val) {
         value_number* number = reinterpret_cast<value_number*>(item.get());
@@ -373,55 +301,55 @@ void test_pair() {
 
     // cycle
     std::shared_ptr<value_pair> v1, v2, v3, v4;
-    v1 = make_value_pair(1, 2);
+    v1 = make_vpair(1, 2);
     ASSERT_EXCEPTION({ v1->car(v1); }, cycle_error);
-    v1 = make_value_pair(1, 2);
-    v2 = make_value_pair(3, 4);
+    v1 = make_vpair(1, 2);
+    v2 = make_vpair(3, 4);
     ASSERT_EXCEPTION({ v1->car(v2); v2->car(v1); }, cycle_error);
-    v1 = make_value_pair(1, 2);
-    v2 = make_value_pair(3, 4);
+    v1 = make_vpair(1, 2);
+    v2 = make_vpair(3, 4);
     ASSERT_EXCEPTION({ v1->car(v2); v2->cdr(v1); }, cycle_error);
-    v1 = make_value_pair(1, 2);
-    v2 = make_value_pair(3, 4);
+    v1 = make_vpair(1, 2);
+    v2 = make_vpair(3, 4);
     ASSERT_EXCEPTION({ v1->cdr(v2); v2->car(v1); }, cycle_error);
-    v1 = make_value_pair(1, 2);
-    v2 = make_value_pair(3, 4);
+    v1 = make_vpair(1, 2);
+    v2 = make_vpair(3, 4);
     ASSERT_EXCEPTION({ v1->cdr(v2); v2->cdr(v1); }, cycle_error);
-    v1 = make_value_pair(1, 2);
-    v2 = make_value_pair(3, 4);
-    v3 = make_value_pair(5, 6);
+    v1 = make_vpair(1, 2);
+    v2 = make_vpair(3, 4);
+    v3 = make_vpair(5, 6);
     ASSERT_EXCEPTION({ v1->car(v2); v2->car(v3); v3->car(v1); }, cycle_error);
-    v1 = make_value_pair(1, 2);
-    v2 = make_value_pair(3, 4);
-    v3 = make_value_pair(5, 6);
+    v1 = make_vpair(1, 2);
+    v2 = make_vpair(3, 4);
+    v3 = make_vpair(5, 6);
     ASSERT_EXCEPTION({ v1->cdr(v2); v2->car(v3); v3->cdr(v1); }, cycle_error);
-    v1 = make_value_pair(1, 2);
-    v2 = make_value_pair(3, 4);
-    v3 = make_value_pair(5, 6);
+    v1 = make_vpair(1, 2);
+    v2 = make_vpair(3, 4);
+    v3 = make_vpair(5, 6);
     ASSERT_EXCEPTION({ v1->car(v2); v2->cdr(v3); v3->car(v1); }, cycle_error);
-    v1 = make_value_pair(1, 2);
-    v2 = make_value_pair(3, 4);
-    v3 = make_value_pair(5, 6);
+    v1 = make_vpair(1, 2);
+    v2 = make_vpair(3, 4);
+    v3 = make_vpair(5, 6);
     ASSERT_EXCEPTION({ v1->cdr(v2); v2->cdr(v3); v3->cdr(v1); }, cycle_error);
-    v1 = make_value_pair(1, 2);
-    v2 = make_value_pair(3, 4);
-    v3 = make_value_pair(5, 6);
-    v4 = make_value_pair(7, 8);
+    v1 = make_vpair(1, 2);
+    v2 = make_vpair(3, 4);
+    v3 = make_vpair(5, 6);
+    v4 = make_vpair(7, 8);
     ASSERT_EXCEPTION({ v1->car(v2); v2->car(v3); v3->car(v4); v4->car(v1); }, cycle_error);
-    v1 = make_value_pair(1, 2);
-    v2 = make_value_pair(3, 4);
-    v3 = make_value_pair(5, 6);
-    v4 = make_value_pair(7, 8);
+    v1 = make_vpair(1, 2);
+    v2 = make_vpair(3, 4);
+    v3 = make_vpair(5, 6);
+    v4 = make_vpair(7, 8);
     ASSERT_EXCEPTION({ v1->car(v2); v2->cdr(v3); v3->car(v4); v4->cdr(v1); }, cycle_error);
-    v1 = make_value_pair(1, 2);
-    v2 = make_value_pair(3, 4);
-    v3 = make_value_pair(5, 6);
-    v4 = make_value_pair(7, 8);
+    v1 = make_vpair(1, 2);
+    v2 = make_vpair(3, 4);
+    v3 = make_vpair(5, 6);
+    v4 = make_vpair(7, 8);
     ASSERT_EXCEPTION({ v1->cdr(v2); v2->car(v3); v3->cdr(v4); v4->car(v1); }, cycle_error);
-    v1 = make_value_pair(1, 2);
-    v2 = make_value_pair(3, 4);
-    v3 = make_value_pair(5, 6);
-    v4 = make_value_pair(7, 8);
+    v1 = make_vpair(1, 2);
+    v2 = make_vpair(3, 4);
+    v3 = make_vpair(5, 6);
+    v4 = make_vpair(7, 8);
     ASSERT_EXCEPTION({ v1->cdr(v2); v2->cdr(v3); v3->cdr(v4); v4->cdr(v1); }, cycle_error);
 }
 
@@ -535,9 +463,9 @@ void test_equal() {
 
     // pair
     std::shared_ptr<value> pair1, pair2, pair3;
-    ASSERT_TO_STR(*(pair1 = make_value_pair(3.14, "abc")), "(3.14 . abc)");
-    ASSERT_TO_STR(*(pair2 = make_value_pair(3.14, "abc")), "(3.14 . abc)");
-    ASSERT_TO_STR(*(pair3 = make_value_pair(3.14, "abc"s)), "(3.14 . \"abc\")");
+    ASSERT_TO_STR(*(pair1 = make_vpair(3.14, "abc")), "(3.14 . abc)");
+    ASSERT_TO_STR(*(pair2 = make_vpair(3.14, "abc")), "(3.14 . abc)");
+    ASSERT_TO_STR(*(pair3 = make_vpair(3.14, "abc"s)), "(3.14 . \"abc\")");
 
     ASSERT_TRUE(*pair1 == *pair1);
     ASSERT_TRUE(*pair1 == *pair2);
@@ -555,9 +483,9 @@ void test_equal() {
 
     // list
     std::shared_ptr<value> list1, list2, list3;
-    ASSERT_TO_STR(*(list1 = make_value_list(1, "2", make_value_pair("3"s, 4))), "(1 2 (\"3\" . 4))");
-    ASSERT_TO_STR(*(list2 = make_value_list(1, "2", make_value_pair("3"s, 4))), "(1 2 (\"3\" . 4))");
-    ASSERT_TO_STR(*(list3 = make_value_list(1, "2", "3"s, 4)), "(1 2 \"3\" 4)");
+    ASSERT_TO_STR(*(list1 = make_list(1, "2", make_vpair("3"s, 4))), "(1 2 (\"3\" . 4))");
+    ASSERT_TO_STR(*(list2 = make_list(1, "2", make_vpair("3"s, 4))), "(1 2 (\"3\" . 4))");
+    ASSERT_TO_STR(*(list3 = make_list(1, "2", "3"s, 4)), "(1 2 \"3\" 4)");
 
     ASSERT_TRUE(*list1 == *list1);
     ASSERT_TRUE(*list1 == *list2);
@@ -574,114 +502,208 @@ void test_equal() {
     ASSERT_FALSE(list1 == list3);
 }
 
-void test_parse() {
-    // brackets
-    ASSERT_PARSE_TO_STR("", "()");
-    ASSERT_PARSE_TO_STR("()()", "(() ())");
-    ASSERT_PARSE_TO_STR("() ()", "(() ())");
-    ASSERT_PARSE_TO_STR(" ()  ()  ", "(() ())");
-    ASSERT_PARSE_TO_STR("(()())", "((() ()))");
-    ASSERT_PARSE_TO_STR("()", "(())");
-    ASSERT_PARSE_TO_STR("(  )", "(())");
-    ASSERT_PARSE_TO_STR("  (  )   ", "(())");
-    ASSERT_PARSE_TO_STR("(() ((()) () ())) ()", "((() ((()) () ())) ())");
-    ASSERT_PARSE_TO_STR(" ( () ( (( )) ()  () ) )  () ", "((() ((()) () ())) ())");
+void test_to_str() {
+    // number
+    ASSERT_TO_STR(*make_value(0), "0");
+    ASSERT_TO_STR(*make_value(1), "1");
+    ASSERT_TO_STR(*make_value(-1), "-1");
+    ASSERT_TO_STR(*make_value(3.14), "3.14");
+    ASSERT_TO_STR(*make_value(-3.14), "-3.14");
+    ASSERT_TO_STR(*make_value(1e-20), "1e-20");
+    ASSERT_TO_STR(*make_value(1e+20), "1e+20");
+    ASSERT_TO_STR(*make_value(3.14e2), "314");
+    ASSERT_TO_STR(*make_value(3.14e-2), "0.0314");
+    ASSERT_TO_STR(*make_value(123'456'789'012), "123456789012");
+    ASSERT_TO_STR(*make_value(1'234'567'890'123), "1.23456789012e+12");
+    ASSERT_TO_STR(*make_value(123'456.789'012), "123456.789012");
+    ASSERT_TO_STR(*make_value(123'456.789'012'3), "123456.789012");
+    ASSERT_TO_STR(*make_value(0.123'456'789'012), "0.123456789012");
+    ASSERT_TO_STR(*make_value(0.123'456'789'012'3), "0.123456789012");
 
-    // integers
-    ASSERT_PARSE_TO_STR("1", "(1)");
-    ASSERT_PARSE_TO_STR("1 2", "(1 2)");
-    ASSERT_PARSE_TO_STR("123", "(123)");
-    ASSERT_PARSE_TO_STR("123456789", "(123456789)");
-    ASSERT_PARSE_TO_STR("1234 56789", "(1234 56789)");
-    ASSERT_PARSE_TO_STR("(1)", "((1))");
-    ASSERT_PARSE_TO_STR("(1 2)", "((1 2))");
-    ASSERT_PARSE_TO_STR("((1))", "(((1)))");
-    ASSERT_PARSE_TO_STR("((1) (2))", "(((1) (2)))");
-    ASSERT_PARSE_TO_STR("(1 () 2)", "((1 () 2))");
-    ASSERT_PARSE_TO_STR("1 2 3", "(1 2 3)");
-    ASSERT_PARSE_TO_STR("(1 2 3)", "((1 2 3))");
-    ASSERT_PARSE_TO_STR("  (  1    2 3 )  ", "((1 2 3))");
-    ASSERT_PARSE_TO_STR("1 (2 3 (4) 5 ((6 7) 8 9) 10)", "(1 (2 3 (4) 5 ((6 7) 8 9) 10))");
-    ASSERT_PARSE_TO_STR("  1  (  2 3 (4  ) 5 (( 6  7 )))", "(1 (2 3 (4) 5 ((6 7))))");
-    ASSERT_PARSE_TO_STR("(() 1 (() 2) (3 ()) 4 (5 (()) 6) 7 ())", "((() 1 (() 2) (3 ()) 4 (5 (()) 6) 7 ()))");
-    ASSERT_PARSE_TO_STR("1 (23 (4) 5 ((67) 89) 10)", "(1 (23 (4) 5 ((67) 89) 10))");
-
-    // decimals
-    ASSERT_PARSE_TO_STR(".456 1. 2.0 3.14 -4. -5.67 -.123", "(0.456 1 2 3.14 -4 -5.67 -0.123)");
-    ASSERT_PARSE_TO_STR("1e10 1e2 1e1 1e0 1e-1 1e-2 1e-10", "(10000000000 100 10 1 0.1 0.01 1e-10)");
-
-    // symbols
-    ASSERT_PARSE_TO_STR("x", "(x)");
-    ASSERT_PARSE_TO_STR("x y", "(x y)");
-    ASSERT_PARSE_TO_STR("abc xyz", "(abc xyz)");
-    ASSERT_PARSE_TO_STR("!?_ */- \\%^", "(!?_ */- \\%^)");
-    ASSERT_PARSE_TO_STR("x y z", "(x y z)");
-    ASSERT_PARSE_TO_STR("x 1 y 2 z", "(x 1 y 2 z)");
-    ASSERT_PARSE_TO_STR("xyz a1 abc 2b def", "(xyz a1 abc 2b def)");
-
-    // quote
-    ASSERT_PARSE_TO_STR("'1", "((quote 1))");
-    ASSERT_PARSE_TO_STR("  '1", "((quote 1))");
-    ASSERT_PARSE_TO_STR("  '  1", "((quote 1))");
-    ASSERT_PARSE_TO_STR("  '  1  ", "((quote 1))");
-    ASSERT_PARSE_TO_STR("'1 2", "((quote 1) 2)");
-    ASSERT_PARSE_TO_STR("'1 '2", "((quote 1) (quote 2))");
-    ASSERT_PARSE_TO_STR("''1", "((quote (quote 1)))");
-    ASSERT_PARSE_TO_STR("'''1", "((quote (quote (quote 1))))");
-    ASSERT_PARSE_TO_STR("1 2 ' (3 4 (5 6 7))", "(1 2 (quote (3 4 (5 6 7))))");
-    ASSERT_PARSE_TO_STR("'1 2 ' (3 4 (5 '6 7))", "((quote 1) 2 (quote (3 4 (5 (quote 6) 7))))");
-    ASSERT_PARSE_TO_STR("1 2 '(3 4 '(5 6 7))", "(1 2 (quote (3 4 (quote (5 6 7)))))");
-    ASSERT_PARSE_TO_STR("''(1 2 3)", "((quote (quote (1 2 3))))");
-
-    // dot
-    ASSERT_PARSE_TO_STR(".", "(.)");
-    ASSERT_PARSE_TO_STR(". . . . .", "(. . . . .)");
-    ASSERT_PARSE_TO_STR("1 . 2 . 3", "(1 . 2 . 3)");
-    ASSERT_PARSE_TO_STR("(1 2) . 3 . (4 5)", "((1 2) . 3 . (4 5))");
-    ASSERT_PARSE_TO_STR("(1 . 2)", "((1 . 2))");
-    ASSERT_PARSE_TO_STR("(1 2 . 3)", "((1 2 . 3))");
-    ASSERT_PARSE_TO_STR("(1 (2 . 3) . 4)", "((1 (2 . 3) . 4))");
-    ASSERT_PARSE_TO_STR("(1 (2 (3 . 4) . 5) . 6)", "((1 (2 (3 . 4) . 5) . 6))");
-    ASSERT_PARSE_TO_STR("(1 (2 . 3))", "((1 (2 . 3)))");
-    ASSERT_PARSE_TO_STR("((1 2) . 3)", "(((1 2) . 3))");
-    ASSERT_PARSE_TO_STR("((1 . 2) . 3)", "(((1 . 2) . 3))");
-    ASSERT_PARSE_TO_STR("(1 . (2 3))", "((1 2 3))");
-    ASSERT_PARSE_TO_STR("(1 2 3 . (4 5 6))", "((1 2 3 4 5 6))");
-    ASSERT_PARSE_TO_STR("(. 1)", "(1)");
-    ASSERT_PARSE_TO_STR("(. (1 2))", "((1 2))");
-    ASSERT_PARSE_TO_STR("(. (1 . 2))", "((1 . 2))");
-    ASSERT_PARSE_TO_STR("(.1 . 2.)", "((0.1 . 2))");
-    ASSERT_PARSE_TO_STR("(1.2 . 3.4)", "((1.2 . 3.4))");
-    ASSERT_PARSE_TO_STR("(1 2 3 . 4)", "((1 2 3 . 4))");
-    ASSERT_PARSE_TO_STR("'(1 . 2)", "((quote (1 . 2)))");
-    ASSERT_PARSE_TO_STR("'(. 2)", "((quote 2))");
-
-    // comment
-    ASSERT_PARSE_TO_STR("(1 2 3); comment", "((1 2 3))");
-    ASSERT_PARSE_TO_STR("(1 2 3); (4 5 \" 6 7", "((1 2 3))");
-    ASSERT_PARSE_TO_STR("(1 2 3)   ;   comment  ", "((1 2 3))");
-    ASSERT_PARSE_TO_STR("\n(1 2 3)   ;   comment  \n  (4 5)", "((1 2 3) (4 5))");
-    ASSERT_PARSE_TO_STR(" ; comment\n(1 2 3)   ;   comment  \n  (4 5)", "((1 2 3) (4 5))");
+    // symbol
+    ASSERT_TO_STR(*make_value(""), "");
+    ASSERT_TO_STR(*make_value("a"), "a");
+    ASSERT_TO_STR(*make_value("abc"), "abc");
+    ASSERT_TO_STR(*make_value("xxx"), "xxx");
+    ASSERT_TO_STR(*make_value("!@#$%"), "!@#$%");
 
     // string
-    ASSERT_PARSE_TO_STR("\"abc\"", "(\"abc\")");
-    ASSERT_PARSE_TO_STR("\"\"", "(\"\")");
-    ASSERT_PARSE_TO_STR("\"x\" \"y\" \"z\"", "(\"x\" \"y\" \"z\")");
-    ASSERT_PARSE_TO_STR("\"a\\tb\"", "(\"a\\tb\")");
-    ASSERT_PARSE_TO_STR("\"a\tb\"", "(\"a\tb\")");
-    ASSERT_PARSE_TO_STR("\"a\\nb\"", "(\"a\\nb\")");
-    ASSERT_PARSE_TO_STR("\"\na\nb\"", "(\"\na\nb\")");
-    ASSERT_PARSE_TO_STR("'\"abc\"", "((quote \"abc\"))");
-    ASSERT_PARSE_TO_STR("\"'abc\"", "(\"'abc\")");
-    ASSERT_PARSE_TO_STR("'\"x\" \"y\" \"z\"", "((quote \"x\") \"y\" \"z\")");
-    ASSERT_PARSE_TO_STR("'(\"x\" \"y\" \"z\")", "((quote (\"x\" \"y\" \"z\")))");
+    ASSERT_TO_STR(*make_value(""s), "\"\"");
+    ASSERT_TO_STR(*make_value("a"s), "\"a\"");
+    ASSERT_TO_STR(*make_value("abc"s), "\"abc\"");
+    ASSERT_TO_STR(*make_value("xxx"s), "\"xxx\"");
+    ASSERT_TO_STR(*make_value("!@#$%"s), "\"!@#$%\"");
+
+    // error
+    ASSERT_TO_STR(*make_error(""), BOLD(RED("error:") " " WHITE("")));
+    ASSERT_TO_STR(*make_error("message"), BOLD(RED("error:") " " WHITE("message")));
+    ASSERT_TO_STR(*make_error("hello world"), BOLD(RED("error:") " " WHITE("hello world")));
+    ASSERT_TO_STR(*make_error("hello '%s'", "world"), BOLD(RED("error:") " " WHITE("hello 'world'")));
+    ASSERT_TO_STR(*make_error("hello '%g'", 3.14), BOLD(RED("error:") " " WHITE("hello '3.14'")));
+    ASSERT_TO_STR(*make_error("hi %d, %d, %d bye", 1, 2, 3), BOLD(RED("error:") " " WHITE("hi 1, 2, 3 bye")));
+
+    // info
+    ASSERT_TO_STR(*make_info(""), GREEN(""));
+    ASSERT_TO_STR(*make_info("message"), GREEN("message"));
+    ASSERT_TO_STR(*make_info("hello world"), GREEN("hello world"));
+    ASSERT_TO_STR(*make_info("hello '%s'", "world"), GREEN("hello 'world'"));
+    ASSERT_TO_STR(*make_info("hello '%g'", 3.14), GREEN("hello '3.14'"));
+    ASSERT_TO_STR(*make_info("hi %d, %d, %d bye", 1, 2, 3), GREEN("hi 1, 2, 3 bye"));
+
+    // bool
+    ASSERT_TO_STR(*true_, "true");
+    ASSERT_TO_STR(*make_value(true), "true");
+    ASSERT_TO_STR(*false_, "false");
+    ASSERT_TO_STR(*make_value(false), "false");
+
+    // bool
+    ASSERT_TO_STR(*nil, "()");
+    ASSERT_TO_STR(*make_nil(), "()");
+
+    // identity
+    ASSERT_TO_STR(*make_value(make_value(1)), "1");
+    ASSERT_TO_STR(*make_value(make_value("abc")), "abc");
+    ASSERT_TO_STR(*make_value(make_value("abc"s)), "\"abc\"");
+    ASSERT_TO_STR(*make_value(true_), "true");
+    ASSERT_TO_STR(*make_value(nil), "()");
+
+    // pair
+    ASSERT_TO_STR(*make_vpair(1, 1), "(1 . 1)");
+    ASSERT_TO_STR(*make_vpair(1, 2), "(1 . 2)");
+    ASSERT_TO_STR(*make_vpair(1, "abc"), "(1 . abc)");
+    ASSERT_TO_STR(*make_vpair("xyz"s, 3.14), "(\"xyz\" . 3.14)");
+    ASSERT_TO_STR(*make_vpair(true_, false_), "(true . false)");
+    ASSERT_TO_STR(*make_vpair(1, nil), "(1)");
+    ASSERT_TO_STR(*make_vpair(nil, 2), "(() . 2)");
+    ASSERT_TO_STR(*make_vpair(nil, nil), "(())");
+
+    // list
+    ASSERT_TO_STR(*make_list(1), "(1)");
+    ASSERT_TO_STR(*make_list(1, 2, 3), "(1 2 3)");
+    ASSERT_TO_STR(*make_list(3.14, "abc", "xyz"s, true_, nil, false_), "(3.14 abc \"xyz\" true () false)");
+    ASSERT_TO_STR(*make_list(1, 2, make_list(3, 4, 5), 6), "(1 2 (3 4 5) 6)");
+    ASSERT_TO_STR(*make_list(1, 2, make_vpair(3, 4)), "(1 2 (3 . 4))");
+    ASSERT_TO_STR(*make_vpair(1, make_vpair(2, make_vpair(3, 4))), "(1 2 3 . 4)");
+    ASSERT_TO_STR(*make_list(make_list(make_list(1))), "(((1)))");
+}
+
+void test_parse() {
+    // nil
+    ASSERT_PARSE("()", nil);
+    ASSERT_PARSE("(  )", nil);
+    ASSERT_PARSE("  (  )   ", nil);
+    ASSERT_PARSE("()()", nil, nil);
+    ASSERT_PARSE("() ()", nil, nil);
+    ASSERT_PARSE(" ()  ()  ", nil, nil);
+    ASSERT_PARSE("(()())", make_list(nil, nil));
+    ASSERT_PARSE("(() ((()) () ())) ()", make_list(nil, make_list(make_list(nil), nil, nil)), nil);
+    ASSERT_PARSE(" ( () ( (( )) ()  () ) )  () ", make_list(nil, make_list(make_list(nil), nil, nil)), nil);
+
+    // integers
+    ASSERT_PARSE("1", 1);
+    ASSERT_PARSE("1 2", 1, 2);
+    ASSERT_PARSE("123", 123);
+    ASSERT_PARSE("123456789", 123456789);
+    ASSERT_PARSE("1234 56789", 1234, 56789);
+    ASSERT_PARSE("(1)", make_list(1));
+    ASSERT_PARSE("(1 2)", make_list(1, 2));
+    ASSERT_PARSE("((1))", make_list(make_list(1)));
+    ASSERT_PARSE("((1) (2))", make_list(make_list(1), make_list(2)));
+    ASSERT_PARSE("(1 () 2)", make_list(1, nil, 2));
+    ASSERT_PARSE("1 2 3", 1, 2, 3);
+    ASSERT_PARSE("(1 2 3)", make_list(1, 2, 3));
+    ASSERT_PARSE("  (  1    2 3 )  ", make_list(1, 2, 3));
+    ASSERT_PARSE("1 (2 3 (4) 5 ((6 7) 8 9) 10)",
+                 1, make_list(2, 3, make_list(4), 5, make_list(make_list(6, 7), 8, 9), 10));
+    ASSERT_PARSE("  1  (  2 3 (4  ) 5 (( 6  7 )))",
+                 1, make_list(2, 3, make_list(4), 5, make_list(make_list(6, 7))));
+    ASSERT_PARSE("1 (23 (4) 5 ((67) 89) 10)",
+                 1, make_list(23, make_list(4), 5, make_list(make_list(67), 89), 10));
+
+    // decimals
+    ASSERT_PARSE(".456 1. 2.0 3.14 -4. -5.67 -.123", 0.456, 1, 2, 3.14, -4, -5.67, -0.123);
+    ASSERT_PARSE("1e10 1e2 1e1 1e0 1e-1 1e-2 1e-10", 1e10, 1e2, 1e1, 1e0, 1e-1, 1e-2, 1e-10);
+
+    // symbols
+    ASSERT_PARSE("x", "x");
+    ASSERT_PARSE("x y", "x", "y");
+    ASSERT_PARSE("abc xyz", "abc", "xyz");
+    ASSERT_PARSE("!?_ */- \\%^", "!?_", "*/-", "\\%^");
+    ASSERT_PARSE("x y z", "x", "y", "z");
+    ASSERT_PARSE("x 1 y 2 z", "x", 1, "y", 2, "z");
+    ASSERT_PARSE("xyz a1 abc 2b def", "xyz", "a1", "abc", "2b", "def");
+
+    // quote
+    ASSERT_PARSE("'1", make_list("quote", 1));
+    ASSERT_PARSE("  '1", make_list("quote", 1));
+    ASSERT_PARSE("  '  1", make_list("quote", 1));
+    ASSERT_PARSE("  '  1  ", make_list("quote", 1));
+    ASSERT_PARSE("'1 2", make_list("quote", 1), 2);
+    ASSERT_PARSE("1 '2", 1, make_list("quote", 2));
+    ASSERT_PARSE("'1 '2", make_list("quote", 1), make_list("quote", 2));
+    ASSERT_PARSE("''1", make_list("quote", make_list("quote", 1)));
+    ASSERT_PARSE("'''1", make_list("quote", make_list("quote", make_list("quote", 1))));
+    ASSERT_PARSE("1 2 ' (3 4 (5 6 7))", 1, 2, make_list("quote", make_list(3, 4, make_list(5, 6, 7))));
+    ASSERT_PARSE("'1 2 ' (3 4 (5 '6 7))",
+                 make_list("quote", 1), 2,
+                 make_list("quote", make_list(3, 4, make_list(5, make_list("quote", 6), 7))));
+    ASSERT_PARSE("1 2 '(3 4 '(5 6 7))",
+                 1, 2, make_list("quote", make_list(3, 4, make_list("quote", make_list(5, 6, 7)))));
+    ASSERT_PARSE("''(1 2 3)", make_list("quote", make_list("quote", make_list(1, 2, 3))));
+
+    // dot
+    ASSERT_PARSE(".", ".");
+    ASSERT_PARSE(". . . . .", ".", ".", ".", ".", ".");
+    ASSERT_PARSE("1 . 2 . 3", 1, ".", 2, ".", 3);
+    ASSERT_PARSE("(1 2) . 3 . (4 5)", make_list(1, 2), ".", 3, ".", make_list(4, 5));
+    ASSERT_PARSE("(1 . 2)", make_vpair(1, 2));
+    ASSERT_PARSE("(1 2 . 3)", make_vpair(1, make_vpair(2, 3)));
+    ASSERT_PARSE("(1 (2 . 3) . 4)", make_vpair(1, make_vpair(make_vpair(2, 3), 4)));
+    ASSERT_PARSE("(1 (2 (3 . 4) . 5) . 6)",
+                 make_vpair(1, make_vpair(make_vpair(2, make_vpair(make_vpair(3, 4), 5)), 6)));
+    ASSERT_PARSE("(1 (2 . 3))", make_list(1, make_vpair(2, 3)));
+    ASSERT_PARSE("((1 2) . 3)", make_vpair(make_list(1, 2), 3));
+    ASSERT_PARSE("((1 . 2) . 3)", make_vpair(make_vpair(1, 2), 3));
+    ASSERT_PARSE("(1 . (2 3))", make_vpair(1, make_list(2, 3)));
+    ASSERT_PARSE("(1 2 3 . (4 5 6))", make_list(1, 2, 3, 4, 5, 6));
+    ASSERT_PARSE("(. 1)", 1);
+    ASSERT_PARSE("(. (1 2))", make_list(1, 2));
+    ASSERT_PARSE("(. (1 . 2))", make_vpair(1, 2));
+    ASSERT_PARSE("(.1 . 2.)", make_vpair(0.1, 2));
+    ASSERT_PARSE("(1.2 . 3.4)", make_vpair(1.2, 3.4));
+    ASSERT_PARSE("(1 2 3 . 4)", make_vpair(1, make_vpair(2, make_vpair(3, 4))));
+    ASSERT_PARSE("'(1 . 2)", make_list("quote", make_vpair(1, 2)));
+    ASSERT_PARSE("'(. 2)", make_list("quote", 2));
+
+    // comment
+    ASSERT_PARSE("(1 2 3); comment", make_list(1, 2, 3));
+    ASSERT_PARSE("(1 2 3); (4 5 \" 6 7", make_list(1, 2, 3));
+    ASSERT_PARSE("(1 2 3)   ;   comment  ", make_list(1, 2, 3));
+    ASSERT_PARSE("\n(1 2 3)   ;   comment  \n  (4 5)", make_list(1, 2, 3), make_list(4, 5));
+    ASSERT_PARSE(" ; comment\n(1 2 3)   ;   comment  \n  (4 5)", make_list(1, 2, 3), make_list(4, 5));
+
+    // string
+    ASSERT_PARSE("\"\"", ""s);
+    ASSERT_PARSE("\"abc\"", "abc"s);
+    ASSERT_PARSE("\"abc def\"", "abc def"s);
+    ASSERT_PARSE("\"  abc   def   \"", "  abc   def   "s);
+    ASSERT_PARSE("\"  abc \n  def  \n \"", "  abc \n  def  \n "s);
+    ASSERT_PARSE("\"x\" \"y\" \"z\"", "x"s, "y"s, "z"s);
+    ASSERT_PARSE("\"a\\tb\"", "a\\tb"s);
+    ASSERT_PARSE("\"a\tb\"", "a\tb"s);
+    ASSERT_PARSE("\"a\\nb\"", "a\\nb"s);
+    ASSERT_PARSE("\"\na\nb\"", "\na\nb"s);
+    ASSERT_PARSE("'\"abc\"", make_list("quote", "abc"s));
+    ASSERT_PARSE("\"'abc\"", "'abc"s);
+    ASSERT_PARSE("'\"x\" \"y\" \"z\"", make_list("quote", "x"s), "y"s, "z"s);
+    ASSERT_PARSE("'(\"x\" \"y\" \"z\")", make_list("quote", make_list("x"s, "y"s, "z"s)));
 
     // special symbols
-    ASSERT_PARSE_TO_STR("nil", "(())");
-    ASSERT_PARSE_TO_STR("true", "(true)");
-    ASSERT_PARSE_TO_STR("false", "(false)");
-    ASSERT_PARSE_TO_STR("#t", "(true)");
-    ASSERT_PARSE_TO_STR("#f", "(false)");
+    ASSERT_PARSE("nil", nil);
+    ASSERT_PARSE("true", true_);
+    ASSERT_PARSE("false", false_);
+    ASSERT_PARSE("#t", true_);
+    ASSERT_PARSE("#f", false_);
 
     // parsing errors
     ASSERT_PARSE_ERROR("(1 2", "unterminated list");
