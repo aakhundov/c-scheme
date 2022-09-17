@@ -178,7 +178,7 @@ std::ostream& value_pair::write(std::ostream& os) const {
     std::shared_ptr<value> running{cdr()};
     while (running != nil) {
         if (running->compound()) {
-            const value_pair* pair = reinterpret_cast<value_pair*>(running.get());
+            auto pair = std::reinterpret_pointer_cast<value_pair>(running);
             os << " ";
             pair->car()->write(os);  // write the next car
             running = pair->cdr();   // go to the following cdr
@@ -220,7 +220,7 @@ bool value_pair::is_list() const {
     while (running != nil) {
         if (running->compound()) {
             // the cdr is a pair
-            const value_pair* pair = reinterpret_cast<value_pair*>(running.get());
+            auto pair = std::reinterpret_pointer_cast<value_pair>(running);
             running = pair->cdr();  // go to the next cdr
         } else {
             // the (terminating) cdr is not a pair
@@ -240,7 +240,7 @@ size_t value_pair::length() const {
         result += 1;  // increment the length
         if (running->compound()) {
             // the cdr is a pair
-            const value_pair* pair = reinterpret_cast<value_pair*>(running.get());
+            auto pair = std::reinterpret_pointer_cast<value_pair>(running);
             running = pair->cdr();  // go to the next cdr
         } else {
             // the (terminating) cdr is not a pair

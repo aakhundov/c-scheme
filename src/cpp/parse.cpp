@@ -40,9 +40,7 @@ const std::unordered_map<std::string, std::shared_ptr<value>> special_symbols{
 
 class parsing_error : public format_exception {
    public:
-    template <typename... Args>
-    parsing_error(const char* format, Args&&... args)
-        : format_exception(format, std::forward<Args>(args)...) {}
+    using format_exception::format_exception;
 };
 
 // functions

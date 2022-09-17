@@ -33,9 +33,6 @@ class format_exception : public str_exception {
 
         _message = buffer;
     }
-
-   protected:
-    format_exception() {}
 };
 
 #endif  // EXCEPTION_HPP_

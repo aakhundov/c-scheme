@@ -294,7 +294,7 @@ void test_pair() {
     value_pair val = *make_list(1, 2, 3, 4, 5);
     ASSERT_ITERATOR(val, "1, 2, 3, 4, 5");
     for (auto& item : val) {
-        value_number* number = reinterpret_cast<value_number*>(item.get());
+        auto number = std::reinterpret_pointer_cast<value_number>(item);
         item = make_value(number->number() * number->number());
     }
     ASSERT_ITERATOR(val, "1, 4, 9, 16, 25");
