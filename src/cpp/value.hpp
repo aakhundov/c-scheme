@@ -52,9 +52,15 @@ class value {
         return _type;
     }
 
+    // is compound type?
+    bool compound() const {
+        return _compound;
+    }
+
    protected:
     // for efficient type checking
     value_t _type{value_t::undefined};
+    bool _compound{false};
 };
 
 class value_number : public value {
@@ -245,6 +251,7 @@ class value_pair : public value {
         const std::shared_ptr<value>& cdr)
         : _car(car), _cdr(cdr) {
         _type = value_t::pair;
+        _compound = true;
     }
 
     value_iterator begin() {
@@ -261,11 +268,11 @@ class value_pair : public value {
 
     // pair getters
     const std::shared_ptr<value_pair> pcar() const {
-        assert(_car->type() == value_t::pair);
+        assert(_car->compound());
         return std::reinterpret_pointer_cast<value_pair>(_car);
     }
     const std::shared_ptr<value_pair> pcdr() const {
-        assert(_cdr->type() == value_t::pair);
+        assert(_cdr->compound());
         return std::reinterpret_pointer_cast<value_pair>(_cdr);
     }
 
