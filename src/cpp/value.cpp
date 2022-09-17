@@ -159,6 +159,20 @@ void value_pair::value_iterator::_advance() {
 }
 
 std::ostream& value_pair::write(std::ostream& os) const {
+    if (car()->type() == value_t::symbol) {
+        // first item is a symbol
+        auto symbol = std::reinterpret_pointer_cast<value_symbol>(car());
+        if (symbol->symbol() == "quote" &&     // first item is a quote symbol
+            cdr()->type() == value_t::pair &&  // there is a second item
+            pcdr()->cdr() == nil) {            // there is no third item
+            // (quote x) -> 'x
+            // (quote (x y z)) -> '(x y z)
+            os << '\'' << pcdr()->car()->str();
+
+            return os;
+        }
+    }
+
     os << "(";
     car()->write(os);  // write the first car
     std::shared_ptr<value> running{cdr()};

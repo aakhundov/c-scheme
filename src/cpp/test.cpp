@@ -576,6 +576,11 @@ void test_to_str() {
     ASSERT_TO_STR(*make_vpair(1, nil), "(1)");
     ASSERT_TO_STR(*make_vpair(nil, 2), "(() . 2)");
     ASSERT_TO_STR(*make_vpair(nil, nil), "(())");
+    ASSERT_TO_STR(*make_vpair("quote", 1), "(quote . 1)");
+    ASSERT_TO_STR(*make_vpair("quote", nil), "(quote)");
+    ASSERT_TO_STR(*make_vpair(1, "quote"), "(1 . quote)");
+    ASSERT_TO_STR(*make_vpair(nil, "quote"), "(() . quote)");
+    ASSERT_TO_STR(*make_vpair("quote", "quote"), "(quote . quote)");
 
     // list
     ASSERT_TO_STR(*make_list(1), "(1)");
@@ -585,6 +590,15 @@ void test_to_str() {
     ASSERT_TO_STR(*make_list(1, 2, make_vpair(3, 4)), "(1 2 (3 . 4))");
     ASSERT_TO_STR(*make_vpair(1, make_vpair(2, make_vpair(3, 4))), "(1 2 3 . 4)");
     ASSERT_TO_STR(*make_list(make_list(make_list(1))), "(((1)))");
+    ASSERT_TO_STR(*make_list("quote"), "(quote)");
+    ASSERT_TO_STR(*make_list("quote", 1), "'1");
+    ASSERT_TO_STR(*make_list("quote", 1, 2), "(quote 1 2)");
+    ASSERT_TO_STR(*make_list("quote", make_vpair(1, 2)), "'(1 . 2)");
+    ASSERT_TO_STR(*make_list("quote", make_vpair(1, 2), 3), "(quote (1 . 2) 3)");
+    ASSERT_TO_STR(*make_list("quote", make_list(1, 2, 3)), "'(1 2 3)");
+    ASSERT_TO_STR(*make_list("quote", make_list(1, 2, 3), make_list(4, 5)), "(quote (1 2 3) (4 5))");
+    ASSERT_TO_STR(*make_list("quote", make_list("quote", 1)), "''1");
+    ASSERT_TO_STR(*make_list("quote", make_list("quote", make_list("quote", 1))), "'''1");
 }
 
 void test_parse() {
