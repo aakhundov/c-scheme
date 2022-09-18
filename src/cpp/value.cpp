@@ -108,12 +108,12 @@ std::ostream& value_nil::write(std::ostream& os) const {
 
 value_pair::value_iterator::reference value_pair::value_iterator::operator*() const {
     // shared ptr to the car
-    return (_at_cdr ? _ptr->_cdr : _ptr->_car);
+    return *(_at_cdr ? _ptr->_cdr : _ptr->_car);
 }
 
 value_pair::value_iterator::pointer value_pair::value_iterator::operator->() {
     // reference to a shared ptr to the car
-    return &(_at_cdr ? _ptr->_cdr : _ptr->_car);
+    return _at_cdr ? _ptr->_cdr : _ptr->_car;
 }
 
 value_pair::value_iterator& value_pair::value_iterator::operator++() {

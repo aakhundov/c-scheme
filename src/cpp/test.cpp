@@ -72,8 +72,8 @@ void report_test(std::string message) {
     {                                                                         \
         value_pair pair = (expr);                                             \
         std::string str_items;                                                \
-        for (auto& item : pair) {                                             \
-            str_items += ((item->str()) + ", ");                              \
+        for (const auto& item : pair) {                                       \
+            str_items += ((item.str()) + ", ");                               \
         }                                                                     \
         str_items.pop_back();                                                 \
         str_items.pop_back();                                                 \
@@ -293,9 +293,9 @@ void test_pair() {
     // iterator mutation
     value_pair val = *make_list(1, 2, 3, 4, 5);
     ASSERT_ITERATOR(val, "1, 2, 3, 4, 5");
-    for (auto& item : val) {
-        auto number = std::reinterpret_pointer_cast<value_number>(item);
-        item = make_value(number->number() * number->number());
+    for (value& item : val) {
+        auto number = reinterpret_cast<value_number*>(&item);
+        number->number(number->number() * number->number());
     }
     ASSERT_ITERATOR(val, "1, 4, 9, 16, 25");
 

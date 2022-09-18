@@ -35,7 +35,7 @@ class value {
     virtual std::ostream& write(std::ostream& os) const = 0;
 
     // convert to string
-    std::string str() {
+    std::string str() const {
         std::ostringstream s;
         write(s);
 
@@ -69,8 +69,8 @@ class value_number : public value {
         _type = value_t::number;
     }
 
-    // getter only
     double number() const { return _number; }
+    void number(double number) { _number = number; }
 
     std::ostream& write(std::ostream& os) const override;
     bool equals(const value& other) const override;
@@ -110,8 +110,8 @@ class value_string : public value {
         _type = value_t::string;
     }
 
-    // getter only
     const std::string& string() const { return _string; }
+    void string(const std::string& string) { _string = string; }
 
     std::ostream& write(std::ostream& os) const override;
     bool equals(const value& other) const override;
@@ -221,9 +221,9 @@ class value_pair : public value {
         // iterator traits
         using iterator_category = std::forward_iterator_tag;
         using difference_type = std::ptrdiff_t;
-        using value_type = std::shared_ptr<value>;
-        using pointer = std::shared_ptr<value>*;
-        using reference = std::shared_ptr<value>&;
+        using value_type = value;
+        using pointer = std::shared_ptr<value>;
+        using reference = value&;
 
         value_iterator(value_pair* ptr) : _ptr(ptr) {}
 

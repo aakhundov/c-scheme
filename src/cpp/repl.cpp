@@ -20,7 +20,7 @@ void handle_repl_input(const std::string& input, std::string& history) {
         auto list = std::reinterpret_pointer_cast<value_pair>(result);
         for (const auto& item : *list) {
             // print one item per line
-            std::cout << *item << '\n';
+            std::cout << item << '\n';
         }
 
         history = list->str();                              // clean history
