@@ -50,11 +50,7 @@ std::ostream& value_string::write(std::ostream& os) const {
 }
 
 bool value_string::equals(const value& other) const {
-    // ugly: depends on the subclasses
-    if (other.type() == value_t::string ||
-        other.type() == value_t::format ||
-        other.type() == value_t::error ||
-        other.type() == value_t::info) {
+    if (other.type() == this->type()) {
         return (reinterpret_cast<const value_string*>(&other)->_string == _string);
     } else {
         return false;
@@ -127,18 +123,15 @@ void value_pair::iterator::_advance() {
 }
 
 std::ostream& value_pair::write(std::ostream& os) const {
-    if (car()->type() == value_t::symbol) {
-        // first item is a symbol
-        auto symbol = std::reinterpret_pointer_cast<value_symbol>(car());
-        if (symbol->symbol() == "quote" &&     // first item is a quote symbol
-            cdr()->type() == value_t::pair &&  // there is a second item
-            pcdr()->cdr() == nil) {            // there is no third item
-            // (quote x) -> 'x
-            // (quote (x y z)) -> '(x y z)
-            os << '\'' << pcdr()->car()->str();
+    if (car()->type() == value_t::symbol &&              // first item is a symbol
+        to<value_symbol>(car())->symbol() == "quote" &&  // first item is a quote symbol
+        cdr()->type() == value_t::pair &&                // there is a second item
+        pcdr()->cdr() == nil) {                          // there is no third item
+        // (quote x) -> 'x
+        // (quote (x y z)) -> '(x y z)
+        os << '\'' << pcdr()->car()->str();
 
-            return os;
-        }
+        return os;
     }
 
     os << "(";
@@ -146,7 +139,7 @@ std::ostream& value_pair::write(std::ostream& os) const {
     std::shared_ptr<value> running{cdr()};
     while (running != nil) {
         if (running->compound()) {
-            auto pair = std::reinterpret_pointer_cast<value_pair>(running);
+            auto pair = to<value_pair>(running);
             os << " ";
             pair->car()->write(os);  // write the next car
             running = pair->cdr();   // go to the following cdr
@@ -187,9 +180,8 @@ bool value_pair::is_list() const {
     std::shared_ptr<value> running{cdr()};
     while (running != nil) {
         if (running->compound()) {
-            // the cdr is a pair
-            auto pair = std::reinterpret_pointer_cast<value_pair>(running);
-            running = pair->cdr();  // go to the next cdr
+            // the cdr is a pair: go to the next cdr
+            running = to<value_pair>(running)->cdr();
         } else {
             // the (terminating) cdr is not a pair
             return false;  // this is not a list
@@ -207,9 +199,8 @@ size_t value_pair::length() const {
     while (running != nil) {
         result += 1;  // increment the length
         if (running->compound()) {
-            // the cdr is a pair
-            auto pair = std::reinterpret_pointer_cast<value_pair>(running);
-            running = pair->cdr();  // go to the next cdr
+            // the cdr is a pair: go to the next cdr
+            running = to<value_pair>(running)->cdr();
         } else {
             // the (terminating) cdr is not a pair
             break;  // stop the counting

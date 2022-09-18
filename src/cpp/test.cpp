@@ -123,20 +123,19 @@ void report_test(std::string message) {
         }                                                                      \
     }
 
-#define ASSERT_PARSE_ERROR(text, expected)                                              \
-    {                                                                                   \
-        std::shared_ptr<value> v = parse_values(text);                                  \
-        std::string str_result = v->str();                                              \
-        report_test(BLUE("[") #text BLUE("] --> [") + str_result + BLUE("]"));          \
-        if (v->type() != value_t::error) {                                              \
-            std::cerr << RED("expected error") << '\n';                                 \
-            exit(1);                                                                    \
-        }                                                                               \
-        std::shared_ptr<value_error> e = std::reinterpret_pointer_cast<value_error>(v); \
-        if (e->string().find(expected) == std::string::npos) {                          \
-            std::cerr << RED("expected error with " #expected) << '\n';                 \
-            exit(1);                                                                    \
-        }                                                                               \
+#define ASSERT_PARSE_ERROR(text, expected)                                      \
+    {                                                                           \
+        std::shared_ptr<value> v = parse_values(text);                          \
+        std::string str_result = v->str();                                      \
+        report_test(BLUE("[") #text BLUE("] --> [") + str_result + BLUE("]"));  \
+        if (v->type() != value_t::error) {                                      \
+            std::cerr << RED("expected error") << '\n';                         \
+            exit(1);                                                            \
+        }                                                                       \
+        if (to<value_error>(v)->string().find(expected) == std::string::npos) { \
+            std::cerr << RED("expected error with " #expected) << '\n';         \
+            exit(1);                                                            \
+        }                                                                       \
     }
 
 void test_value() {
@@ -301,8 +300,9 @@ void test_pair() {
     ASSERT_ITERATOR(val, "1, 4, 9, 16, 25");
     for (auto p = val.begin(); p != val.end(); p++) {
         // replace the value in the shared_ptr with iterator's ptr()
-        auto number = std::reinterpret_pointer_cast<value_number>(p.ptr());
-        p.ptr(make_number(2 * number->number()));
+        auto old_number = to<value_number>(p.ptr());
+        auto new_number = make_number(2 * old_number->number());
+        p.ptr(new_number);
     }
     ASSERT_ITERATOR(val, "2, 8, 18, 32, 50");
 

@@ -17,7 +17,7 @@ void handle_repl_input(const std::string& input, std::string& history) {
         std::cout << *result << '\n';  // print the error
         history = input;               // history as is
     } else if (result->type() == value_t::pair) {
-        auto list = std::reinterpret_pointer_cast<value_pair>(result);
+        auto list = to<value_pair>(result);
         for (const auto& item : *list) {
             // print one item per line
             std::cout << item << '\n';

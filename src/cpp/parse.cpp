@@ -136,43 +136,37 @@ std::shared_ptr<value> replace_dots_in_list(std::shared_ptr<value> v) {
 
     while (running != nil) {
         // iterate over the items of the list v
-        auto pair = std::reinterpret_pointer_cast<value_pair>(running);
-        if (pair->car()->type() == value_t::symbol) {
-            // current item is a symbol
-            auto current_item = std::reinterpret_pointer_cast<value_symbol>(pair->car());
-            if (current_item->symbol() == dot_symbol) {
-                // current item is a dot
-                if (pair->cdr() == nil) {
-                    // no next item: (x .)
-                    throw parsing_error("unfollowed %s in %s", dot_symbol.c_str(), v->str().c_str());
-                }
-                auto cdr = pair->pcdr();
-                if (cdr->cdr() != nil) {
-                    // 2+ next items: (x . y z)
-                    throw parsing_error("2+ items after %s in %s", dot_symbol.c_str(), v->str().c_str());
-                }
-                if (cdr->car()->type() == value_t::symbol) {
-                    // next item is a symbol
-                    auto next_item = std::reinterpret_pointer_cast<value_symbol>(cdr->car());
-                    if (next_item->symbol() == dot_symbol) {
-                        // next item is a dot: (x . .)
-                        throw parsing_error(
-                            "%s followed by %s in %s",
-                            dot_symbol.c_str(), dot_symbol.c_str(), v->str().c_str());
-                    }
-                }
-
-                if (!previous) {
-                    // (. then x) -> x
-                    return cdr->car();
-                } else {
-                    // (x then . then y) -> (x . y)
-                    // (x then y then . then z) -> (x y . z)
-                    previous->cdr(cdr->car());
-                }
-
-                break;
+        auto pair = to<value_pair>(running);
+        if (pair->car()->type() == value_t::symbol &&
+            to<value_symbol>(pair->car())->symbol() == dot_symbol) {
+            // current item is a dot symbol
+            if (pair->cdr() == nil) {
+                // no next item: (x .)
+                throw parsing_error("unfollowed %s in %s", dot_symbol.c_str(), v->str().c_str());
             }
+            auto cdr = pair->pcdr();
+            if (cdr->cdr() != nil) {
+                // 2+ next items: (x . y z)
+                throw parsing_error("2+ items after %s in %s", dot_symbol.c_str(), v->str().c_str());
+            }
+            if (cdr->car()->type() == value_t::symbol &&
+                to<value_symbol>(cdr->car())->symbol() == dot_symbol) {
+                // next item is a dot symbol: (x . .)
+                throw parsing_error(
+                    "%s followed by %s in %s",
+                    dot_symbol.c_str(), dot_symbol.c_str(), v->str().c_str());
+            }
+
+            if (!previous) {
+                // (. then x) -> x
+                return cdr->car();
+            } else {
+                // (x then . then y) -> (x . y)
+                // (x then y then . then z) -> (x y . z)
+                previous->cdr(cdr->car());
+            }
+
+            break;
         }
 
         previous = pair;        // remember the current pair

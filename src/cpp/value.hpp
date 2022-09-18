@@ -297,12 +297,10 @@ class value_pair : public value {
 
     // pair getters
     const std::shared_ptr<value_pair> pcar() const {
-        assert(_car->compound());
-        return std::reinterpret_pointer_cast<value_pair>(_car);
+        return _car->compound() ? std::reinterpret_pointer_cast<value_pair>(_car) : nullptr;
     }
     const std::shared_ptr<value_pair> pcdr() const {
-        assert(_cdr->compound());
-        return std::reinterpret_pointer_cast<value_pair>(_cdr);
+        return _cdr->compound() ? std::reinterpret_pointer_cast<value_pair>(_cdr) : nullptr;
     }
 
     // setters
@@ -443,6 +441,14 @@ inline bool operator!=(const value& v1, const value& v2) {
 }
 
 std::ostream& operator<<(std::ostream& os, const value_t& t);
+
+template <typename T,
+          typename std::enable_if<
+              std::is_base_of<value, T>::value,
+              bool>::type = true>  // poor man's concept
+inline std::shared_ptr<T> to(const std::shared_ptr<value>& v) {
+    return std::reinterpret_pointer_cast<T>(v);
+}
 
 // exceptions
 
