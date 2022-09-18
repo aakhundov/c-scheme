@@ -299,8 +299,8 @@ std::shared_ptr<value> parse_values(const std::filesystem::path& p) {
 
     std::ifstream f{p};
 
-    if (!f) {
-        return make_error("can't open the file: '%s'", p.c_str());
+    if (!f.is_open()) {
+        return make_error("failed to open the file: '%s'", p.c_str());
     }
 
     return parse_values(f);
