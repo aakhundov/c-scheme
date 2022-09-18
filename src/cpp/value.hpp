@@ -216,7 +216,7 @@ const std::shared_ptr<value_nil> nil = value_nil::get();
 
 class value_pair : public value {
    public:
-    struct value_iterator {
+    struct iterator {
        public:
         // iterator traits
         using iterator_category = std::forward_iterator_tag;
@@ -225,7 +225,7 @@ class value_pair : public value {
         using pointer = std::shared_ptr<value>;
         using reference = value&;
 
-        value_iterator(value_pair* ptr) : _ptr(ptr) {}
+        iterator(value_pair* ptr) : _ptr(ptr) {}
 
         reference operator*() const {
             return *(_at_cdr ? _ptr->_cdr : _ptr->_car);
@@ -235,24 +235,24 @@ class value_pair : public value {
             return _at_cdr ? _ptr->_cdr : _ptr->_car;
         }
 
-        value_iterator& operator++() {
+        iterator& operator++() {
             _advance();
 
             return *this;
         }
 
-        value_iterator operator++(int) {
-            value_iterator tmp = *this;
+        iterator operator++(int) {
+            iterator tmp = *this;
             _advance();
 
             return tmp;
         }
 
-        friend bool operator==(const value_iterator& a, const value_iterator& b) {
+        friend bool operator==(const iterator& a, const iterator& b) {
             return a._ptr == b._ptr && a._at_cdr == b._at_cdr;
         };
 
-        friend bool operator!=(const value_iterator& a, const value_iterator& b) {
+        friend bool operator!=(const iterator& a, const iterator& b) {
             return a._ptr != b._ptr || a._at_cdr != b._at_cdr;
         };
 
@@ -279,12 +279,12 @@ class value_pair : public value {
         _compound = true;
     }
 
-    value_iterator begin() {
-        return value_iterator(this);
+    iterator begin() {
+        return iterator(this);
     }
 
-    value_iterator end() {
-        return value_iterator(nullptr);
+    iterator end() {
+        return iterator(nullptr);
     }
 
     // getters

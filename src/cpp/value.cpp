@@ -106,7 +106,7 @@ std::ostream& value_nil::write(std::ostream& os) const {
 
 // value_pair
 
-void value_pair::value_iterator::_advance() {
+void value_pair::iterator::_advance() {
     if (_ptr->cdr()->compound()) {
         _ptr = reinterpret_cast<value_pair*>(_ptr->cdr().get());  // cdr is a pair
     } else {
