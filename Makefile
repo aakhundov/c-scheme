@@ -30,21 +30,25 @@ C_LIB_OBJECTS=$(C_LIB_SOURCES:$(C_SRC_DIR)/%.c=$(C_BIN_DIR)/%.o)
 CPP_SRC_DIR=$(SRC_DIR)/cpp
 CPP_BIN_DIR=$(BIN_DIR)/cpp
 
+CPP_REPL=$(CPP_BIN_DIR)/$(APP)-repl
 CPP_TEST=$(CPP_BIN_DIR)/$(APP)-test
 CPP_LIB=$(CPP_BIN_DIR)/$(APP).so
 
 CPP_SOURCES=$(wildcard $(CPP_SRC_DIR)/*.cpp)
+CPP_REPL_SOURCES=$(CPP_SRC_DIR)/repl.cpp $(CPP_SRC_DIR)/terminal.cpp
+CPP_REPL_OBJECTS=$(CPP_REPL_SOURCES:$(CPP_SRC_DIR)/%.cpp=$(CPP_BIN_DIR)/%.o)
 CPP_TEST_SOURCES=$(CPP_SRC_DIR)/test.cpp
 CPP_TEST_OBJECTS=$(CPP_TEST_SOURCES:$(CPP_SRC_DIR)/%.cpp=$(CPP_BIN_DIR)/%.o)
 CPP_LIB_SOURCES=$(filter-out $(CPP_REPL_SOURCES) $(CPP_TEST_SOURCES), $(CPP_SOURCES))
 CPP_LIB_OBJECTS=$(CPP_LIB_SOURCES:$(CPP_SRC_DIR)/%.cpp=$(CPP_BIN_DIR)/%.o)
 
-all: c-repl c-test c-lib cpp-test cpp-lib
+all: c-repl c-test c-lib cpp-repl cpp-test cpp-lib
 
 c-repl: $(C_REPL)
 c-test: $(C_TEST)
 c-lib: $(C_LIB)
 
+cpp-repl: $(CPP_REPL)
 cpp-test: $(CPP_TEST)
 cpp-lib: $(CPP_LIB)
 
@@ -65,6 +69,12 @@ $(C_LIB): $(C_LIB_OBJECTS)
 
 $(C_LIB_OBJECTS): $(C_BIN_DIR)/%.o: $(C_SRC_DIR)/%.c
 	$(CC) $(C_CFLAGS) $< -o $@
+
+$(CPP_REPL): $(CPP_REPL_OBJECTS) $(CPP_LIB)
+	$(CPPC) $(LDFLAGS) $^ -o $@ $(REPL_LDLIBS)
+
+$(CPP_REPL_OBJECTS): $(CPP_BIN_DIR)/%.o: $(CPP_SRC_DIR)/%.cpp
+	$(CPPC) $(CPP_CFLAGS) $< -o $@
 
 $(CPP_TEST): $(CPP_TEST_OBJECTS) $(CPP_LIB)
 	$(CPPC) $(LDFLAGS) $^ -o $@ $(TEST_LDLIBS)
