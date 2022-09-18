@@ -31,7 +31,7 @@ void handle_repl_input(const std::string& input, std::string& history) {
 int main() {
     terminal t{{"q", "quit", "exit"}};
 
-    t.add_handler({"clr", "clear"}, std::bind([]() { system("clear"); }));
+    t.add_handler({"clr", "clear"}, std::bind([]() { if (system("clear")) {} }));
     t.add_handler({".*"}, std::bind(handle_repl_input, _1, _3));
 
     std::cout << "cpp-scheme version 0.1.0\n"
