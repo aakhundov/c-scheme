@@ -227,13 +227,38 @@ class value_pair : public value {
 
         value_iterator(value_pair* ptr) : _ptr(ptr) {}
 
-        reference operator*() const;
-        pointer operator->();
-        value_iterator& operator++();
-        value_iterator operator++(int);
+        reference operator*() const {
+            return *(_at_cdr ? _ptr->_cdr : _ptr->_car);
+        }
 
-        friend bool operator==(const value_iterator& a, const value_iterator& b);
-        friend bool operator!=(const value_iterator& a, const value_iterator& b);
+        pointer operator->() {
+            return _at_cdr ? _ptr->_cdr : _ptr->_car;
+        }
+
+        value_iterator& operator++() {
+            _advance();
+
+            return *this;
+        }
+
+        value_iterator operator++(int) {
+            value_iterator tmp = *this;
+            _advance();
+
+            return tmp;
+        }
+
+        friend bool operator==(const value_iterator& a, const value_iterator& b) {
+            return a._ptr == b._ptr && a._at_cdr == b._at_cdr;
+        };
+
+        friend bool operator!=(const value_iterator& a, const value_iterator& b) {
+            return a._ptr != b._ptr || a._at_cdr != b._at_cdr;
+        };
+
+        std::shared_ptr<value> ptr() {
+            return _at_cdr ? _ptr->_cdr : _ptr->_car;
+        }
 
        private:
         // move the iterator

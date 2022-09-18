@@ -106,38 +106,6 @@ std::ostream& value_nil::write(std::ostream& os) const {
 
 // value_pair
 
-value_pair::value_iterator::reference value_pair::value_iterator::operator*() const {
-    // shared ptr to the car
-    return *(_at_cdr ? _ptr->_cdr : _ptr->_car);
-}
-
-value_pair::value_iterator::pointer value_pair::value_iterator::operator->() {
-    // reference to a shared ptr to the car
-    return _at_cdr ? _ptr->_cdr : _ptr->_car;
-}
-
-value_pair::value_iterator& value_pair::value_iterator::operator++() {
-    _advance();
-
-    return *this;
-}
-
-value_pair::value_iterator value_pair::value_iterator::operator++(int) {
-    value_iterator tmp = *this;
-
-    _advance();
-
-    return tmp;
-}
-
-bool operator==(const value_pair::value_iterator& a, const value_pair::value_iterator& b) {
-    return a._ptr == b._ptr && a._at_cdr == b._at_cdr;
-};
-
-bool operator!=(const value_pair::value_iterator& a, const value_pair::value_iterator& b) {
-    return a._ptr != b._ptr || a._at_cdr != b._at_cdr;
-};
-
 void value_pair::value_iterator::_advance() {
     if (_ptr->cdr()->compound()) {
         _ptr = reinterpret_cast<value_pair*>(_ptr->cdr().get());  // cdr is a pair
