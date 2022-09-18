@@ -294,10 +294,17 @@ void test_pair() {
     value_pair val = *make_list(1, 2, 3, 4, 5);
     ASSERT_ITERATOR(val, "1, 2, 3, 4, 5");
     for (value& item : val) {
+        // mutate the value in-place with a setter
         auto number = reinterpret_cast<value_number*>(&item);
         number->number(number->number() * number->number());
     }
     ASSERT_ITERATOR(val, "1, 4, 9, 16, 25");
+    for (auto p = val.begin(); p != val.end(); p++) {
+        // replace the value in the shared_ptr with iterator's ptr()
+        auto number = std::reinterpret_pointer_cast<value_number>(p.ptr());
+        p.ptr(make_number(2 * number->number()));
+    }
+    ASSERT_ITERATOR(val, "2, 8, 18, 32, 50");
 
     // cycle
     std::shared_ptr<value_pair> v1, v2, v3, v4;

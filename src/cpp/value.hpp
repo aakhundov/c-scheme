@@ -256,8 +256,12 @@ class value_pair : public value {
             return a._ptr != b._ptr || a._at_cdr != b._at_cdr;
         };
 
-        std::shared_ptr<value> ptr() {
+        const std::shared_ptr<value>& ptr() const {
             return _at_cdr ? _ptr->_cdr : _ptr->_car;
+        }
+
+        void ptr(const std::shared_ptr<value>& p) {
+            (_at_cdr ? _ptr->_cdr : _ptr->_car) = p;
         }
 
        private:
