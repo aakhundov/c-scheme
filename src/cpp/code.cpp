@@ -75,6 +75,8 @@ std::shared_ptr<value> token::to_value() const {
             std::shared_ptr<value> v = _val;
             return make_list("const", v);
     }
+
+    return nil;
 }
 
 // code_label
