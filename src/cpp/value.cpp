@@ -234,9 +234,6 @@ void value_pair::_throw_on_cycle_from(const std::shared_ptr<value>& other) {
 
 std::ostream& operator<<(std::ostream& os, const value_t& t) {
     switch (t) {
-        case value_t::undefined:
-            os << "undefined";
-            break;
         case value_t::number:
             os << "number";
             break;

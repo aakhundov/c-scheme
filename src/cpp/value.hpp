@@ -13,7 +13,6 @@
 #include "exception.hpp"
 
 enum class value_t {
-    undefined,
     number,
     symbol,
     string,
@@ -47,27 +46,21 @@ class value {
         return this == &other;
     }
 
-    // get the value's type
-    value_t type() const {
-        return _type;
-    }
-
-    // is compound type?
-    bool compound() const {
-        return _compound;
-    }
+    value_t type() const { return _type; }
+    bool compound() const { return _compound; }
 
    protected:
+    value(value_t type) : _type{type} {}
+    value(value_t type, bool compound) : _type{type}, _compound{compound} {}
+
     // for efficient type checking
-    value_t _type{value_t::undefined};
+    value_t _type;
     bool _compound{false};
 };
 
 class value_number : public value {
    public:
-    value_number(double number) : _number(number) {
-        _type = value_t::number;
-    }
+    value_number(double number) : value(value_t::number), _number(number) {}
 
     double number() const { return _number; }
     void number(double number) { _number = number; }
@@ -97,18 +90,14 @@ class value_symbol : public value {
 
    private:
     // can't instantiate a singleton
-    value_symbol(const std::string symbol) : _symbol(symbol) {
-        _type = value_t::symbol;
-    }
+    value_symbol(const std::string symbol) : value(value_t::symbol), _symbol(symbol) {}
 
     std::string _symbol;
 };
 
 class value_string : public value {
    public:
-    value_string(const std::string& string) : _string(string) {
-        _type = value_t::string;
-    }
+    value_string(const std::string& string) : value(value_t::string), _string(string) {}
 
     const std::string& string() const { return _string; }
     void string(const std::string& string) { _string = string; }
@@ -117,9 +106,7 @@ class value_string : public value {
     bool equals(const value& other) const override;
 
    protected:
-    value_string() {
-        _type = value_t::string;
-    }
+    value_string(value_t type) : value(type) {}
 
     std::string _string;
 };
@@ -128,7 +115,7 @@ class value_format : public value_string {
    public:
     // poor man's std::format
     template <typename... Args>
-    value_format(const char* format, Args&&... args) {
+    value_format(value_t type, const char* format, Args&&... args) : value_string(type) {
         static char buffer[65536];
 
         if constexpr (sizeof...(args) > 0) {
@@ -138,17 +125,18 @@ class value_format : public value_string {
         }
 
         _string = buffer;
-        _type = value_t::format;
     }
+
+    template <typename... Args>
+    value_format(const char* format, Args&&... args)
+        : value_format(value_t::format, format, std::forward<Args>(args)...) {}
 };
 
 class value_error : public value_format {
    public:
     template <typename... Args>
     value_error(const char* format, Args&&... args)
-        : value_format(format, std::forward<Args>(args)...) {
-        _type = value_t::error;
-    }
+        : value_format(value_t::error, format, std::forward<Args>(args)...) {}
 
     std::ostream& write(std::ostream& os) const override;
 };
@@ -157,9 +145,7 @@ class value_info : public value_format {
    public:
     template <typename... Args>
     value_info(const char* format, Args&&... args)
-        : value_format(format, std::forward<Args>(args)...) {
-        _type = value_t::info;
-    }
+        : value_format(value_t::info, format, std::forward<Args>(args)...) {}
 
     std::ostream& write(std::ostream& os) const override;
 };
@@ -182,9 +168,7 @@ class value_bool : public value {
 
    private:
     // can't instantiate a singleton
-    value_bool(bool truth) : _truth(truth) {
-        _type = value_t::bool_;
-    }
+    value_bool(bool truth) : value(value_t::bool_), _truth(truth) {}
 
     bool _truth;
 };
@@ -204,9 +188,7 @@ class value_nil : public value {
 
    private:
     // can't instantiate a singleton
-    value_nil() {
-        _type = value_t::nil;
-    }
+    value_nil() : value(value_t::nil) {}
 };
 
 // singleton instances
@@ -278,10 +260,7 @@ class value_pair : public value {
     value_pair(
         const std::shared_ptr<value>& car,
         const std::shared_ptr<value>& cdr)
-        : _car(car), _cdr(cdr) {
-        _type = value_t::pair;
-        _compound = true;
-    }
+        : value(value_t::pair, true), _car(car), _cdr(cdr) {}
 
     iterator begin() {
         return iterator(this);
