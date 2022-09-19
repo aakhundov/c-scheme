@@ -219,14 +219,12 @@ class value_pair : public value {
 
         iterator& operator++() {
             _advance();
-
             return *this;
         }
 
         iterator operator++(int) {
             iterator tmp = *this;
             _advance();
-
             return tmp;
         }
 

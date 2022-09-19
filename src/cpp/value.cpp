@@ -273,6 +273,5 @@ std::ostream& operator<<(std::ostream& os, const value_t& t) {
 std::string cycle_error::_make_message(const value_pair* from) {
     std::ostringstream s;
     s << "cycle from " << *from << " (" << from << ")";
-
     return s.str();
 }
