@@ -29,13 +29,6 @@ enum class code_t {
     restore,
 };
 
-// exceptions
-
-class code_error : public format_exception {
-   public:
-    using format_exception::format_exception;
-};
-
 // token
 
 class token {
@@ -245,5 +238,12 @@ std::vector<std::unique_ptr<code>> translate_to_code(const std::shared_ptr<value
 inline std::ostream& operator<<(std::ostream& os, const code& c) {
     return c.write(os);
 }
+
+// exceptions
+
+class code_error : public format_exception {
+   public:
+    using format_exception::format_exception;
+};
 
 #endif  // CODE_HPP_

@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <exception>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -11,20 +12,23 @@
 using namespace std::placeholders;
 
 void handle_repl_input(const std::string& input, std::string& history) {
-    std::shared_ptr<value> result = parse_values(input);
+    try {
+        std::shared_ptr<value> result = parse_values(input);
+        if (result->type() == value_t::pair) {
+            // there are items (not nil)
+            auto list = to<value_pair>(result);
+            for (const auto& item : *list) {
+                // print one item per line
+                std::cout << item << '\n';
+            }
 
-    if (result->type() == value_t::error) {
-        std::cout << *result << '\n';  // print the error
-        history = input;               // history as is
-    } else if (result->type() == value_t::pair) {
-        auto list = to<value_pair>(result);
-        for (const auto& item : *list) {
-            // print one item per line
-            std::cout << item << '\n';
+            history = list->str();                              // clean history
+            history = history.substr(1, history.length() - 2);  // drop outermost brackets
         }
-
-        history = list->str();                              // clean history
-        history = history.substr(1, history.length() - 2);  // omit outermost brackets
+    } catch (std::exception& e) {
+        auto error = make_error(e.what());
+        std::cout << *error << '\n';  // print the error
+        history = input;              // history as is
     }
 }
 

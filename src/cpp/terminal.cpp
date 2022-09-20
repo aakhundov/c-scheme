@@ -113,7 +113,7 @@ std::string terminal::_get_input() {
             }
             free(line);
         }
-        result.pop_back();  // omit trailing space
+        result.pop_back();  // drop trailing space
     }
 
     return result;

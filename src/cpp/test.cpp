@@ -84,19 +84,25 @@ void report_test(std::string message) {
         }                                                                     \
     }
 
-#define ASSERT_EXCEPTION(code, type)                                             \
-    {                                                                            \
-        bool raised = false;                                                     \
-        try {                                                                    \
-            code                                                                 \
-        } catch (type&) {                                                        \
-            raised = true;                                                       \
-        }                                                                        \
-        report_test(BLUE("[") #code BLUE("] --> [") BOLD(RED(#type)) BLUE("]")); \
-        if (!raised) {                                                           \
-            std::cerr << RED("expected " #type " exception") << '\n';            \
-            exit(1);                                                             \
-        }                                                                        \
+#define ASSERT_EXCEPTION(code, type, text)                                              \
+    {                                                                                   \
+        bool raised = false;                                                            \
+        try {                                                                           \
+            code                                                                        \
+        } catch (type & e) {                                                            \
+            std::string what(e.what());                                                 \
+            report_test(BLUE("[") #code BLUE("] --> [") RED("" + what + "") BLUE("]")); \
+            raised = true;                                                              \
+            if (what.find(text) == std::string::npos) {                                 \
+                std::cerr << RED("expected " #type " with " #text) << '\n';             \
+                exit(1);                                                                \
+            }                                                                           \
+        }                                                                               \
+        if (!raised) {                                                                  \
+            report_test(BLUE("[") #code BLUE("] --> [") "no exception" BLUE("]"));      \
+            std::cerr << RED("expected " #type " exception") << '\n';                   \
+            exit(1);                                                                    \
+        }                                                                               \
     }
 
 #define ASSERT_PARSE(text, ...)                                                \
@@ -123,19 +129,9 @@ void report_test(std::string message) {
         }                                                                      \
     }
 
-#define ASSERT_PARSE_ERROR(text, expected)                                      \
-    {                                                                           \
-        std::shared_ptr<value> v = parse_values(text);                          \
-        std::string str_result = v->str();                                      \
-        report_test(BLUE("[") #text BLUE("] --> [") + str_result + BLUE("]"));  \
-        if (v->type() != value_t::error) {                                      \
-            std::cerr << RED("expected error") << '\n';                         \
-            exit(1);                                                            \
-        }                                                                       \
-        if (to<value_error>(v)->string().find(expected) == std::string::npos) { \
-            std::cerr << RED("expected error with " #expected) << '\n';         \
-            exit(1);                                                            \
-        }                                                                       \
+#define ASSERT_PARSE_ERROR(str, error)                                  \
+    {                                                                   \
+        ASSERT_EXCEPTION({ parse_values(str); }, parsing_error, error); \
     }
 
 void test_value() {
@@ -309,55 +305,55 @@ void test_pair() {
     // cycle
     std::shared_ptr<value_pair> v1, v2, v3, v4;
     v1 = make_vpair(1, 2);
-    ASSERT_EXCEPTION({ v1->car(v1); }, cycle_error);
+    ASSERT_EXCEPTION({ v1->car(v1); }, cycle_error, "cycle from (1 . 2)");
     v1 = make_vpair(1, 2);
     v2 = make_vpair(3, 4);
-    ASSERT_EXCEPTION({ v1->car(v2); v2->car(v1); }, cycle_error);
+    ASSERT_EXCEPTION({ v1->car(v2); v2->car(v1); }, cycle_error, "cycle from (3 . 4)");
     v1 = make_vpair(1, 2);
     v2 = make_vpair(3, 4);
-    ASSERT_EXCEPTION({ v1->car(v2); v2->cdr(v1); }, cycle_error);
+    ASSERT_EXCEPTION({ v1->car(v2); v2->cdr(v1); }, cycle_error, "cycle from (3 . 4)");
     v1 = make_vpair(1, 2);
     v2 = make_vpair(3, 4);
-    ASSERT_EXCEPTION({ v1->cdr(v2); v2->car(v1); }, cycle_error);
+    ASSERT_EXCEPTION({ v1->cdr(v2); v2->car(v1); }, cycle_error, "cycle from (3 . 4)");
     v1 = make_vpair(1, 2);
     v2 = make_vpair(3, 4);
-    ASSERT_EXCEPTION({ v1->cdr(v2); v2->cdr(v1); }, cycle_error);
-    v1 = make_vpair(1, 2);
-    v2 = make_vpair(3, 4);
-    v3 = make_vpair(5, 6);
-    ASSERT_EXCEPTION({ v1->car(v2); v2->car(v3); v3->car(v1); }, cycle_error);
+    ASSERT_EXCEPTION({ v1->cdr(v2); v2->cdr(v1); }, cycle_error, "cycle from (3 . 4)");
     v1 = make_vpair(1, 2);
     v2 = make_vpair(3, 4);
     v3 = make_vpair(5, 6);
-    ASSERT_EXCEPTION({ v1->cdr(v2); v2->car(v3); v3->cdr(v1); }, cycle_error);
+    ASSERT_EXCEPTION({ v1->car(v2); v2->car(v3); v3->car(v1); }, cycle_error, "cycle from (5 . 6)");
     v1 = make_vpair(1, 2);
     v2 = make_vpair(3, 4);
     v3 = make_vpair(5, 6);
-    ASSERT_EXCEPTION({ v1->car(v2); v2->cdr(v3); v3->car(v1); }, cycle_error);
+    ASSERT_EXCEPTION({ v1->cdr(v2); v2->car(v3); v3->cdr(v1); }, cycle_error, "cycle from (5 . 6)");
     v1 = make_vpair(1, 2);
     v2 = make_vpair(3, 4);
     v3 = make_vpair(5, 6);
-    ASSERT_EXCEPTION({ v1->cdr(v2); v2->cdr(v3); v3->cdr(v1); }, cycle_error);
+    ASSERT_EXCEPTION({ v1->car(v2); v2->cdr(v3); v3->car(v1); }, cycle_error, "cycle from (5 . 6)");
     v1 = make_vpair(1, 2);
     v2 = make_vpair(3, 4);
     v3 = make_vpair(5, 6);
-    v4 = make_vpair(7, 8);
-    ASSERT_EXCEPTION({ v1->car(v2); v2->car(v3); v3->car(v4); v4->car(v1); }, cycle_error);
+    ASSERT_EXCEPTION({ v1->cdr(v2); v2->cdr(v3); v3->cdr(v1); }, cycle_error, "cycle from (5 . 6)");
     v1 = make_vpair(1, 2);
     v2 = make_vpair(3, 4);
     v3 = make_vpair(5, 6);
     v4 = make_vpair(7, 8);
-    ASSERT_EXCEPTION({ v1->car(v2); v2->cdr(v3); v3->car(v4); v4->cdr(v1); }, cycle_error);
+    ASSERT_EXCEPTION({ v1->car(v2); v2->car(v3); v3->car(v4); v4->car(v1); }, cycle_error, "cycle from (7 . 8)");
     v1 = make_vpair(1, 2);
     v2 = make_vpair(3, 4);
     v3 = make_vpair(5, 6);
     v4 = make_vpair(7, 8);
-    ASSERT_EXCEPTION({ v1->cdr(v2); v2->car(v3); v3->cdr(v4); v4->car(v1); }, cycle_error);
+    ASSERT_EXCEPTION({ v1->car(v2); v2->cdr(v3); v3->car(v4); v4->cdr(v1); }, cycle_error, "cycle from (7 . 8)");
     v1 = make_vpair(1, 2);
     v2 = make_vpair(3, 4);
     v3 = make_vpair(5, 6);
     v4 = make_vpair(7, 8);
-    ASSERT_EXCEPTION({ v1->cdr(v2); v2->cdr(v3); v3->cdr(v4); v4->cdr(v1); }, cycle_error);
+    ASSERT_EXCEPTION({ v1->cdr(v2); v2->car(v3); v3->cdr(v4); v4->car(v1); }, cycle_error, "cycle from (7 . 8)");
+    v1 = make_vpair(1, 2);
+    v2 = make_vpair(3, 4);
+    v3 = make_vpair(5, 6);
+    v4 = make_vpair(7, 8);
+    ASSERT_EXCEPTION({ v1->cdr(v2); v2->cdr(v3); v3->cdr(v4); v4->cdr(v1); }, cycle_error, "cycle from (7 . 8)");
 }
 
 void test_equal() {

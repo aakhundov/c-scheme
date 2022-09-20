@@ -36,13 +36,6 @@ const std::unordered_map<std::string, std::shared_ptr<value>> special_symbols{
     {"nil", nil},
 };
 
-// exceptions
-
-class parsing_error : public format_exception {
-   public:
-    using format_exception::format_exception;
-};
-
 // functions
 
 inline bool is_symbol_char(char c) {
@@ -258,25 +251,19 @@ std::shared_ptr<value> parse_list(std::istream& is) {
 }  // namespace
 
 std::shared_ptr<value> parse_values(std::istream& is) {
-    try {
-        // parse the whole string content as a list
-        std::shared_ptr<value> result = parse_list(is);
+    // parse the whole string content as a list
+    std::shared_ptr<value> result = parse_list(is);
 
-        if (is) {
-            // there are chars left in the stream
-            throw parsing_error("premature end of list");
-        }
-
-        return result;
-    } catch (parsing_error& e) {
-        // something has gone wrong
-        return make_error(e.what());
+    if (is) {
+        // there are chars left in the stream
+        throw parsing_error("premature end of list");
     }
+
+    return result;
 }
 
 std::shared_ptr<value> parse_values(const std::string& str) {
     std::istringstream s{str};
-
     return parse_values(s);
 }
 
