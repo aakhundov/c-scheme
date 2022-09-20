@@ -1,6 +1,8 @@
 #include <cassert>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -16,124 +18,155 @@ using namespace std::literals;
 static size_t test_counter = 0;
 
 void report_test(std::string message) {
+    // increment the test_counter and report
     std::cout << std::setfill('0') << std::setw(5)
               << BLUE(<< ++test_counter <<) << " "
               << message << '\n';
 }
 
-#define RUN_TEST_FUNCTION(fn)                            \
-    {                                                    \
-        std::cout << "[" << #fn << "]\n";                \
-        std::cout << "==============================\n"; \
-        fn();                                            \
-        std::cout << '\n';                               \
+void run_test_function(std::function<void(void)> fn, std::string fn_str) {
+    std::cout << "[" << fn_str << "]\n";
+    std::cout << "==============================\n";
+
+    fn();
+
+    std::cout << '\n';
+}
+
+void assert_true(bool result, std::string expr_str) {
+    report_test(BLUE("[") + expr_str + BLUE("] == [") + GREEN("true") BLUE("]"));
+
+    if (!result) {
+        // the result is false
+        std::cerr << RED("expected true") << '\n';
+        exit(EXIT_FAILURE);
+    }
+}
+
+void assert_false(bool result, std::string expr_str) {
+    report_test(BLUE("[") + expr_str + BLUE("] == [") RED("false") BLUE("]"));
+
+    if (result) {
+        // the result is true
+        std::cerr << RED("expected false") << '\n';
+        exit(EXIT_FAILURE);
+    }
+}
+
+template <typename T1, typename T2>
+void assert_equal(T1 expr, T2 expected, std::string expr_str, std::string expected_str) {
+    std::ostringstream buffer;
+    buffer << (expr);
+    std::string str_result = buffer.str();
+
+    report_test(BLUE("[") + expr_str + BLUE("] == [") + str_result + BLUE("]"));
+
+    if ((expr) != (expected)) {
+        // the expr is not equal to the expected
+        std::cerr << RED("expected " + expected_str +) << '\n';
+        exit(EXIT_FAILURE);
+    }
+}
+
+void assert_to_str(const value& v, std::string expected, std::string v_str) {
+    std::string str_result = v.str();
+
+    report_test(BLUE("[") + v_str + BLUE("] --> [") + str_result + BLUE("]"));
+
+    if (str_result != expected) {
+        // string version of v is not equal to the expected
+        std::cerr << RED("expected \"" + expected + "\"") << '\n';
+        exit(EXIT_FAILURE);
+    }
+}
+
+void assert_iterator(value_pair& v, std::string str_expected, std::string v_str) {
+    // join v's items with ", "
+    std::string str_result;
+    for (const auto& item : v) {
+        str_result += ((item.str()) + ", ");
+    }
+    str_result.pop_back();  // drop trailing comma
+    str_result.pop_back();  // drop trailing space
+
+    report_test(BLUE("[") + v_str + BLUE("] --> [") + str_result + BLUE("]"));
+
+    // compare to the expected string
+    if (str_result != str_expected) {
+        // ", "-joined items of v don't equal the str_expected
+        std::cerr << RED("expected \"" + str_expected + "\"") << '\n';
+        exit(EXIT_FAILURE);
+    }
+}
+
+void assert_parse(std::string text, const std::shared_ptr<value_pair>& expected) {
+    std::shared_ptr<value> values = parse_values_from(text);
+
+    report_test(BLUE("[") + text + BLUE("] --> [") + values->str() + BLUE("]"));
+
+    if (*values != *expected) {
+        // the parsed values don't equal to the expected
+        std::cerr << RED("expected \"" + expected->str() + "\"");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void assert_exception_thrown(std::string code, std::string type, std::string what, std::string substring) {
+    report_test(BLUE("[") + code + BLUE("] --> [") RED("" + type + ": " + what + "") BLUE("]"));
+
+    if (what.find(substring) == std::string::npos) {
+        // the expected exception was thrown, but the substring not in e.what()
+        std::cerr << RED("expected " + type + " with \"" + substring + "\"") << '\n';
+        exit(EXIT_FAILURE);
+    }
+}
+
+void assert_exception_not_thrown(std::string code, std::string type, std::string substring) {
+    report_test(BLUE("[") + code + BLUE("] --> [") "no exception" BLUE("]"));
+
+    // the expected expection was not thrown
+    std::cerr << RED("expected " + type + " with \"" + substring + "\"") << '\n';
+    exit(EXIT_FAILURE);
+}
+
+#define RUN_TEST_FUNCTION(fn) \
+    { run_test_function(fn, #fn); }
+
+#define ASSERT_TRUE(expr) \
+    { assert_true((expr), #expr); }
+
+#define ASSERT_FALSE(expr) \
+    { assert_false((expr), #expr); }
+
+#define ASSERT_EQUAL(expr, expected) \
+    { assert_equal((expr), (expected), #expr, #expected); }
+
+#define ASSERT_TO_STR(expr, expected) \
+    { assert_to_str((expr), (expected), #expr); }
+
+#define ASSERT_ITERATOR(expr, str_expected) \
+    { assert_iterator((expr), (str_expected), #expr); }
+
+#define ASSERT_PARSE(text, ...) \
+    { assert_parse(text, make_list(__VA_ARGS__)); }
+
+#define ASSERT_EXCEPTION(code, type, substring)                         \
+    {                                                                   \
+        bool thrown = false;                                            \
+        try {                                                           \
+            code                                                        \
+        } catch (type & e) {                                            \
+            assert_exception_thrown(#code, #type, e.what(), substring); \
+            thrown = true;                                              \
+        }                                                               \
+        if (!thrown) {                                                  \
+            assert_exception_not_thrown(#code, #type, substring);       \
+        }                                                               \
     }
 
-#define ASSERT_TRUE(expr)                                                    \
-    {                                                                        \
-        report_test(BLUE("[") #expr BLUE("] == [") GREEN("true") BLUE("]")); \
-        if (!(expr)) {                                                       \
-            std::cerr << RED("expected true") << '\n';                       \
-            exit(1);                                                         \
-        }                                                                    \
-    }
-
-#define ASSERT_FALSE(expr)                                                  \
-    {                                                                       \
-        report_test(BLUE("[") #expr BLUE("] == [") RED("false") BLUE("]")); \
-        if ((expr)) {                                                       \
-            std::cerr << RED("expected false") << '\n';                     \
-            exit(1);                                                        \
-        }                                                                   \
-    }
-
-#define ASSERT_EQUAL(expr, expected)                                          \
-    {                                                                         \
-        auto result = (expr);                                                 \
-        std::ostringstream buffer;                                            \
-        buffer << result;                                                     \
-        std::string str_result = buffer.str();                                \
-        report_test(BLUE("[") #expr BLUE("] == [") + str_result + BLUE("]")); \
-        if (result != (expected)) {                                           \
-            std::cerr << RED("expected " #expected) << '\n';                  \
-            exit(1);                                                          \
-        }                                                                     \
-    }
-
-#define ASSERT_TO_STR(expr, expected)                                          \
-    {                                                                          \
-        std::string str_result = (expr).str();                                 \
-        report_test(BLUE("[") #expr BLUE("] --> [") + str_result + BLUE("]")); \
-        if (str_result != (expected)) {                                        \
-            std::cerr << RED("expected " #expected) << '\n';                   \
-            exit(1);                                                           \
-        }                                                                      \
-    }
-
-#define ASSERT_ITERATOR(expr, expected)                                       \
-    {                                                                         \
-        value_pair pair = (expr);                                             \
-        std::string str_items;                                                \
-        for (const auto& item : pair) {                                       \
-            str_items += ((item.str()) + ", ");                               \
-        }                                                                     \
-        str_items.pop_back();                                                 \
-        str_items.pop_back();                                                 \
-        report_test(BLUE("[") #expr BLUE("] --> [") + str_items + BLUE("]")); \
-        if (str_items != (expected)) {                                        \
-            std::cerr << RED("expected " #expected) << '\n';                  \
-            exit(1);                                                          \
-        }                                                                     \
-    }
-
-#define ASSERT_EXCEPTION(code, type, text)                                              \
-    {                                                                                   \
-        bool raised = false;                                                            \
-        try {                                                                           \
-            code                                                                        \
-        } catch (type & e) {                                                            \
-            std::string what(e.what());                                                 \
-            report_test(BLUE("[") #code BLUE("] --> [") RED("" + what + "") BLUE("]")); \
-            raised = true;                                                              \
-            if (what.find(text) == std::string::npos) {                                 \
-                std::cerr << RED("expected " #type " with " #text) << '\n';             \
-                exit(1);                                                                \
-            }                                                                           \
-        }                                                                               \
-        if (!raised) {                                                                  \
-            report_test(BLUE("[") #code BLUE("] --> [") "no exception" BLUE("]"));      \
-            std::cerr << RED("expected " #type " exception") << '\n';                   \
-            exit(1);                                                                    \
-        }                                                                               \
-    }
-
-#define ASSERT_PARSE(text, ...)                                                \
-    {                                                                          \
-        std::shared_ptr<value> v = parse_values_from(text);                    \
-        std::shared_ptr<value_pair> expected = make_list(__VA_ARGS__);         \
-        std::string str_result = v->str();                                     \
-        std::string str_expected = expected->str();                            \
-        report_test(BLUE("[") #text BLUE("] --> [") + str_result + BLUE("]")); \
-        if (*v != *expected) {                                                 \
-            std::cerr << RED("expected ") << str_expected << '\n';             \
-            exit(1);                                                           \
-        }                                                                      \
-    }
-
-#define ASSERT_PARSE_TO_STR(text, expected)                                    \
-    {                                                                          \
-        std::shared_ptr<value> v = parse_values_from(text);                    \
-        std::string str_result = v->str();                                     \
-        report_test(BLUE("[") #text BLUE("] --> [") + str_result + BLUE("]")); \
-        if (str_result != (expected)) {                                        \
-            std::cerr << RED("expected " #expected) << '\n';                   \
-            exit(1);                                                           \
-        }                                                                      \
-    }
-
-#define ASSERT_PARSE_ERROR(str, error)                                       \
-    {                                                                        \
-        ASSERT_EXCEPTION({ parse_values_from(str); }, parsing_error, error); \
+#define ASSERT_PARSE_ERROR(text, substring)                                       \
+    {                                                                             \
+        ASSERT_EXCEPTION({ parse_values_from(text); }, parsing_error, substring); \
     }
 
 void test_value() {
