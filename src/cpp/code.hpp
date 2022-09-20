@@ -233,7 +233,7 @@ class code_restore : public code {
 
 // helper functions
 
-std::vector<std::unique_ptr<code>> translate_to_code(const std::shared_ptr<value_pair>& source);
+std::vector<std::unique_ptr<code>> translate_to_code(const std::shared_ptr<value>& source);
 
 inline std::ostream& operator<<(std::ostream& os, const code& c) {
     return c.write(os);

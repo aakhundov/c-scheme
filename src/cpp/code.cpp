@@ -402,51 +402,61 @@ bool is_assign_call(const std::shared_ptr<value_pair>& statement) {
 
 }  // namespace
 
-std::vector<std::unique_ptr<code>> translate_to_code(const std::shared_ptr<value_pair>& source) {
+std::vector<std::unique_ptr<code>> translate_to_code(const std::shared_ptr<value>& source) {
     std::vector<std::unique_ptr<code>> result;
 
-    for (auto p = source->begin(); p != source->end(); p++) {
-        // there is another statement
-        if (p->type() == value_t::symbol) {
-            // the statement is a symbol
-            auto label = to<value_symbol>(p.ptr());
-            result.push_back(std::make_unique<code_label>(label));
-        } else if (p->type() == value_t::pair) {
-            // the statement is a list
-            auto statement = to<value_pair>(p.ptr());
-            if (statement->car()->type() == value_t::symbol) {
-                // the statement header is a symbol
-                std::string header = to<value_symbol>(statement->car())->symbol();
-                if (header == "assign") {
-                    if (is_assign_call(statement)) {
-                        result.push_back(std::make_unique<code_assign_call>(statement));
+    if (source != nil) {
+        if (source->type() == value_t::pair) {
+            // source is a list
+            auto lines = to<value_pair>(source);
+            for (auto p = lines->begin(); p != lines->end(); p++) {
+                // there is another statement
+                if (p->type() == value_t::symbol) {
+                    // the statement is a symbol
+                    auto label = to<value_symbol>(p.ptr());
+                    result.push_back(std::make_unique<code_label>(label));
+                } else if (p->type() == value_t::pair) {
+                    // the statement is a list
+                    auto statement = to<value_pair>(p.ptr());
+                    if (statement->car()->type() == value_t::symbol) {
+                        // the statement header is a symbol
+                        std::string header = to<value_symbol>(statement->car())->symbol();
+                        if (header == "assign") {
+                            if (is_assign_call(statement)) {
+                                result.push_back(std::make_unique<code_assign_call>(statement));
+                            } else {
+                                result.push_back(std::make_unique<code_assign_copy>(statement));
+                            }
+                        } else if (header == "perform") {
+                            result.push_back(std::make_unique<code_perform>(statement));
+                        } else if (header == "branch") {
+                            result.push_back(std::make_unique<code_branch>(statement));
+                        } else if (header == "goto") {
+                            result.push_back(std::make_unique<code_goto>(statement));
+                        } else if (header == "save") {
+                            result.push_back(std::make_unique<code_save>(statement));
+                        } else if (header == "restore") {
+                            result.push_back(std::make_unique<code_restore>(statement));
+                        } else {
+                            throw code_error(
+                                "unrecognized statement header: %s",
+                                header.c_str());
+                        }
                     } else {
-                        result.push_back(std::make_unique<code_assign_copy>(statement));
+                        throw code_error(
+                            "statement header must be a symbol: %s",
+                            statement->car()->str().c_str());
                     }
-                } else if (header == "perform") {
-                    result.push_back(std::make_unique<code_perform>(statement));
-                } else if (header == "branch") {
-                    result.push_back(std::make_unique<code_branch>(statement));
-                } else if (header == "goto") {
-                    result.push_back(std::make_unique<code_goto>(statement));
-                } else if (header == "save") {
-                    result.push_back(std::make_unique<code_save>(statement));
-                } else if (header == "restore") {
-                    result.push_back(std::make_unique<code_restore>(statement));
                 } else {
                     throw code_error(
-                        "unrecognized statement header: %s",
-                        header.c_str());
+                        "statement must be a symbol or a list: %s",
+                        p->str().c_str());
                 }
-            } else {
-                throw code_error(
-                    "statement header must be a symbol: %s",
-                    statement->car()->str().c_str());
             }
         } else {
             throw code_error(
-                "statement must be a symbol or a list: %s",
-                p->str().c_str());
+                "source must be a list of statements: %s",
+                source->str().c_str());
         }
     }
 

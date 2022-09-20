@@ -1,3 +1,4 @@
+#include <cassert>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -5,6 +6,7 @@
 #include <sstream>
 #include <vector>
 
+#include "code.hpp"
 #include "constants.hpp"
 #include "parse.hpp"
 #include "value.hpp"
@@ -751,12 +753,32 @@ void test_parse() {
     ASSERT_PARSE_ERROR("(1 (2 \n 3) (4\n 5  6\n 7)\n)@", "unexpected character: '@'");
 }
 
+void test_code() {
+    // reconstruct the machines' code
+    std::filesystem::path machines{"./lib/machines"};
+    for (auto& code_file : std::filesystem::directory_iterator(machines)) {
+        report_test(code_file.path());
+
+        auto source = parse_values_from(code_file.path());
+        auto code = translate_to_code(source);
+
+        auto running = source;
+        for (const auto& translated_line : code) {
+            const auto pair = to<value_pair>(running);
+            const auto& original_line = pair->car();
+            assert(*translated_line->to_value() == *original_line);
+            running = pair->cdr();
+        }
+    }
+}
+
 int main() {
     RUN_TEST_FUNCTION(test_value);
     RUN_TEST_FUNCTION(test_pair);
     RUN_TEST_FUNCTION(test_equal);
     RUN_TEST_FUNCTION(test_to_str);
     RUN_TEST_FUNCTION(test_parse);
+    RUN_TEST_FUNCTION(test_code);
 
     std::cout << "all tests have been passed!\n";
 
