@@ -286,20 +286,20 @@ void test_pair() {
     ASSERT_TRUE(make_list(nil, nil, nil)->is_list());
 
     // length
-    ASSERT_EQUAL(make_vpair(1, nil)->length(), 1);
-    ASSERT_EQUAL(make_vpair(nil, 2)->length(), 2);
-    ASSERT_EQUAL(make_vpair(nil, nil)->length(), 1);
-    ASSERT_EQUAL(make_vpair(1, 2)->length(), 2);
-    ASSERT_EQUAL(make_vpair(1, make_vpair(2, nil))->length(), 2);
-    ASSERT_EQUAL(make_vpair(1, make_vpair(2, 3))->length(), 3);
-    ASSERT_EQUAL(make_list(1)->length(), 1);
-    ASSERT_EQUAL(make_list(1, 2)->length(), 2);
-    ASSERT_EQUAL(make_list(1, 2, 3)->length(), 3);
-    ASSERT_EQUAL(make_list(1, 2, make_vpair(3, 4))->length(), 3);
-    ASSERT_EQUAL(make_list(make_vpair(1, 2), make_vpair(3, 4))->length(), 2);
-    ASSERT_EQUAL(make_list(1, 2, nil)->length(), 3);
-    ASSERT_EQUAL(make_list(1, nil, nil)->length(), 3);
-    ASSERT_EQUAL(make_list(nil, nil, nil)->length(), 3);
+    ASSERT_EQUAL(make_vpair(1, nil)->length(), 1ull);
+    ASSERT_EQUAL(make_vpair(nil, 2)->length(), 2ull);
+    ASSERT_EQUAL(make_vpair(nil, nil)->length(), 1ull);
+    ASSERT_EQUAL(make_vpair(1, 2)->length(), 2ull);
+    ASSERT_EQUAL(make_vpair(1, make_vpair(2, nil))->length(), 2ull);
+    ASSERT_EQUAL(make_vpair(1, make_vpair(2, 3))->length(), 3ull);
+    ASSERT_EQUAL(make_list(1)->length(), 1ull);
+    ASSERT_EQUAL(make_list(1, 2)->length(), 2ull);
+    ASSERT_EQUAL(make_list(1, 2, 3)->length(), 3ull);
+    ASSERT_EQUAL(make_list(1, 2, make_vpair(3, 4))->length(), 3ull);
+    ASSERT_EQUAL(make_list(make_vpair(1, 2), make_vpair(3, 4))->length(), 2ull);
+    ASSERT_EQUAL(make_list(1, 2, nil)->length(), 3ull);
+    ASSERT_EQUAL(make_list(1, nil, nil)->length(), 3ull);
+    ASSERT_EQUAL(make_list(nil, nil, nil)->length(), 3ull);
 
     // iterator
     ASSERT_ITERATOR(*make_vpair(1, nil), "1");
@@ -792,11 +792,13 @@ void test_code() {
     for (auto& code_file : std::filesystem::directory_iterator(machines)) {
         report_test(code_file.path());
 
+        // parse and translate the code from the file
         auto source = parse_values_from(code_file.path());
         auto code = translate_to_code(source);
 
         auto running = source;
         for (const auto& translated_line : code) {
+            // compare each line of the code with the original
             const auto pair = to<value_pair>(running);
             const auto& original_line = pair->car();
             assert(*translated_line->to_value() == *original_line);
@@ -815,5 +817,5 @@ int main() {
 
     std::cout << "all tests have been passed!\n";
 
-    return 0;
+    return EXIT_SUCCESS;
 }
