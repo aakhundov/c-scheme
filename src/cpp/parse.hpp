@@ -10,10 +10,10 @@
 
 // parsing functions
 
-std::shared_ptr<value> parse_values(std::istream& is);
-std::shared_ptr<value> parse_values(const std::string& s);
-std::shared_ptr<value> parse_values(const char* s);
-std::shared_ptr<value> parse_values(const std::filesystem::path& p);
+std::shared_ptr<value> parse_values_from(std::istream& is);
+std::shared_ptr<value> parse_values_from(const std::string& s);
+std::shared_ptr<value> parse_values_from(const char* s);
+std::shared_ptr<value> parse_values_from(const std::filesystem::path& p);
 
 // exceptions
 

@@ -13,7 +13,7 @@ using namespace std::placeholders;
 
 void handle_repl_input(const std::string& input, std::string& history) {
     try {
-        std::shared_ptr<value> result = parse_values(input);
+        std::shared_ptr<value> result = parse_values_from(input);
         if (result->type() == value_t::pair) {
             // there are items (not nil)
             auto list = to<value_pair>(result);

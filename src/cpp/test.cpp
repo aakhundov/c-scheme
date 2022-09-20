@@ -107,7 +107,7 @@ void report_test(std::string message) {
 
 #define ASSERT_PARSE(text, ...)                                                \
     {                                                                          \
-        std::shared_ptr<value> v = parse_values(text);                         \
+        std::shared_ptr<value> v = parse_values_from(text);                    \
         std::shared_ptr<value_pair> expected = make_list(__VA_ARGS__);         \
         std::string str_result = v->str();                                     \
         std::string str_expected = expected->str();                            \
@@ -120,7 +120,7 @@ void report_test(std::string message) {
 
 #define ASSERT_PARSE_TO_STR(text, expected)                                    \
     {                                                                          \
-        std::shared_ptr<value> v = parse_values(text);                         \
+        std::shared_ptr<value> v = parse_values_from(text);                    \
         std::string str_result = v->str();                                     \
         report_test(BLUE("[") #text BLUE("] --> [") + str_result + BLUE("]")); \
         if (str_result != (expected)) {                                        \
@@ -129,9 +129,9 @@ void report_test(std::string message) {
         }                                                                      \
     }
 
-#define ASSERT_PARSE_ERROR(str, error)                                  \
-    {                                                                   \
-        ASSERT_EXCEPTION({ parse_values(str); }, parsing_error, error); \
+#define ASSERT_PARSE_ERROR(str, error)                                       \
+    {                                                                        \
+        ASSERT_EXCEPTION({ parse_values_from(str); }, parsing_error, error); \
     }
 
 void test_value() {

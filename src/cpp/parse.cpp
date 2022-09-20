@@ -250,7 +250,7 @@ std::shared_ptr<value> parse_list(std::istream& is) {
 
 }  // namespace
 
-std::shared_ptr<value> parse_values(std::istream& is) {
+std::shared_ptr<value> parse_values_from(std::istream& is) {
     // parse the whole string content as a list
     std::shared_ptr<value> result = parse_list(is);
 
@@ -262,16 +262,16 @@ std::shared_ptr<value> parse_values(std::istream& is) {
     return result;
 }
 
-std::shared_ptr<value> parse_values(const std::string& str) {
+std::shared_ptr<value> parse_values_from(const std::string& str) {
     std::istringstream s{str};
-    return parse_values(s);
+    return parse_values_from(s);
 }
 
-std::shared_ptr<value> parse_values(const char* str) {
-    return parse_values(std::string(str));
+std::shared_ptr<value> parse_values_from(const char* str) {
+    return parse_values_from(std::string(str));
 }
 
-std::shared_ptr<value> parse_values(const std::filesystem::path& p) {
+std::shared_ptr<value> parse_values_from(const std::filesystem::path& p) {
     if (!std::filesystem::exists(p)) {
         return make_error("the path does not exist: '%s'", p.c_str());
     } else if (!std::filesystem::is_regular_file(p)) {
@@ -284,5 +284,5 @@ std::shared_ptr<value> parse_values(const std::filesystem::path& p) {
         return make_error("failed to open the file: '%s'", p.c_str());
     }
 
-    return parse_values(f);
+    return parse_values_from(f);
 }
