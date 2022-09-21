@@ -15,74 +15,85 @@
 
 using namespace std::literals;
 
+using std::cerr;
+using std::cout;
+using std::function;
+using std::ostringstream;
+using std::setfill;
+using std::setw;
+using std::shared_ptr;
+using std::string;
+using std::filesystem::directory_iterator;
+using std::filesystem::path;
+
 static size_t test_counter = 0;
 
-void report_test(std::string message) {
+void report_test(string message) {
     // increment the test_counter and report
-    std::cout << std::setfill('0') << std::setw(5)
-              << BLUE(<< ++test_counter <<) << " "
-              << message << '\n';
+    cout << setfill('0') << setw(5)
+         << BLUE(<< ++test_counter <<) << " "
+         << message << '\n';
 }
 
-void run_test_function(std::function<void(void)> fn, std::string fn_str) {
-    std::cout << "[" << fn_str << "]\n";
-    std::cout << "==============================\n";
+void run_test_function(function<void(void)> fn, string fn_str) {
+    cout << "[" << fn_str << "]\n";
+    cout << "==============================\n";
 
     fn();
 
-    std::cout << '\n';
+    cout << '\n';
 }
 
-void assert_true(bool result, std::string expr_str) {
+void assert_true(bool result, string expr_str) {
     report_test(BLUE("[") + expr_str + BLUE("] == [") + GREEN("true") BLUE("]"));
 
     if (!result) {
         // the result is false
-        std::cerr << RED("expected true") << '\n';
+        cerr << RED("expected true") << '\n';
         exit(EXIT_FAILURE);
     }
 }
 
-void assert_false(bool result, std::string expr_str) {
+void assert_false(bool result, string expr_str) {
     report_test(BLUE("[") + expr_str + BLUE("] == [") RED("false") BLUE("]"));
 
     if (result) {
         // the result is true
-        std::cerr << RED("expected false") << '\n';
+        cerr << RED("expected false") << '\n';
         exit(EXIT_FAILURE);
     }
 }
 
 template <typename T1, typename T2>
-void assert_equal(T1 expr, T2 expected, std::string expr_str, std::string expected_str) {
-    std::ostringstream buffer;
+void assert_equal(T1 expr, T2 expected, string expr_str, string expected_str) {
+    ostringstream buffer;
     buffer << (expr);
-    std::string str_result = buffer.str();
+    string str_result = buffer.str();
 
     report_test(BLUE("[") + expr_str + BLUE("] == [") + str_result + BLUE("]"));
 
     if ((expr) != (expected)) {
         // the expr is not equal to the expected
-        std::cerr << RED("expected " + expected_str +) << '\n';
+        cerr << RED("expected " + expected_str +) << '\n';
         exit(EXIT_FAILURE);
     }
 }
 
-void assert_to_str(const value& v, std::string expected, std::string v_str) {
-    std::string str_result = v.str();
+void assert_to_str(const value& v, string expected, string v_str) {
+    string str_result = v.str();
 
     report_test(BLUE("[") + v_str + BLUE("] --> [") + str_result + BLUE("]"));
 
     if (str_result != expected) {
         // string version of v is not equal to the expected
-        std::cerr << RED("expected \"" + expected + "\"") << '\n';
+        cerr << RED("expected \"" + expected + "\"") << '\n';
         exit(EXIT_FAILURE);
     }
 }
 
-void assert_iterator(value_pair& v, std::string str_expected, std::string v_str) {
+void assert_iterator(value_pair& v, string str_expected, string v_str) {
     // join v's items with ", "
-    std::string str_result;
+    string str_result;
     for (const auto& item : v) {
         str_result += ((item.str()) + ", ");
     }
@@ -94,38 +105,38 @@ void assert_iterator(value_pair& v, std::string str_expected, std::string v_str)
     // compare to the expected string
     if (str_result != str_expected) {
         // ", "-joined items of v don't equal the str_expected
-        std::cerr << RED("expected \"" + str_expected + "\"") << '\n';
+        cerr << RED("expected \"" + str_expected + "\"") << '\n';
         exit(EXIT_FAILURE);
     }
 }
 
-void assert_parse(std::string text, const std::shared_ptr<value_pair>& expected) {
-    std::shared_ptr<value> values = parse_values_from(text);
+void assert_parse(string text, const shared_ptr<value_pair>& expected) {
+    shared_ptr<value> values = parse_values_from(text);
 
     report_test(BLUE("[") + text + BLUE("] --> [") + values->str() + BLUE("]"));
 
     if (*values != *expected) {
         // the parsed values don't equal to the expected
-        std::cerr << RED("expected \"" + expected->str() + "\"");
+        cerr << RED("expected \"" + expected->str() + "\"");
         exit(EXIT_FAILURE);
     }
 }
 
-void assert_exception_thrown(std::string code, std::string type, std::string what, std::string substring) {
+void assert_exception_thrown(string code, string type, string what, string substring) {
     report_test(BLUE("[") + code + BLUE("] --> [") RED("" + type + ": " + what + "") BLUE("]"));
 
-    if (what.find(substring) == std::string::npos) {
+    if (what.find(substring) == string::npos) {
         // the expected exception was thrown, but the substring not in e.what()
-        std::cerr << RED("expected " + type + " with \"" + substring + "\"") << '\n';
+        cerr << RED("expected " + type + " with \"" + substring + "\"") << '\n';
         exit(EXIT_FAILURE);
     }
 }
 
-void assert_exception_not_thrown(std::string code, std::string type, std::string substring) {
+void assert_exception_not_thrown(string code, string type, string substring) {
     report_test(BLUE("[") + code + BLUE("] --> [") "no exception" BLUE("]"));
 
     // the expected expection was not thrown
-    std::cerr << RED("expected " + type + " with \"" + substring + "\"") << '\n';
+    cerr << RED("expected " + type + " with \"" + substring + "\"") << '\n';
     exit(EXIT_FAILURE);
 }
 
@@ -171,7 +182,7 @@ void assert_exception_not_thrown(std::string code, std::string type, std::string
 
 void test_value() {
     // number
-    std::shared_ptr<value_number> num1, num2;
+    shared_ptr<value_number> num1, num2;
     ASSERT_TO_STR(*(num1 = make_number(3.14)), "3.14");
     ASSERT_TRUE(num1->type() == value_t::number);
     ASSERT_FALSE(num1->compound());
@@ -181,7 +192,7 @@ void test_value() {
     ASSERT_FALSE(num1 == num2);
 
     // symbol
-    std::shared_ptr<value_symbol> sym1, sym2;
+    shared_ptr<value_symbol> sym1, sym2;
     ASSERT_TO_STR(*(sym1 = make_symbol("abc")), "abc");
     ASSERT_TRUE(sym1->type() == value_t::symbol);
     ASSERT_FALSE(sym1->compound());
@@ -191,7 +202,7 @@ void test_value() {
     ASSERT_TRUE(sym1 == sym2);
 
     // string
-    std::shared_ptr<value_string> str1, str2;
+    shared_ptr<value_string> str1, str2;
     ASSERT_TO_STR(*(str1 = make_string("abc")), "\"abc\"");
     ASSERT_TRUE(str1->type() == value_t::string);
     ASSERT_FALSE(str1->compound());
@@ -201,7 +212,7 @@ void test_value() {
     ASSERT_FALSE(str1 == str2);
 
     // error
-    std::shared_ptr<value_error> error1, error2;
+    shared_ptr<value_error> error1, error2;
     ASSERT_TO_STR(*(error1 = make_error("hello '%g'", 3.14)), BOLD(RED("error:") " " WHITE("hello '3.14'")));
     ASSERT_TRUE(error1->type() == value_t::error);
     ASSERT_FALSE(error1->compound());
@@ -211,7 +222,7 @@ void test_value() {
     ASSERT_FALSE(error1 == error2);
 
     // info
-    std::shared_ptr<value_info> info1, info2;
+    shared_ptr<value_info> info1, info2;
     ASSERT_TO_STR(*(info1 = make_info("hello '%g'", 3.14)), GREEN("hello '3.14'"));
     ASSERT_TRUE(info1->type() == value_t::info);
     ASSERT_FALSE(info1->compound());
@@ -221,7 +232,7 @@ void test_value() {
     ASSERT_FALSE(info1 == info2);
 
     // bool
-    std::shared_ptr<value_bool> bool1, bool2;
+    shared_ptr<value_bool> bool1, bool2;
     ASSERT_TO_STR(*(bool1 = make_bool(true)), "true");
     ASSERT_TRUE(bool1->type() == value_t::bool_);
     ASSERT_FALSE(bool1->compound());
@@ -231,7 +242,7 @@ void test_value() {
     ASSERT_TRUE(bool1 == bool2);
 
     // nil
-    std::shared_ptr<value_nil> nil1, nil2;
+    shared_ptr<value_nil> nil1, nil2;
     ASSERT_TO_STR(*(nil1 = make_nil()), "()");
     ASSERT_TRUE(nil1->type() == value_t::nil);
     ASSERT_FALSE(nil1->compound());
@@ -240,7 +251,7 @@ void test_value() {
     ASSERT_TRUE(nil1 == nil2);
 
     // pair
-    std::shared_ptr<value_pair> pair1, pair2;
+    shared_ptr<value_pair> pair1, pair2;
     ASSERT_TO_STR(*(pair1 = make_vpair(3.14, "abc")), "(3.14 . abc)");
     ASSERT_TRUE(pair1->type() == value_t::pair);
     ASSERT_TRUE(pair1->compound());
@@ -251,7 +262,7 @@ void test_value() {
     ASSERT_FALSE(pair1 == pair2);
 
     // list
-    std::shared_ptr<value_pair> list1, list2;
+    shared_ptr<value_pair> list1, list2;
     ASSERT_TO_STR(*(list1 = make_list(3.14, "abc", nil, false)), "(3.14 abc () false)");
     ASSERT_TRUE(list1->type() == value_t::pair);
     ASSERT_TRUE(list1->compound());
@@ -338,7 +349,7 @@ void test_pair() {
     ASSERT_ITERATOR(val, "2, 8, 18, 32, 50");
 
     // cycle
-    std::shared_ptr<value_pair> v1, v2, v3, v4;
+    shared_ptr<value_pair> v1, v2, v3, v4;
     v1 = make_vpair(1, 2);
     ASSERT_EXCEPTION({ v1->car(v1); }, cycle_error, "cycle from (1 . 2)");
     v1 = make_vpair(1, 2);
@@ -393,7 +404,7 @@ void test_pair() {
 
 void test_equal() {
     // number
-    std::shared_ptr<value> num1, num2, num3;
+    shared_ptr<value> num1, num2, num3;
     ASSERT_TO_STR(*(num1 = make_value(3.14)), "3.14");
     ASSERT_TO_STR(*(num2 = make_value(3.14)), "3.14");
     ASSERT_TO_STR(*(num3 = make_value(6.28)), "6.28");
@@ -413,7 +424,7 @@ void test_equal() {
     ASSERT_FALSE(num1 == num3);
 
     // symbol
-    std::shared_ptr<value> sym1, sym2, sym3;
+    shared_ptr<value> sym1, sym2, sym3;
     ASSERT_TO_STR(*(sym1 = make_value("abc")), "abc");
     ASSERT_TO_STR(*(sym2 = make_value("abc")), "abc");
     ASSERT_TO_STR(*(sym3 = make_value("ab")), "ab");
@@ -433,7 +444,7 @@ void test_equal() {
     ASSERT_FALSE(sym1 == sym3);
 
     // string
-    std::shared_ptr<value> str1, str2, str3;
+    shared_ptr<value> str1, str2, str3;
     ASSERT_TO_STR(*(str1 = make_value("abc"s)), "\"abc\"");
     ASSERT_TO_STR(*(str2 = make_value("abc"s)), "\"abc\"");
     ASSERT_TO_STR(*(str3 = make_value("ab"s)), "\"ab\"");
@@ -453,7 +464,7 @@ void test_equal() {
     ASSERT_FALSE(str1 == str3);
 
     // bool
-    std::shared_ptr<value> bool1, bool2, bool3;
+    shared_ptr<value> bool1, bool2, bool3;
     ASSERT_TO_STR(*(bool1 = make_value(true)), "true");
     ASSERT_TO_STR(*(bool2 = make_value(true)), "true");
     ASSERT_TO_STR(*(bool3 = make_value(false)), "false");
@@ -477,7 +488,7 @@ void test_equal() {
     ASSERT_TRUE(bool3 == false_);  // predefined
 
     // nil
-    std::shared_ptr<value> nil1, nil2, nil3;
+    shared_ptr<value> nil1, nil2, nil3;
     ASSERT_TO_STR(*(nil1 = make_nil()), "()");
     ASSERT_TO_STR(*(nil2 = make_nil()), "()");
     ASSERT_TO_STR(*(nil3 = nil), "()");
@@ -500,7 +511,7 @@ void test_equal() {
     ASSERT_TRUE(nil3 == nil);  // predefined
 
     // pair
-    std::shared_ptr<value> pair1, pair2, pair3;
+    shared_ptr<value> pair1, pair2, pair3;
     ASSERT_TO_STR(*(pair1 = make_vpair(3.14, "abc")), "(3.14 . abc)");
     ASSERT_TO_STR(*(pair2 = make_vpair(3.14, "abc")), "(3.14 . abc)");
     ASSERT_TO_STR(*(pair3 = make_vpair(3.14, "abc"s)), "(3.14 . \"abc\")");
@@ -520,7 +531,7 @@ void test_equal() {
     ASSERT_FALSE(pair1 == pair3);
 
     // list
-    std::shared_ptr<value> list1, list2, list3;
+    shared_ptr<value> list1, list2, list3;
     ASSERT_TO_STR(*(list1 = make_list(1, "2", make_vpair("3"s, 4))), "(1 2 (\"3\" . 4))");
     ASSERT_TO_STR(*(list2 = make_list(1, "2", make_vpair("3"s, 4))), "(1 2 (\"3\" . 4))");
     ASSERT_TO_STR(*(list3 = make_list(1, "2", "3"s, 4)), "(1 2 \"3\" 4)");
@@ -788,8 +799,8 @@ void test_parse() {
 
 void test_code() {
     // reconstruct the machines' code
-    std::filesystem::path machines{"./lib/machines"};
-    for (auto& code_file : std::filesystem::directory_iterator(machines)) {
+    path machines{"./lib/machines"};
+    for (auto& code_file : directory_iterator(machines)) {
         report_test(code_file.path());
 
         // parse and translate the code from the file
@@ -815,7 +826,7 @@ int main() {
     RUN_TEST_FUNCTION(test_parse);
     RUN_TEST_FUNCTION(test_code);
 
-    std::cout << "all tests have been passed!\n";
+    cout << "all tests have been passed!\n";
 
     return EXIT_SUCCESS;
 }

@@ -6,6 +6,17 @@
 #include <iostream>
 #include <regex>
 
+using std::cout;
+using std::endl;
+using std::getline;
+using std::ifstream;
+using std::initializer_list;
+using std::regex;
+using std::regex_match;
+using std::smatch;
+using std::string;
+using std::vector;
+
 // editline OS-specific variants
 
 #ifdef _WIN32
@@ -43,33 +54,33 @@ static void add_history(const char* line) {
 
 // terminal
 
-void terminal::add_handler(std::initializer_list<std::string> patterns, handler_type handler) {
-    for (const std::string& pattern : patterns) {
+void terminal::add_handler(initializer_list<string> patterns, handler_type handler) {
+    for (const string& pattern : patterns) {
         // turn each pattern into a regex and add with the handler
-        _handlers.push_back({std::regex(pattern), handler});
+        _handlers.push_back({regex(pattern), handler});
     }
 }
 
 void terminal::run() {
     while (true) {
-        std::string input = _get_input();
+        string input = _get_input();
 
         if (input.empty()) {
             continue;  // no input
         }
 
         for (const auto& exit_rgx : _exit_regexes) {
-            if (std::regex_match(input, exit_rgx)) {
+            if (regex_match(input, exit_rgx)) {
                 return;  // exit input
             }
         }
 
         bool handled = false;
         for (const auto& [rgx, handler] : _handlers) {
-            std::smatch matches;
-            if (std::regex_match(input, matches, rgx)) {
+            smatch matches;
+            if (regex_match(input, matches, rgx)) {
                 // there is a match
-                std::string history_line;
+                string history_line;
                 handler(input, matches, history_line);  // handle
 
                 if (!history_line.empty()) {
@@ -83,13 +94,13 @@ void terminal::run() {
 
         if (!handled) {
             // there was no match
-            std::cout << "unhandled input: '" << input << "'\n";
+            cout << "unhandled input: '" << input << "'\n";
         }
     }
 }
 
-std::string terminal::_get_input() {
-    std::string result;
+string terminal::_get_input() {
+    string result;
 
     char* line = readline(">>> ");
     if (strlen(line) > 0) {
@@ -119,7 +130,7 @@ std::string terminal::_get_input() {
     return result;
 }
 
-void terminal::_add_history(const std::string& line) {
+void terminal::_add_history(const string& line) {
     HIST_ENTRY* curr = history_get(history_length);
     if (curr == NULL || line != curr->line) {
         // the line != last line in the history
@@ -127,29 +138,29 @@ void terminal::_add_history(const std::string& line) {
 
         if (_history_file.is_open()) {
             // add to the history file and flush
-            _history_file << line << std::endl;
+            _history_file << line << endl;
         }
     }
 }
 
-void terminal::_load_history(const std::string& path) {
+void terminal::_load_history(const string& path) {
     if (_history_file.is_open()) {
         // the history file exists
-        std::ifstream file{path};  // open for reading
-        std::string line;
-        while (std::getline(file, line)) {
+        ifstream file{path};  // open for reading
+        string line;
+        while (getline(file, line)) {
             // add each file line to history
             add_history(line.c_str());
         }
     }
 }
 
-std::vector<std::regex> terminal::_make_exit_regexes(const std::initializer_list<std::string>& patterns) {
-    std::vector<std::regex> result;
+vector<regex> terminal::_make_exit_regexes(const initializer_list<string>& patterns) {
+    vector<regex> result;
 
-    for (const std::string& pattern : patterns) {
+    for (const string& pattern : patterns) {
         // turn each pattern into a regex and add
-        result.push_back(std::regex(pattern));
+        result.push_back(regex(pattern));
     }
 
     return result;

@@ -26,16 +26,28 @@ enum class value_t {
     pair,
 };
 
+using std::enable_if;
+using std::forward;
+using std::forward_iterator_tag;
+using std::is_base_of;
+using std::is_convertible;
+using std::make_shared;
+using std::ostream;
+using std::ostringstream;
+using std::reinterpret_pointer_cast;
+using std::shared_ptr;
+using std::string;
+
 class value {
    public:
     virtual ~value() {}  // virtual destructor
 
     // write the value to a stream (pure virtual)
-    virtual std::ostream& write(std::ostream& os) const = 0;
+    virtual ostream& write(ostream& os) const = 0;
 
     // convert to string
-    std::string str() const {
-        std::ostringstream s;
+    string str() const {
+        ostringstream s;
         write(s);
 
         return s.str();
@@ -65,7 +77,7 @@ class value_number : public value {
     double number() const { return _number; }
     void number(double number) { _number = number; }
 
-    std::ostream& write(std::ostream& os) const override;
+    ostream& write(ostream& os) const override;
     bool equals(const value& other) const override;
 
    private:
@@ -75,10 +87,10 @@ class value_number : public value {
 class value_symbol : public value {
    public:
     // singleton instance getter
-    static const std::shared_ptr<value_symbol>& get(const std::string& symbol);
+    static const shared_ptr<value_symbol>& get(const string& symbol);
 
     // getter only
-    const std::string& symbol() const { return _symbol; }
+    const string& symbol() const { return _symbol; }
 
     // can't copy or move a singleton
     value_symbol(const value_symbol&) = delete;
@@ -86,23 +98,23 @@ class value_symbol : public value {
     value_symbol(value_symbol&&) = delete;
     void operator=(value_symbol&&) = delete;
 
-    std::ostream& write(std::ostream& os) const override;
+    ostream& write(ostream& os) const override;
 
    private:
     // can't instantiate a singleton
-    value_symbol(const std::string symbol) : value(value_t::symbol), _symbol(symbol) {}
+    value_symbol(const string symbol) : value(value_t::symbol), _symbol(symbol) {}
 
-    std::string _symbol;
+    string _symbol;
 };
 
 class value_string : public value {
    public:
-    value_string(const std::string& string) : value(value_t::string), _string(string) {}
+    value_string(const string& string) : value(value_t::string), _string(string) {}
 
-    const std::string& string() const { return _string; }
+    const string& string() const { return _string; }
     void string(const std::string& string) { _string = string; }
 
-    std::ostream& write(std::ostream& os) const override;
+    ostream& write(ostream& os) const override;
     bool equals(const value& other) const override;
 
    protected:
@@ -113,13 +125,13 @@ class value_string : public value {
 
 class value_format : public value_string {
    public:
-    // poor man's std::format
+    // poor man's format
     template <typename... Args>
     value_format(value_t type, const char* format, Args&&... args) : value_string(type) {
         static char buffer[65536];
 
         if constexpr (sizeof...(args) > 0) {
-            snprintf(buffer, sizeof(buffer), format, std::forward<Args>(args)...);
+            snprintf(buffer, sizeof(buffer), format, forward<Args>(args)...);
         } else {
             snprintf(buffer, sizeof(buffer), "%s", format);
         }
@@ -129,31 +141,31 @@ class value_format : public value_string {
 
     template <typename... Args>
     value_format(const char* format, Args&&... args)
-        : value_format(value_t::format, format, std::forward<Args>(args)...) {}
+        : value_format(value_t::format, format, forward<Args>(args)...) {}
 };
 
 class value_error : public value_format {
    public:
     template <typename... Args>
     value_error(const char* format, Args&&... args)
-        : value_format(value_t::error, format, std::forward<Args>(args)...) {}
+        : value_format(value_t::error, format, forward<Args>(args)...) {}
 
-    std::ostream& write(std::ostream& os) const override;
+    ostream& write(ostream& os) const override;
 };
 
 class value_info : public value_format {
    public:
     template <typename... Args>
     value_info(const char* format, Args&&... args)
-        : value_format(value_t::info, format, std::forward<Args>(args)...) {}
+        : value_format(value_t::info, format, forward<Args>(args)...) {}
 
-    std::ostream& write(std::ostream& os) const override;
+    ostream& write(ostream& os) const override;
 };
 
 class value_bool : public value {
    public:
     // singleton instance getter
-    static const std::shared_ptr<value_bool>& get(bool truth);
+    static const shared_ptr<value_bool>& get(bool truth);
 
     // getter only
     bool truth() const { return _truth; }
@@ -164,7 +176,7 @@ class value_bool : public value {
     value_bool(value_bool&&) = delete;
     void operator=(value_bool&&) = delete;
 
-    std::ostream& write(std::ostream& os) const override;
+    ostream& write(ostream& os) const override;
 
    private:
     // can't instantiate a singleton
@@ -176,7 +188,7 @@ class value_bool : public value {
 class value_nil : public value {
    public:
     // singleton instance getter
-    static const std::shared_ptr<value_nil>& get();
+    static const shared_ptr<value_nil>& get();
 
     // can't copy or move a singleton
     value_nil(const value_nil&) = delete;
@@ -184,7 +196,7 @@ class value_nil : public value {
     value_nil(value_nil&&) = delete;
     void operator=(value_nil&&) = delete;
 
-    std::ostream& write(std::ostream& os) const override;
+    ostream& write(ostream& os) const override;
 
    private:
     // can't instantiate a singleton
@@ -192,19 +204,19 @@ class value_nil : public value {
 };
 
 // singleton instances
-const std::shared_ptr<value_bool> true_ = value_bool::get(true);
-const std::shared_ptr<value_bool> false_ = value_bool::get(false);
-const std::shared_ptr<value_nil> nil = value_nil::get();
+const shared_ptr<value_bool> true_ = value_bool::get(true);
+const shared_ptr<value_bool> false_ = value_bool::get(false);
+const shared_ptr<value_nil> nil = value_nil::get();
 
 class value_pair : public value {
    public:
     struct iterator {
        public:
         // iterator traits
-        using iterator_category = std::forward_iterator_tag;
-        using difference_type = std::ptrdiff_t;
+        using iterator_category = forward_iterator_tag;
+        using difference_type = ptrdiff_t;
         using value_type = value;
-        using pointer = std::shared_ptr<value>;
+        using pointer = shared_ptr<value>;
         using reference = value&;
 
         iterator(value_pair* ptr) : _ptr(ptr) {}
@@ -236,11 +248,11 @@ class value_pair : public value {
             return a._ptr != b._ptr || a._at_cdr != b._at_cdr;
         };
 
-        const std::shared_ptr<value>& ptr() const {
+        const shared_ptr<value>& ptr() const {
             return _at_cdr ? _ptr->_cdr : _ptr->_car;
         }
 
-        void ptr(const std::shared_ptr<value>& p) {
+        void ptr(const shared_ptr<value>& p) {
             (_at_cdr ? _ptr->_cdr : _ptr->_car) = p;
         }
 
@@ -256,8 +268,8 @@ class value_pair : public value {
 
     // car and cdr shared ptrs are passed by copying
     value_pair(
-        const std::shared_ptr<value>& car,
-        const std::shared_ptr<value>& cdr)
+        const shared_ptr<value>& car,
+        const shared_ptr<value>& cdr)
         : value(value_t::pair, true), _car(car), _cdr(cdr) {}
 
     iterator begin() {
@@ -269,143 +281,143 @@ class value_pair : public value {
     }
 
     // getters
-    const std::shared_ptr<value>& car() const { return _car; }
-    const std::shared_ptr<value>& cdr() const { return _cdr; }
+    const shared_ptr<value>& car() const { return _car; }
+    const shared_ptr<value>& cdr() const { return _cdr; }
 
     // pair getters
-    const std::shared_ptr<value_pair> pcar() const {
-        return _car->compound() ? std::reinterpret_pointer_cast<value_pair>(_car) : nullptr;
+    const shared_ptr<value_pair> pcar() const {
+        return _car->compound() ? reinterpret_pointer_cast<value_pair>(_car) : nullptr;
     }
-    const std::shared_ptr<value_pair> pcdr() const {
-        return _cdr->compound() ? std::reinterpret_pointer_cast<value_pair>(_cdr) : nullptr;
+    const shared_ptr<value_pair> pcdr() const {
+        return _cdr->compound() ? reinterpret_pointer_cast<value_pair>(_cdr) : nullptr;
     }
 
     // setters
-    void car(std::shared_ptr<value> car) {
+    void car(shared_ptr<value> car) {
         _throw_on_cycle_from(car);
-        _car = std::move(car);
+        _car = move(car);
     }
-    void cdr(std::shared_ptr<value> cdr) {
+    void cdr(shared_ptr<value> cdr) {
         _throw_on_cycle_from(cdr);
-        _cdr = std::move(cdr);
+        _cdr = move(cdr);
     }
 
-    std::ostream& write(std::ostream& os) const override;
+    ostream& write(ostream& os) const override;
     bool equals(const value& other) const override;
 
     bool is_list() const;
     size_t length() const;
 
    private:
-    void _throw_on_cycle_from(const std::shared_ptr<value>& other);
+    void _throw_on_cycle_from(const shared_ptr<value>& other);
 
-    std::shared_ptr<value> _car;
-    std::shared_ptr<value> _cdr;
+    shared_ptr<value> _car;
+    shared_ptr<value> _cdr;
 };
 
 // factory functions
 
 template <typename T,
-          typename std::enable_if<
-              std::is_convertible<T, double>::value,
+          typename enable_if<
+              is_convertible<T, double>::value,
               bool>::type = true>  // poor man's concept
-inline std::shared_ptr<value_number> make_value(T number) {
+inline shared_ptr<value_number> make_value(T number) {
     // from the number
-    return std::make_shared<value_number>(number);
+    return make_shared<value_number>(number);
 }
 
 template <typename T,
-          typename std::enable_if<
-              std::is_convertible<T, double>::value,
+          typename enable_if<
+              is_convertible<T, double>::value,
               bool>::type = true>  // poor man's concept
-inline std::shared_ptr<value_number> make_number(T number) {
+inline shared_ptr<value_number> make_number(T number) {
     return make_value(number);
 }
 
-inline const std::shared_ptr<value_symbol>& make_value(const char* symbol) {
+inline const shared_ptr<value_symbol>& make_value(const char* symbol) {
     // from the singleton table
     return value_symbol::get(symbol);
 }
 
-inline const std::shared_ptr<value_symbol>& make_symbol(const char* symbol) {
+inline const shared_ptr<value_symbol>& make_symbol(const char* symbol) {
     return make_value(symbol);
 }
 
-inline const std::shared_ptr<value_symbol>& make_symbol(const std::string& symbol) {
+inline const shared_ptr<value_symbol>& make_symbol(const string& symbol) {
     return make_value(symbol.c_str());
 }
 
-inline std::shared_ptr<value_string> make_value(const std::string& string) {
+inline shared_ptr<value_string> make_value(const string& string) {
     // from the string
-    return std::make_shared<value_string>(string);
+    return make_shared<value_string>(string);
 }
 
-inline std::shared_ptr<value_string> make_string(const char* string) {
+inline shared_ptr<value_string> make_string(const char* string) {
     return make_value(std::string(string));
 }
 
-inline std::shared_ptr<value_string> make_string(const std::string& string) {
+inline shared_ptr<value_string> make_string(const string& string) {
     return make_value(string);
 }
 
-inline const std::shared_ptr<value_bool>& make_value(bool truth) {
+inline const shared_ptr<value_bool>& make_value(bool truth) {
     // from the singletons
     return (truth ? true_ : false_);
 }
 
-inline const std::shared_ptr<value_bool>& make_bool(bool truth) {
+inline const shared_ptr<value_bool>& make_bool(bool truth) {
     return make_value(truth);
 }
 
-inline const std::shared_ptr<value_nil>& make_nil() {
+inline const shared_ptr<value_nil>& make_nil() {
     // from the singleton
     return nil;
 }
 
-inline std::shared_ptr<value>& make_value(std::shared_ptr<value>& val) {
+inline shared_ptr<value>& make_value(shared_ptr<value>& val) {
     // from lvalue reference: identity
     return val;
 }
 
-inline std::shared_ptr<value>& make_value(std::shared_ptr<value>&& val) {
+inline shared_ptr<value>& make_value(shared_ptr<value>&& val) {
     // from rvalue reference: identity
     return val;
 }
 
 template <typename T1, typename T2>
-std::shared_ptr<value_pair> make_vpair(T1&& car, T2&& cdr) {
+shared_ptr<value_pair> make_vpair(T1&& car, T2&& cdr) {
     // from two separate universal references: car and cdr
-    return std::make_shared<value_pair>(
-        make_value(std::forward<T1>(car)),
-        make_value(std::forward<T2>(cdr)));
+    return make_shared<value_pair>(
+        make_value(forward<T1>(car)),
+        make_value(forward<T2>(cdr)));
 }
 
 template <typename Head, typename... Tail>
-std::shared_ptr<value_pair> make_list(Head&& first, Tail&&... rest) {
+shared_ptr<value_pair> make_list(Head&& first, Tail&&... rest) {
     if constexpr (sizeof...(rest) > 0) {
         return make_vpair(
-            make_value(std::forward<Head>(first)),    // the head
-            make_list(std::forward<Tail>(rest)...));  // the rest
+            make_value(forward<Head>(first)),    // the head
+            make_list(forward<Tail>(rest)...));  // the rest
     } else {
         return make_vpair(
-            make_value(std::forward<Head>(first)),  // the tail
-            nil);                                   // terminating nil
+            make_value(forward<Head>(first)),  // the tail
+            nil);                              // terminating nil
     }
 }
 
 template <typename... Args>
-inline std::shared_ptr<value_error> make_error(const char* format, Args... args) {
-    return std::make_shared<value_error>(format, std::forward<Args>(args)...);
+inline shared_ptr<value_error> make_error(const char* format, Args... args) {
+    return make_shared<value_error>(format, forward<Args>(args)...);
 }
 
 template <typename... Args>
-inline std::shared_ptr<value_info> make_info(const char* format, Args... args) {
-    return std::make_shared<value_info>(format, std::forward<Args>(args)...);
+inline shared_ptr<value_info> make_info(const char* format, Args... args) {
+    return make_shared<value_info>(format, forward<Args>(args)...);
 }
 
 // helper functions
 
-inline std::ostream& operator<<(std::ostream& os, const value& v) {
+inline ostream& operator<<(ostream& os, const value& v) {
     return v.write(os);
 }
 
@@ -417,14 +429,14 @@ inline bool operator!=(const value& v1, const value& v2) {
     return (&v1 != &v2 && !v1.equals(v2));
 }
 
-std::ostream& operator<<(std::ostream& os, const value_t& t);
+ostream& operator<<(ostream& os, const value_t& t);
 
 template <typename T,
-          typename std::enable_if<
-              std::is_base_of<value, T>::value,
+          typename enable_if<
+              is_base_of<value, T>::value,
               bool>::type = true>  // poor man's concept
-inline std::shared_ptr<T> to(const std::shared_ptr<value>& v) {
-    return std::reinterpret_pointer_cast<T>(v);
+inline shared_ptr<T> to(const shared_ptr<value>& v) {
+    return reinterpret_pointer_cast<T>(v);
 }
 
 // exceptions
@@ -435,7 +447,7 @@ class cycle_error : public str_exception {
         : str_exception(_make_message(from)) {}
 
    private:
-    std::string _make_message(const value_pair* from);
+    string _make_message(const value_pair* from);
 };
 
 #endif  // VALUE_HPP_

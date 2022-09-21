@@ -5,9 +5,13 @@
 #include <exception>
 #include <string>
 
-class str_exception : public std::exception {
+using std::exception;
+using std::forward;
+using std::string;
+
+class str_exception : public exception {
    public:
-    str_exception(const std::string& message) : _message(message) {}
+    str_exception(const string& message) : _message(message) {}
 
     const char* what() const noexcept override {
         return _message.c_str();
@@ -16,7 +20,7 @@ class str_exception : public std::exception {
    protected:
     str_exception() {}
 
-    std::string _message;
+    string _message;
 };
 
 class format_exception : public str_exception {
@@ -26,7 +30,7 @@ class format_exception : public str_exception {
         static char buffer[65536];
 
         if constexpr (sizeof...(args) > 0) {
-            snprintf(buffer, sizeof(buffer), format, std::forward<Args>(args)...);
+            snprintf(buffer, sizeof(buffer), format, forward<Args>(args)...);
         } else {
             snprintf(buffer, sizeof(buffer), "%s", format);
         }

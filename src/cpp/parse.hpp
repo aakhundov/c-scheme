@@ -8,12 +8,17 @@
 
 #include "value.hpp"
 
+using std::istream;
+using std::shared_ptr;
+using std::string;
+using std::filesystem::path;
+
 // parsing functions
 
-std::shared_ptr<value> parse_values_from(std::istream& is);
-std::shared_ptr<value> parse_values_from(const std::string& s);
-std::shared_ptr<value> parse_values_from(const char* s);
-std::shared_ptr<value> parse_values_from(const std::filesystem::path& p);
+shared_ptr<value> parse_values_from(istream& is);
+shared_ptr<value> parse_values_from(const string& s);
+shared_ptr<value> parse_values_from(const char* s);
+shared_ptr<value> parse_values_from(const path& p);
 
 // exceptions
 

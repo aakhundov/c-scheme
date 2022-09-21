@@ -9,30 +9,40 @@
 #include <utility>
 #include <vector>
 
+using std::function;
+using std::initializer_list;
+using std::ios;
+using std::ofstream;
+using std::pair;
+using std::regex;
+using std::smatch;
+using std::string;
+using std::vector;
+
 class terminal {
    public:
     // parameters: input string, regex match results, history line (out parameter)
-    using handler_type = std::function<void(const std::string&, const std::smatch&, std::string&)>;
+    using handler_type = function<void(const string&, const smatch&, string&)>;
 
-    terminal(std::initializer_list<std::string> exit_patterns, std::string history_path = ".history")
-        : _history_file{history_path, std::ios::app},
+    terminal(initializer_list<string> exit_patterns, string history_path = ".history")
+        : _history_file{history_path, ios::app},
           _exit_regexes{_make_exit_regexes(exit_patterns)} {
         _load_history(history_path);
     }
 
-    void add_handler(std::initializer_list<std::string> patterns, handler_type handler);
+    void add_handler(initializer_list<string> patterns, handler_type handler);
     void run();
 
    private:
-    std::vector<std::regex> _make_exit_regexes(const std::initializer_list<std::string>& patterns);
+    vector<regex> _make_exit_regexes(const initializer_list<string>& patterns);
 
-    std::string _get_input();
-    void _add_history(const std::string& line);
-    void _load_history(const std::string& path);
+    string _get_input();
+    void _add_history(const string& line);
+    void _load_history(const string& path);
 
-    std::ofstream _history_file;
-    std::vector<std::regex> _exit_regexes;
-    std::vector<std::pair<std::regex, handler_type>> _handlers;
+    ofstream _history_file;
+    vector<regex> _exit_regexes;
+    vector<pair<regex, handler_type>> _handlers;
 };
 
 #endif  // TERMINAL_H_

@@ -7,9 +7,15 @@
 #include "exception.hpp"
 #include "value.hpp"
 
+using std::make_unique;
+using std::shared_ptr;
+using std::string;
+using std::unique_ptr;
+using std::vector;
+
 // token
 
-token::token(const std::shared_ptr<value>& v) {
+token::token(const shared_ptr<value>& v) {
     if (v->type() == value_t::pair) {
         // v is a pair
         auto pair = to<value_pair>(v);
@@ -17,7 +23,7 @@ token::token(const std::shared_ptr<value>& v) {
             // v is a two-item list
             if (pair->car()->type() == value_t::symbol) {
                 // the first item is a symbol
-                std::string type_symbol = to<value_symbol>(pair->car())->symbol();
+                string type_symbol = to<value_symbol>(pair->car())->symbol();
                 if (type_symbol == "op") {
                     _type = token_t::op;
                 } else if (type_symbol == "reg") {
@@ -62,7 +68,7 @@ token::token(const std::shared_ptr<value>& v) {
     }
 }
 
-std::shared_ptr<value> token::to_value() const {
+shared_ptr<value> token::to_value() const {
     switch (_type) {
         case token_t::op:
             return make_list("op", make_symbol(name()));
@@ -72,7 +78,7 @@ std::shared_ptr<value> token::to_value() const {
             return make_list("label", make_symbol(name()));
         case token_t::const_:
             // copy _val to avoid const conflict
-            std::shared_ptr<value> v = val();
+            shared_ptr<value> v = val();
             return make_list("const", v);
     }
 
@@ -81,17 +87,17 @@ std::shared_ptr<value> token::to_value() const {
 
 // code_label
 
-code_label::code_label(const std::shared_ptr<value_symbol>& statement) : code(code_t::label) {
+code_label::code_label(const shared_ptr<value_symbol>& statement) : code(code_t::label) {
     _label = statement->symbol();
 }
 
-std::shared_ptr<value> code_label::to_value() const {
+shared_ptr<value> code_label::to_value() const {
     return make_symbol(_label);
 }
 
 // code_assign_call
 
-code_assign_call::code_assign_call(const std::shared_ptr<value_pair>& statement) : code(code_t::assign_call) {
+code_assign_call::code_assign_call(const shared_ptr<value_pair>& statement) : code(code_t::assign_call) {
     if (statement->length() >= 3) {
         // at least three items
         auto second = statement->pcdr()->car();
@@ -136,7 +142,7 @@ code_assign_call::code_assign_call(const std::shared_ptr<value_pair>& statement)
     }
 }
 
-std::shared_ptr<value> code_assign_call::to_value() const {
+shared_ptr<value> code_assign_call::to_value() const {
     auto result = make_list(
         "assign",                            // header
         make_symbol(_reg),                   // register
@@ -154,7 +160,7 @@ std::shared_ptr<value> code_assign_call::to_value() const {
 
 // code_assign_copy
 
-code_assign_copy::code_assign_copy(const std::shared_ptr<value_pair>& statement) : code(code_t::assign_copy) {
+code_assign_copy::code_assign_copy(const shared_ptr<value_pair>& statement) : code(code_t::assign_copy) {
     if (statement->length() == 3) {
         // exactly three items
         auto second = statement->pcdr()->car();
@@ -184,7 +190,7 @@ code_assign_copy::code_assign_copy(const std::shared_ptr<value_pair>& statement)
     }
 }
 
-std::shared_ptr<value> code_assign_copy::to_value() const {
+shared_ptr<value> code_assign_copy::to_value() const {
     return make_list(
         "assign",           // header
         make_symbol(_reg),  // register
@@ -193,7 +199,7 @@ std::shared_ptr<value> code_assign_copy::to_value() const {
 
 // code_perform
 
-code_perform::code_perform(const std::shared_ptr<value_pair>& statement) : code(code_t::perform) {
+code_perform::code_perform(const shared_ptr<value_pair>& statement) : code(code_t::perform) {
     if (statement->length() >= 2) {
         // at least two items
         auto second = statement->pcdr()->car();
@@ -229,7 +235,7 @@ code_perform::code_perform(const std::shared_ptr<value_pair>& statement) : code(
     }
 }
 
-std::shared_ptr<value> code_perform::to_value() const {
+shared_ptr<value> code_perform::to_value() const {
     auto result = make_list(
         "perform",                           // header
         make_list("op", make_symbol(_op)));  // op
@@ -246,7 +252,7 @@ std::shared_ptr<value> code_perform::to_value() const {
 
 // code_branch
 
-code_branch::code_branch(const std::shared_ptr<value_pair>& statement) : code(code_t::branch) {
+code_branch::code_branch(const shared_ptr<value_pair>& statement) : code(code_t::branch) {
     if (statement->length() >= 3) {
         // at least three items
         auto second = statement->pcdr()->car();
@@ -292,7 +298,7 @@ code_branch::code_branch(const std::shared_ptr<value_pair>& statement) : code(co
     }
 }
 
-std::shared_ptr<value> code_branch::to_value() const {
+shared_ptr<value> code_branch::to_value() const {
     auto result = make_list(
         "branch",                                 // header
         make_list("label", make_symbol(_label)),  // label
@@ -310,7 +316,7 @@ std::shared_ptr<value> code_branch::to_value() const {
 
 // code_goto
 
-code_goto::code_goto(const std::shared_ptr<value_pair>& statement) : code(code_t::goto_) {
+code_goto::code_goto(const shared_ptr<value_pair>& statement) : code(code_t::goto_) {
     if (statement->length() == 2) {
         // exactly two items
         auto second = statement->pcdr()->car();
@@ -322,7 +328,7 @@ code_goto::code_goto(const std::shared_ptr<value_pair>& statement) : code(code_t
     }
 }
 
-std::shared_ptr<value> code_goto::to_value() const {
+shared_ptr<value> code_goto::to_value() const {
     return make_list(
         "goto",               // header
         _target.to_value());  // target
@@ -330,7 +336,7 @@ std::shared_ptr<value> code_goto::to_value() const {
 
 // code_save
 
-code_save::code_save(const std::shared_ptr<value_pair>& statement) : code(code_t::save) {
+code_save::code_save(const shared_ptr<value_pair>& statement) : code(code_t::save) {
     if (statement->length() == 2) {
         // exactly two items
         auto second = statement->pcdr()->car();
@@ -350,7 +356,7 @@ code_save::code_save(const std::shared_ptr<value_pair>& statement) : code(code_t
     }
 }
 
-std::shared_ptr<value> code_save::to_value() const {
+shared_ptr<value> code_save::to_value() const {
     return make_list(
         "save",              // header
         make_symbol(_reg));  // register
@@ -358,7 +364,7 @@ std::shared_ptr<value> code_save::to_value() const {
 
 // code_restore
 
-code_restore::code_restore(const std::shared_ptr<value_pair>& statement) : code(code_t::restore) {
+code_restore::code_restore(const shared_ptr<value_pair>& statement) : code(code_t::restore) {
     if (statement->length() == 2) {
         // exactly two items
         auto second = statement->pcdr()->car();
@@ -378,7 +384,7 @@ code_restore::code_restore(const std::shared_ptr<value_pair>& statement) : code(
     }
 }
 
-std::shared_ptr<value> code_restore::to_value() const {
+shared_ptr<value> code_restore::to_value() const {
     return make_list(
         "restore",           // header
         make_symbol(_reg));  // register
@@ -388,7 +394,7 @@ std::shared_ptr<value> code_restore::to_value() const {
 
 namespace {
 
-bool is_assign_call(const std::shared_ptr<value_pair>& statement) {
+bool is_assign_call(const shared_ptr<value_pair>& statement) {
     if (statement->length() >= 3) {
         // at least three items
         token s{statement->pcdr()->pcdr()->car()};  // a token from the third item
@@ -402,8 +408,8 @@ bool is_assign_call(const std::shared_ptr<value_pair>& statement) {
 
 }  // namespace
 
-std::vector<std::unique_ptr<code>> translate_to_code(const std::shared_ptr<value>& source) {
-    std::vector<std::unique_ptr<code>> result;
+vector<unique_ptr<code>> translate_to_code(const shared_ptr<value>& source) {
+    vector<unique_ptr<code>> result;
 
     if (source != nil) {
         if (source->type() == value_t::pair) {
@@ -414,29 +420,29 @@ std::vector<std::unique_ptr<code>> translate_to_code(const std::shared_ptr<value
                 if (p->type() == value_t::symbol) {
                     // the statement is a symbol
                     auto label = to<value_symbol>(p.ptr());
-                    result.push_back(std::make_unique<code_label>(label));
+                    result.push_back(make_unique<code_label>(label));
                 } else if (p->type() == value_t::pair) {
                     // the statement is a list
                     auto statement = to<value_pair>(p.ptr());
                     if (statement->car()->type() == value_t::symbol) {
                         // the statement header is a symbol
-                        std::string header = to<value_symbol>(statement->car())->symbol();
+                        string header = to<value_symbol>(statement->car())->symbol();
                         if (header == "assign") {
                             if (is_assign_call(statement)) {
-                                result.push_back(std::make_unique<code_assign_call>(statement));
+                                result.push_back(make_unique<code_assign_call>(statement));
                             } else {
-                                result.push_back(std::make_unique<code_assign_copy>(statement));
+                                result.push_back(make_unique<code_assign_copy>(statement));
                             }
                         } else if (header == "perform") {
-                            result.push_back(std::make_unique<code_perform>(statement));
+                            result.push_back(make_unique<code_perform>(statement));
                         } else if (header == "branch") {
-                            result.push_back(std::make_unique<code_branch>(statement));
+                            result.push_back(make_unique<code_branch>(statement));
                         } else if (header == "goto") {
-                            result.push_back(std::make_unique<code_goto>(statement));
+                            result.push_back(make_unique<code_goto>(statement));
                         } else if (header == "save") {
-                            result.push_back(std::make_unique<code_save>(statement));
+                            result.push_back(make_unique<code_save>(statement));
                         } else if (header == "restore") {
-                            result.push_back(std::make_unique<code_restore>(statement));
+                            result.push_back(make_unique<code_restore>(statement));
                         } else {
                             throw code_error(
                                 "unrecognized statement header: %s",

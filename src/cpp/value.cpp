@@ -6,11 +6,19 @@
 #include <sstream>
 #include <unordered_map>
 
+using std::defaultfloat;
+using std::ostream;
+using std::ostringstream;
+using std::setprecision;
+using std::shared_ptr;
+using std::unordered_map;
+using std::string;
+
 // value_number
 
-std::ostream& value_number::write(std::ostream& os) const {
+ostream& value_number::write(ostream& os) const {
     // write with a 12-digit precision, then restore the default
-    return (os << std::setprecision(12) << _number << std::defaultfloat);
+    return (os << setprecision(12) << _number << defaultfloat);
 }
 
 bool value_number::equals(const value& other) const {
@@ -23,11 +31,11 @@ bool value_number::equals(const value& other) const {
 
 // value_symbol
 
-const std::shared_ptr<value_symbol>& value_symbol::get(const std::string& symbol) {
+const shared_ptr<value_symbol>& value_symbol::get(const string& symbol) {
     // static table of content-to-value mappings
-    static std::unordered_map<std::string, std::shared_ptr<value_symbol>> _odarray;
+    static unordered_map<string, shared_ptr<value_symbol>> _odarray;
 
-    std::shared_ptr<value_symbol>& val = _odarray[symbol];
+    shared_ptr<value_symbol>& val = _odarray[symbol];
 
     if (!val) {
         // create a new value
@@ -37,14 +45,14 @@ const std::shared_ptr<value_symbol>& value_symbol::get(const std::string& symbol
     return val;
 }
 
-std::ostream& value_symbol::write(std::ostream& os) const {
+ostream& value_symbol::write(ostream& os) const {
     // the symbol as is
     return (os << _symbol);
 }
 
 // value_string
 
-std::ostream& value_string::write(std::ostream& os) const {
+ostream& value_string::write(ostream& os) const {
     // the string in quotes
     return (os << "\"" << _string << "\"");
 }
@@ -59,43 +67,43 @@ bool value_string::equals(const value& other) const {
 
 // value_error
 
-std::ostream& value_error::write(std::ostream& os) const {
+ostream& value_error::write(ostream& os) const {
     // the red/white and bold error text
     return (os << BOLD(RED("error:") " " WHITE(<< _string <<)));
 }
 
 // value_info
 
-std::ostream& value_info::write(std::ostream& os) const {
+ostream& value_info::write(ostream& os) const {
     // the green info text
     return (os << GREEN(<< _string <<));
 }
 
 // value_bool
 
-const std::shared_ptr<value_bool>& value_bool::get(bool truth) {
+const shared_ptr<value_bool>& value_bool::get(bool truth) {
     // static singletons: true and false
-    static const std::shared_ptr<value_bool> true_ = std::shared_ptr<value_bool>(new value_bool(true));
-    static const std::shared_ptr<value_bool> false_ = std::shared_ptr<value_bool>(new value_bool(false));
+    static const shared_ptr<value_bool> true_ = shared_ptr<value_bool>(new value_bool(true));
+    static const shared_ptr<value_bool> false_ = shared_ptr<value_bool>(new value_bool(false));
 
     return (truth ? true_ : false_);
 }
 
-std::ostream& value_bool::write(std::ostream& os) const {
+ostream& value_bool::write(ostream& os) const {
     // the corresponding bool literal
     return (os << (_truth ? "true" : "false"));
 }
 
 // value_nil
 
-const std::shared_ptr<value_nil>& value_nil::get() {
+const shared_ptr<value_nil>& value_nil::get() {
     // static singleton: nil
-    static const std::shared_ptr<value_nil> nil = std::shared_ptr<value_nil>(new value_nil);
+    static const shared_ptr<value_nil> nil = shared_ptr<value_nil>(new value_nil);
 
     return nil;
 }
 
-std::ostream& value_nil::write(std::ostream& os) const {
+ostream& value_nil::write(ostream& os) const {
     // the empty list notation for the nil
     return (os << "()");
 };
@@ -122,7 +130,7 @@ void value_pair::iterator::_advance() {
     }
 }
 
-std::ostream& value_pair::write(std::ostream& os) const {
+ostream& value_pair::write(ostream& os) const {
     if (car()->type() == value_t::symbol &&              // first item is a symbol
         to<value_symbol>(car())->symbol() == "quote" &&  // first item is a quote symbol
         cdr()->type() == value_t::pair &&                // there is a second item
@@ -136,7 +144,7 @@ std::ostream& value_pair::write(std::ostream& os) const {
 
     os << "(";
     car()->write(os);  // write the first car
-    std::shared_ptr<value> running{cdr()};
+    shared_ptr<value> running{cdr()};
     while (running != nil) {
         if (running->compound()) {
             auto pair = to<value_pair>(running);
@@ -177,7 +185,7 @@ bool value_pair::equals(const value& other) const {
 }
 
 bool value_pair::is_list() const {
-    std::shared_ptr<value> running{cdr()};
+    shared_ptr<value> running{cdr()};
     while (running != nil) {
         if (running->compound()) {
             // the cdr is a pair: go to the next cdr
@@ -195,7 +203,7 @@ size_t value_pair::length() const {
     // at least one pair
     size_t result = 1;
 
-    std::shared_ptr<value> running{cdr()};
+    shared_ptr<value> running{cdr()};
     while (running != nil) {
         result += 1;  // increment the length
         if (running->compound()) {
@@ -210,9 +218,9 @@ size_t value_pair::length() const {
     return result;
 }
 
-void value_pair::_throw_on_cycle_from(const std::shared_ptr<value>& other) {
+void value_pair::_throw_on_cycle_from(const shared_ptr<value>& other) {
     if (other->compound()) {
-        std::shared_ptr<value> running{other};
+        shared_ptr<value> running{other};
         while (running != nil) {
             if (running->compound()) {
                 const value_pair* pair = reinterpret_cast<value_pair*>(running.get());
@@ -232,7 +240,7 @@ void value_pair::_throw_on_cycle_from(const std::shared_ptr<value>& other) {
 
 // helper functions
 
-std::ostream& operator<<(std::ostream& os, const value_t& t) {
+ostream& operator<<(ostream& os, const value_t& t) {
     switch (t) {
         case value_t::number:
             os << "number";
@@ -270,8 +278,8 @@ std::ostream& operator<<(std::ostream& os, const value_t& t) {
 
 // exceptions
 
-std::string cycle_error::_make_message(const value_pair* from) {
-    std::ostringstream s;
+string cycle_error::_make_message(const value_pair* from) {
+    ostringstream s;
     s << "cycle from " << *from << " (" << from << ")";
     return s.str();
 }
