@@ -12,6 +12,8 @@
 #include "constants.hpp"
 #include "exception.hpp"
 
+// value hierarchy
+
 enum class value_t {
     number,
     symbol,
@@ -23,8 +25,6 @@ enum class value_t {
     nil,
     pair,
 };
-
-// value hierarchy
 
 class value {
    public:

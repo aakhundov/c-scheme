@@ -58,19 +58,19 @@ void terminal::run() {
             continue;  // no input
         }
 
-        for (const auto& exit_regex : _exit_regexes) {
-            if (std::regex_match(input, exit_regex)) {
+        for (const auto& exit_rgx : _exit_regexes) {
+            if (std::regex_match(input, exit_rgx)) {
                 return;  // exit input
             }
         }
 
         bool handled = false;
-        for (const auto& pair : _handlers) {
+        for (const auto& [rgx, handler] : _handlers) {
             std::smatch matches;
-            if (std::regex_match(input, matches, pair.first)) {
+            if (std::regex_match(input, matches, rgx)) {
                 // there is a match
                 std::string history_line;
-                pair.second(input, matches, history_line);  // handle
+                handler(input, matches, history_line);  // handle
 
                 if (!history_line.empty()) {
                     _add_history(history_line);
