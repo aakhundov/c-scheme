@@ -7,9 +7,12 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include "value.hpp"
+
+// token
 
 enum class token_t {
     op,
@@ -18,25 +21,12 @@ enum class token_t {
     const_,
 };
 
-enum class code_t {
-    label,
-    assign_call,
-    assign_copy,
-    perform,
-    branch,
-    goto_,
-    save,
-    restore,
-};
-
-// token
-
 class token {
    public:
-    token(token_t type, const std::string& name) : _type(type), _name(name) {
+    token(token_t type, const std::string& name) : _type(type), _content(name) {
         assert(type == token_t::op || type == token_t::reg || type == token_t::label);
     }
-    token(token_t type, const std::shared_ptr<value>& val) : _type(type), _val(val) {
+    token(token_t type, const std::shared_ptr<value>& val) : _type(type), _content(val) {
         assert(type == token_t::const_);
     }
     token(const std::shared_ptr<value>& v);
@@ -45,12 +35,12 @@ class token {
 
     const std::string& name() const {
         assert(_type == token_t::op || _type == token_t::reg || _type == token_t::label);
-        return _name;
+        return std::get<std::string>(_content);
     }
 
     const std::shared_ptr<value>& val() const {
         assert(_type == token_t::const_);
-        return _val;
+        return std::get<std::shared_ptr<value>>(_content);
     }
 
     std::shared_ptr<value> to_value() const;
@@ -64,11 +54,21 @@ class token {
     token() {}
 
     token_t _type;
-    std::string _name;
-    std::shared_ptr<value> _val{nullptr};
+    std::variant<std::string, std::shared_ptr<value>> _content;
 };
 
 // code hierarchy
+
+enum class code_t {
+    label,
+    assign_call,
+    assign_copy,
+    perform,
+    branch,
+    goto_,
+    save,
+    restore,
+};
 
 class code {
    public:

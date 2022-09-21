@@ -34,11 +34,11 @@ token::token(const std::shared_ptr<value>& v) {
 
                 if (_type == token_t::const_) {
                     // use the second item (value) as is
-                    _val = pair->pcdr()->car();
+                    _content = pair->pcdr()->car();
                 } else {
                     if (pair->pcdr()->car()->type() == value_t::symbol) {
                         // the second item (name) is a string
-                        _name = to<value_symbol>(pair->pcdr()->car())->symbol();
+                        _content = to<value_symbol>(pair->pcdr()->car())->symbol();
                     } else {
                         throw code_error(
                             "non-const token's second item must be a string: %s",
@@ -65,14 +65,14 @@ token::token(const std::shared_ptr<value>& v) {
 std::shared_ptr<value> token::to_value() const {
     switch (_type) {
         case token_t::op:
-            return make_list("op", make_symbol(_name));
+            return make_list("op", make_symbol(name()));
         case token_t::reg:
-            return make_list("reg", make_symbol(_name));
+            return make_list("reg", make_symbol(name()));
         case token_t::label:
-            return make_list("label", make_symbol(_name));
+            return make_list("label", make_symbol(name()));
         case token_t::const_:
             // copy _val to avoid const conflict
-            std::shared_ptr<value> v = _val;
+            std::shared_ptr<value> v = val();
             return make_list("const", v);
     }
 
