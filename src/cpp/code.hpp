@@ -18,7 +18,6 @@ using std::ostream;
 using std::ostringstream;
 using std::shared_ptr;
 using std::string;
-using std::unique_ptr;
 using std::variant;
 using std::vector;
 
@@ -243,10 +242,18 @@ class code_restore : public code {
 
 // helper functions
 
-vector<unique_ptr<code>> translate_to_code(const shared_ptr<value>& source);
+vector<shared_ptr<code>> translate_to_code(const shared_ptr<value>& source);
 
 inline ostream& operator<<(ostream& os, const code& c) {
     return c.write(os);
+}
+
+template <typename T,
+          typename enable_if<
+              is_base_of<code, T>::value,
+              bool>::type = true>  // poor man's concept
+inline shared_ptr<T> to(const shared_ptr<code>& v) {
+    return reinterpret_pointer_cast<T>(v);
 }
 
 // exceptions

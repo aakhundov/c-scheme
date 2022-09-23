@@ -7,10 +7,9 @@
 #include "exception.hpp"
 #include "value.hpp"
 
-using std::make_unique;
+using std::make_shared;
 using std::shared_ptr;
 using std::string;
-using std::unique_ptr;
 using std::vector;
 
 // token
@@ -408,8 +407,8 @@ bool is_assign_call(const shared_ptr<value_pair>& statement) {
 
 }  // namespace
 
-vector<unique_ptr<code>> translate_to_code(const shared_ptr<value>& source) {
-    vector<unique_ptr<code>> result;
+vector<shared_ptr<code>> translate_to_code(const shared_ptr<value>& source) {
+    vector<shared_ptr<code>> result;
 
     if (source != nil) {
         if (source->type() == value_t::pair) {
@@ -420,7 +419,7 @@ vector<unique_ptr<code>> translate_to_code(const shared_ptr<value>& source) {
                 if (p->type() == value_t::symbol) {
                     // the statement is a symbol
                     auto label = to<value_symbol>(p.ptr());
-                    result.push_back(make_unique<code_label>(label));
+                    result.push_back(make_shared<code_label>(label));
                 } else if (p->type() == value_t::pair) {
                     // the statement is a list
                     auto statement = to<value_pair>(p.ptr());
@@ -429,20 +428,20 @@ vector<unique_ptr<code>> translate_to_code(const shared_ptr<value>& source) {
                         string header = to<value_symbol>(statement->car())->symbol();
                         if (header == "assign") {
                             if (is_assign_call(statement)) {
-                                result.push_back(make_unique<code_assign_call>(statement));
+                                result.push_back(make_shared<code_assign_call>(statement));
                             } else {
-                                result.push_back(make_unique<code_assign_copy>(statement));
+                                result.push_back(make_shared<code_assign_copy>(statement));
                             }
                         } else if (header == "perform") {
-                            result.push_back(make_unique<code_perform>(statement));
+                            result.push_back(make_shared<code_perform>(statement));
                         } else if (header == "branch") {
-                            result.push_back(make_unique<code_branch>(statement));
+                            result.push_back(make_shared<code_branch>(statement));
                         } else if (header == "goto") {
-                            result.push_back(make_unique<code_goto>(statement));
+                            result.push_back(make_shared<code_goto>(statement));
                         } else if (header == "save") {
-                            result.push_back(make_unique<code_save>(statement));
+                            result.push_back(make_shared<code_save>(statement));
                         } else if (header == "restore") {
-                            result.push_back(make_unique<code_restore>(statement));
+                            result.push_back(make_shared<code_restore>(statement));
                         } else {
                             throw code_error(
                                 "unrecognized statement header: %s",
