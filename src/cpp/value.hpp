@@ -183,29 +183,9 @@ class value_bool : public value {
     bool _truth;
 };
 
-class value_nil : public value {
-   public:
-    // singleton instance getter
-    static const shared_ptr<value_nil>& get();
-
-    // can't copy or move a singleton
-    value_nil(const value_nil&) = delete;
-    void operator=(value_nil const&) = delete;
-    value_nil(value_nil&&) = delete;
-    void operator=(value_nil&&) = delete;
-
-    ostream& write(ostream& os) const override;
-
-   private:
-    // can't instantiate a singleton
-    value_nil() : value(value_t::nil) {}
-};
-
-// singleton instances
+// singleton bools
 const shared_ptr<value_bool> true_ = value_bool::get(true);
 const shared_ptr<value_bool> false_ = value_bool::get(false);
-const shared_ptr<value_nil> nil = value_nil::get();
-const shared_ptr<value> nil_value = nil;
 
 class value_pair : public value {
    public:
@@ -276,7 +256,7 @@ class value_pair : public value {
         const shared_ptr<value>& cdr)
         : value_pair(value_t::pair, car, cdr) {}
 
-    iterator begin() {
+    virtual iterator begin() {
         return iterator(this);
     }
 
@@ -309,8 +289,8 @@ class value_pair : public value {
     ostream& write(ostream& os) const override;
     bool equals(const value& other) const override;
 
-    bool is_list() const;
-    size_t length() const;
+    virtual bool is_list() const;
+    virtual size_t length() const;
 
    private:
     void _throw_on_cycle_from(const shared_ptr<value>& other);
@@ -318,6 +298,49 @@ class value_pair : public value {
     shared_ptr<value> _car;
     shared_ptr<value> _cdr;
 };
+
+class value_nil : public value_pair {
+   public:
+    // singleton instance getter
+    static const shared_ptr<value_nil>& get();
+
+    // can't copy or move a singleton
+    value_nil(const value_nil&) = delete;
+    void operator=(value_nil const&) = delete;
+    value_nil(value_nil&&) = delete;
+    void operator=(value_nil&&) = delete;
+
+    iterator begin() override {
+        return iterator(nullptr);
+    }
+
+    ostream& write(ostream& os) const override {
+        // the empty list notation
+        return (os << "()");
+    };
+
+    bool equals(const value& other) const override {
+        // pointer-based comparision
+        return this == &other;
+    }
+
+    bool is_list() const override {
+        // still a list
+        return true;
+    }
+
+    size_t length() const override {
+        // empty list
+        return 0;
+    }
+
+   private:
+    // can't instantiate a singleton
+    value_nil() : value_pair(value_t::nil, nullptr, nullptr) {}
+};
+
+// singleton nil
+const shared_ptr<value_pair> nil = value_nil::get();
 
 // factory functions
 
@@ -366,7 +389,7 @@ inline shared_ptr<value_string> make_string(const string& string) {
 
 inline const shared_ptr<value_bool>& make_value(bool truth) {
     // from the singletons
-    return (truth ? true_ : false_);
+    return value_bool::get(truth);
 }
 
 inline const shared_ptr<value_bool>& make_bool(bool truth) {
@@ -375,7 +398,7 @@ inline const shared_ptr<value_bool>& make_bool(bool truth) {
 
 inline const shared_ptr<value_nil>& make_nil() {
     // from the singleton
-    return nil;
+    return value_nil::get();
 }
 
 inline shared_ptr<value>& make_value(shared_ptr<value>& val) {

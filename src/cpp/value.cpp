@@ -94,20 +94,6 @@ ostream& value_bool::write(ostream& os) const {
     return (os << (_truth ? "true" : "false"));
 }
 
-// value_nil
-
-const shared_ptr<value_nil>& value_nil::get() {
-    // static singleton: nil
-    static const shared_ptr<value_nil> nil = shared_ptr<value_nil>(new value_nil);
-
-    return nil;
-}
-
-ostream& value_nil::write(ostream& os) const {
-    // the empty list notation for the nil
-    return (os << "()");
-};
-
 // value_pair
 
 void value_pair::iterator::_advance() {
@@ -236,6 +222,15 @@ void value_pair::_throw_on_cycle_from(const shared_ptr<value>& other) {
             }
         }
     }
+}
+
+// value_nil
+
+const shared_ptr<value_nil>& value_nil::get() {
+    // static singleton: nil
+    static const shared_ptr<value_nil> nil = shared_ptr<value_nil>(new value_nil);
+
+    return nil;
 }
 
 // helper functions
