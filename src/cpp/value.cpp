@@ -11,8 +11,8 @@ using std::ostream;
 using std::ostringstream;
 using std::setprecision;
 using std::shared_ptr;
-using std::unordered_map;
 using std::string;
+using std::unordered_map;
 
 // value_number
 
@@ -111,7 +111,7 @@ ostream& value_nil::write(ostream& os) const {
 // value_pair
 
 void value_pair::iterator::_advance() {
-    if (_ptr->cdr()->compound()) {
+    if (_ptr->cdr()->type() == value_t::pair) {
         _ptr = reinterpret_cast<value_pair*>(_ptr->cdr().get());  // cdr is a pair
     } else {
         if (_ptr->cdr() == nil) {
@@ -146,7 +146,7 @@ ostream& value_pair::write(ostream& os) const {
     car()->write(os);  // write the first car
     shared_ptr<value> running{cdr()};
     while (running != nil) {
-        if (running->compound()) {
+        if (running->type() == value_t::pair) {
             auto pair = to<value_pair>(running);
             os << " ";
             pair->car()->write(os);  // write the next car
@@ -166,7 +166,7 @@ bool value_pair::equals(const value& other) const {
     if (other.type() == this->type()) {
         const value* running1 = this;
         const value* running2 = &other;
-        while (running1->compound() && running1->type() == running2->type()) {
+        while (running1->type() == value_t::pair && running1->type() == running2->type()) {
             const value_pair* pair1 = reinterpret_cast<const value_pair*>(running1);
             const value_pair* pair2 = reinterpret_cast<const value_pair*>(running2);
 
@@ -187,7 +187,7 @@ bool value_pair::equals(const value& other) const {
 bool value_pair::is_list() const {
     shared_ptr<value> running{cdr()};
     while (running != nil) {
-        if (running->compound()) {
+        if (running->type() == value_t::pair) {
             // the cdr is a pair: go to the next cdr
             running = to<value_pair>(running)->cdr();
         } else {
@@ -206,7 +206,7 @@ size_t value_pair::length() const {
     shared_ptr<value> running{cdr()};
     while (running != nil) {
         result += 1;  // increment the length
-        if (running->compound()) {
+        if (running->type() == value_t::pair) {
             // the cdr is a pair: go to the next cdr
             running = to<value_pair>(running)->cdr();
         } else {
@@ -219,10 +219,10 @@ size_t value_pair::length() const {
 }
 
 void value_pair::_throw_on_cycle_from(const shared_ptr<value>& other) {
-    if (other->compound()) {
+    if (other->type() == value_t::pair) {
         shared_ptr<value> running{other};
         while (running != nil) {
-            if (running->compound()) {
+            if (running->type() == value_t::pair) {
                 const value_pair* pair = reinterpret_cast<value_pair*>(running.get());
 
                 if (pair == this) {

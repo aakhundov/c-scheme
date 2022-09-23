@@ -24,6 +24,7 @@ enum class value_t {
     bool_,
     nil,
     pair,
+    instruction,
 };
 
 using std::enable_if;
@@ -59,15 +60,12 @@ class value {
     }
 
     value_t type() const { return _type; }
-    bool compound() const { return _compound; }
 
    protected:
     value(value_t type) : _type{type} {}
-    value(value_t type, bool compound) : _type{type}, _compound{compound} {}
 
     // for efficient type checking
     value_t _type;
-    bool _compound{false};
 };
 
 class value_number : public value {
@@ -207,6 +205,7 @@ class value_nil : public value {
 const shared_ptr<value_bool> true_ = value_bool::get(true);
 const shared_ptr<value_bool> false_ = value_bool::get(false);
 const shared_ptr<value_nil> nil = value_nil::get();
+const shared_ptr<value> nil_value = nil;
 
 class value_pair : public value {
    public:
@@ -268,9 +267,14 @@ class value_pair : public value {
 
     // car and cdr shared ptrs are passed by copying
     value_pair(
+        value_t type,
         const shared_ptr<value>& car,
         const shared_ptr<value>& cdr)
-        : value(value_t::pair, true), _car(car), _cdr(cdr) {}
+        : value(type), _car(car), _cdr(cdr) {}
+    value_pair(
+        const shared_ptr<value>& car,
+        const shared_ptr<value>& cdr)
+        : value_pair(value_t::pair, car, cdr) {}
 
     iterator begin() {
         return iterator(this);
@@ -286,10 +290,10 @@ class value_pair : public value {
 
     // pair getters
     const shared_ptr<value_pair> pcar() const {
-        return _car->compound() ? reinterpret_pointer_cast<value_pair>(_car) : nullptr;
+        return _car->type() == value_t::pair ? reinterpret_pointer_cast<value_pair>(_car) : nullptr;
     }
     const shared_ptr<value_pair> pcdr() const {
-        return _cdr->compound() ? reinterpret_pointer_cast<value_pair>(_cdr) : nullptr;
+        return _cdr->type() == value_t::pair ? reinterpret_pointer_cast<value_pair>(_cdr) : nullptr;
     }
 
     // setters

@@ -185,7 +185,6 @@ void test_value() {
     shared_ptr<value_number> num1, num2;
     ASSERT_TO_STR(*(num1 = make_number(3.14)), "3.14");
     ASSERT_TRUE(num1->type() == value_t::number);
-    ASSERT_FALSE(num1->compound());
     ASSERT_EQUAL(num1->number(), 3.14);
     ASSERT_TO_STR(*(num2 = make_number(3.14)), "3.14");
     ASSERT_TRUE(*num1 == *num2);
@@ -195,7 +194,6 @@ void test_value() {
     shared_ptr<value_symbol> sym1, sym2;
     ASSERT_TO_STR(*(sym1 = make_symbol("abc")), "abc");
     ASSERT_TRUE(sym1->type() == value_t::symbol);
-    ASSERT_FALSE(sym1->compound());
     ASSERT_EQUAL(sym1->symbol(), "abc");
     ASSERT_TO_STR(*(sym2 = make_symbol("abc")), "abc");
     ASSERT_TRUE(*sym1 == *sym2);
@@ -205,7 +203,6 @@ void test_value() {
     shared_ptr<value_string> str1, str2;
     ASSERT_TO_STR(*(str1 = make_string("abc")), "\"abc\"");
     ASSERT_TRUE(str1->type() == value_t::string);
-    ASSERT_FALSE(str1->compound());
     ASSERT_EQUAL(str1->string(), "abc");
     ASSERT_TO_STR(*(str2 = make_string("abc")), "\"abc\"");
     ASSERT_TRUE(*str1 == *str2);
@@ -215,7 +212,6 @@ void test_value() {
     shared_ptr<value_error> error1, error2;
     ASSERT_TO_STR(*(error1 = make_error("hello '%g'", 3.14)), BOLD(RED("error:") " " WHITE("hello '3.14'")));
     ASSERT_TRUE(error1->type() == value_t::error);
-    ASSERT_FALSE(error1->compound());
     ASSERT_EQUAL(error1->string(), "hello '3.14'");
     ASSERT_TO_STR(*(error2 = make_error("hello '%g'", 3.14)), BOLD(RED("error:") " " WHITE("hello '3.14'")));
     ASSERT_TRUE(*error1 == *error2);
@@ -225,7 +221,6 @@ void test_value() {
     shared_ptr<value_info> info1, info2;
     ASSERT_TO_STR(*(info1 = make_info("hello '%g'", 3.14)), GREEN("hello '3.14'"));
     ASSERT_TRUE(info1->type() == value_t::info);
-    ASSERT_FALSE(info1->compound());
     ASSERT_EQUAL(info1->string(), "hello '3.14'");
     ASSERT_TO_STR(*(info2 = make_info("hello '%g'", 3.14)), GREEN("hello '3.14'"));
     ASSERT_TRUE(*info1 == *info2);
@@ -235,7 +230,6 @@ void test_value() {
     shared_ptr<value_bool> bool1, bool2;
     ASSERT_TO_STR(*(bool1 = make_bool(true)), "true");
     ASSERT_TRUE(bool1->type() == value_t::bool_);
-    ASSERT_FALSE(bool1->compound());
     ASSERT_EQUAL(bool1->truth(), true);
     ASSERT_TO_STR(*(bool2 = make_bool(true)), "true");
     ASSERT_TRUE(*bool1 == *bool2);
@@ -245,7 +239,6 @@ void test_value() {
     shared_ptr<value_nil> nil1, nil2;
     ASSERT_TO_STR(*(nil1 = make_nil()), "()");
     ASSERT_TRUE(nil1->type() == value_t::nil);
-    ASSERT_FALSE(nil1->compound());
     ASSERT_TO_STR(*(nil2 = make_nil()), "()");
     ASSERT_TRUE(*nil1 == *nil2);
     ASSERT_TRUE(nil1 == nil2);
@@ -254,7 +247,6 @@ void test_value() {
     shared_ptr<value_pair> pair1, pair2;
     ASSERT_TO_STR(*(pair1 = make_vpair(3.14, "abc")), "(3.14 . abc)");
     ASSERT_TRUE(pair1->type() == value_t::pair);
-    ASSERT_TRUE(pair1->compound());
     ASSERT_TO_STR(*pair1->car(), "3.14");
     ASSERT_TO_STR(*pair1->cdr(), "abc");
     ASSERT_TO_STR(*(pair2 = make_vpair(3.14, "abc")), "(3.14 . abc)");
@@ -265,7 +257,6 @@ void test_value() {
     shared_ptr<value_pair> list1, list2;
     ASSERT_TO_STR(*(list1 = make_list(3.14, "abc", nil, false)), "(3.14 abc () false)");
     ASSERT_TRUE(list1->type() == value_t::pair);
-    ASSERT_TRUE(list1->compound());
     ASSERT_TO_STR(*list1->car(), "3.14");
     ASSERT_TO_STR(*list1->cdr(), "(abc () false)");
     ASSERT_TO_STR(*list1->pcdr()->car(), "abc");
