@@ -807,10 +807,10 @@ void test_code() {
         for (const auto& translated : code) {
             // compare each line of the code with the original
             const auto& original_line = running->car();
-            const auto& translated_line = *translated->to_value();
+            const shared_ptr<value> translated_line = translated->to_value();
 
-            if (translated_line != *original_line) {
-                cerr << RED("" + translated_line.str() + " != " + original_line->str() + "") << '\n';
+            if (*translated_line != *original_line) {
+                cerr << RED("" + translated_line->str() + " != " + original_line->str() + "") << '\n';
                 exit(EXIT_FAILURE);
             }
 
