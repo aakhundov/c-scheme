@@ -24,7 +24,7 @@ enum class value_t {
     bool_,
     nil,
     pair,
-    external,
+    custom,
 };
 
 using std::enable_if;

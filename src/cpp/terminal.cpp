@@ -10,7 +10,6 @@ using std::cout;
 using std::endl;
 using std::getline;
 using std::ifstream;
-using std::initializer_list;
 using std::regex;
 using std::regex_match;
 using std::smatch;
@@ -54,7 +53,7 @@ static void add_history(const char* line) {
 
 // terminal
 
-void terminal::add_handler(initializer_list<string> patterns, handler_type handler) {
+void terminal::add_handler(const vector<string>& patterns, handler_type handler) {
     for (const string& pattern : patterns) {
         // turn each pattern into a regex and add with the handler
         _handlers.push_back({regex(pattern), handler});
@@ -155,7 +154,7 @@ void terminal::_load_history(const string& path) {
     }
 }
 
-vector<regex> terminal::_make_exit_regexes(const initializer_list<string>& patterns) {
+vector<regex> terminal::_make_exit_regexes(const vector<string>& patterns) {
     vector<regex> result;
 
     for (const string& pattern : patterns) {

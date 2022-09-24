@@ -147,12 +147,16 @@ shared_ptr<value> replace_dots_in_list(shared_ptr<value> v) {
             // current item is a dot symbol
             if (pair->cdr() == nil) {
                 // no next item: (x .)
-                throw parsing_error("unfollowed %s in %s", dot_symbol.c_str(), v->str().c_str());
+                throw parsing_error(
+                    "unfollowed %s in %s",
+                    dot_symbol.c_str(), v->str().c_str());
             }
             auto cdr = pair->pcdr();
             if (cdr->cdr() != nil) {
                 // 2+ next items: (x . y z)
-                throw parsing_error("2+ items after %s in %s", dot_symbol.c_str(), v->str().c_str());
+                throw parsing_error(
+                    "2+ items after %s in %s",
+                    dot_symbol.c_str(), v->str().c_str());
             }
             if (cdr->car()->type() == value_t::symbol &&
                 to<value_symbol>(cdr->car())->symbol() == dot_symbol) {

@@ -18,8 +18,8 @@ using std::unordered_map;
 
 value::operator bool() const {
     return (
-        _type == value_t::bool_ &&
-        !reinterpret_cast<const value_bool*>(this)->truth());
+        _type != value_t::bool_ ||
+        reinterpret_cast<const value_bool*>(this)->truth());
 }
 
 // value_number

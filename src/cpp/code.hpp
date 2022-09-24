@@ -2,7 +2,6 @@
 #define CODE_HPP_
 
 #include <cassert>
-#include <initializer_list>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -13,7 +12,6 @@
 #include "value.hpp"
 
 using std::get;
-using std::initializer_list;
 using std::ostream;
 using std::ostringstream;
 using std::shared_ptr;
@@ -87,8 +85,8 @@ class code {
 
     virtual shared_ptr<value> to_value() const = 0;
 
-    virtual ostream& write(ostream& os) const {
-        return (os << "    " << *to_value());
+    ostream& write(ostream& os) const {
+        return (os << *to_value());
     };
 
     string str() const {
@@ -112,11 +110,7 @@ class code_label : public code {
 
     const string& label() const { return _label; }
 
-    virtual shared_ptr<value> to_value() const override;
-
-    virtual ostream& write(ostream& os) const override {
-        return (os << _label);
-    };
+    shared_ptr<value> to_value() const override;
 
    private:
     string _label;
@@ -127,7 +121,7 @@ class code_assign_call : public code {
     code_assign_call(
         const string& reg,
         const string& op,
-        initializer_list<token> args)
+        const vector<token>& args)
         : code(code_t::assign_call), _reg{reg}, _op{op}, _args{args} {}
     code_assign_call(const shared_ptr<value_pair>& v);
 
@@ -135,7 +129,7 @@ class code_assign_call : public code {
     const string& op() const { return _op; }
     vector<token>& args() { return _args; }
 
-    virtual shared_ptr<value> to_value() const override;
+    shared_ptr<value> to_value() const override;
 
    private:
     string _reg;
@@ -152,7 +146,7 @@ class code_assign_copy : public code {
     const string& reg() const { return _reg; }
     const token& src() const { return _src; }
 
-    virtual shared_ptr<value> to_value() const override;
+    shared_ptr<value> to_value() const override;
 
    private:
     string _reg;
@@ -161,14 +155,14 @@ class code_assign_copy : public code {
 
 class code_perform : public code {
    public:
-    code_perform(const string& op, initializer_list<token> args)
+    code_perform(const string& op, const vector<token>& args)
         : code(code_t::assign_call), _op{op}, _args{args} {}
     code_perform(const shared_ptr<value_pair>& v);
 
     const string& op() const { return _op; }
     vector<token>& args() { return _args; }
 
-    virtual shared_ptr<value> to_value() const override;
+    shared_ptr<value> to_value() const override;
 
    private:
     string _op;
@@ -180,7 +174,7 @@ class code_branch : public code {
     code_branch(
         const string& label,
         const string& op,
-        initializer_list<token> args)
+        const vector<token>& args)
         : code(code_t::branch), _label{label}, _op{op}, _args{args} {}
     code_branch(const shared_ptr<value_pair>& v);
 
@@ -188,7 +182,7 @@ class code_branch : public code {
     const string& op() const { return _op; }
     vector<token>& args() { return _args; }
 
-    virtual shared_ptr<value> to_value() const override;
+    shared_ptr<value> to_value() const override;
 
    private:
     string _label;
@@ -204,7 +198,7 @@ class code_goto : public code {
 
     const token& target() const { return _target; }
 
-    virtual shared_ptr<value> to_value() const override;
+    shared_ptr<value> to_value() const override;
 
    private:
     token _target;
@@ -219,7 +213,7 @@ class code_save : public code {
 
     const string& reg() const { return _reg; }
 
-    virtual shared_ptr<value> to_value() const override;
+    shared_ptr<value> to_value() const override;
 
    private:
     string _reg;
@@ -234,7 +228,7 @@ class code_restore : public code {
 
     const string& reg() const { return _reg; }
 
-    virtual shared_ptr<value> to_value() const override;
+    shared_ptr<value> to_value() const override;
 
    private:
     string _reg;
