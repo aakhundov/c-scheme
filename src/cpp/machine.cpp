@@ -282,7 +282,7 @@ shared_ptr<value_pair> machine::_append_code(const vector<shared_ptr<code>>& cod
         tail = new_pair;  // set the new tail
 
         if (label_queue.size() > 0) {
-            // point the labels in the queued  o
+            // point the labels in the queued to
             // the following instruction (new_pair)
             // and clear the queue
             for (const auto& label_str : label_queue) {
@@ -317,6 +317,16 @@ shared_ptr<value_pair> machine::_append_code(const vector<shared_ptr<code>>& cod
 
 machine::machine(const vector<shared_ptr<code>>& code) {
     _append_code(code);
+}
+
+machine::~machine() {
+    // cleanup registers, labels, etc. before implicit destruction
+    for (auto p = _registers->begin(); p != _registers->end(); p++) p.ptr(nullptr);
+    for (auto p = _labels->begin(); p != _labels->end(); p++) p.ptr(nullptr);
+    for (auto p = _constants->begin(); p != _constants->end(); p++) p.ptr(nullptr);
+    for (auto p = _ops->begin(); p != _ops->end(); p++) p.ptr(nullptr);
+    for (auto p = _code_head->begin(); p != _code_head->end(); p++) p.ptr(nullptr);
+    for (auto p = _stack->begin(); p != _stack->end(); p++) p.ptr(nullptr);
 }
 
 void machine::bind_op(const string& name, machine_op const op) {

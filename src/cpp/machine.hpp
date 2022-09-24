@@ -30,6 +30,7 @@ using machine_op = shared_ptr<value> (*)(const vector<shared_ptr<value_pair>>&);
 class machine {
    public:
     machine(const vector<shared_ptr<code>>& code);
+    ~machine();
 
     void bind_op(const string& name, machine_op const op);
     shared_ptr<value> read_from_register(const string& name);
