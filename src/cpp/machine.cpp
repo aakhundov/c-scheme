@@ -41,7 +41,7 @@ class machine::instruction_assign_call : public value_instruction {
    private:
     const shared_ptr<value_pair> _reg;
     const shared_ptr<value_machine_op> _op;
-    const vector<const shared_ptr<value_pair>> _args;
+    const vector<shared_ptr<value_pair>> _args;
 };
 
 class machine::instruction_assign_copy : public value_instruction {
@@ -84,7 +84,7 @@ class machine::instruction_perform : public value_instruction {
 
    private:
     const shared_ptr<value_machine_op> _op;
-    const vector<const shared_ptr<value_pair>> _args;
+    const vector<shared_ptr<value_pair>> _args;
 };
 
 class machine::instruction_branch : public value_instruction {
@@ -114,7 +114,7 @@ class machine::instruction_branch : public value_instruction {
    private:
     const shared_ptr<value_pair> _label;
     const shared_ptr<value_machine_op> _op;
-    const vector<const shared_ptr<value_pair>> _args;
+    const vector<shared_ptr<value_pair>> _args;
 };
 
 class machine::instruction_goto : public value_instruction {
@@ -225,8 +225,8 @@ const shared_ptr<value_pair> machine::_token_to_arg(const token& t) {
     }
 }
 
-const vector<const shared_ptr<value_pair>> machine::_tokens_to_args(const vector<token>& tokens) {
-    vector<const shared_ptr<value_pair>> result;
+const vector<shared_ptr<value_pair>> machine::_tokens_to_args(const vector<token>& tokens) {
+    vector<shared_ptr<value_pair>> result;
 
     for (auto& t : tokens) {
         // create an arg for every token

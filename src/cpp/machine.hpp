@@ -25,7 +25,7 @@ class machine_error : public format_exception {
 
 // machine
 
-using machine_op = shared_ptr<value> (*)(const vector<const shared_ptr<value_pair>>&);
+using machine_op = shared_ptr<value> (*)(const vector<shared_ptr<value_pair>>&);
 
 class machine {
    public:
@@ -97,7 +97,7 @@ class machine {
 
     shared_ptr<value> _call_op(
         const shared_ptr<value_machine_op>& v,
-        const vector<const shared_ptr<value_pair>>& _args) {
+        const vector<shared_ptr<value_pair>>& _args) {
         if (auto op = v->op()) {
             return op(_args);  // call the op
         } else {
@@ -126,7 +126,7 @@ class machine {
     shared_ptr<value_machine_op> _get_op(const string& name);
 
     const shared_ptr<value_pair> _token_to_arg(const token& t);
-    const vector<const shared_ptr<value_pair>> _tokens_to_args(const vector<token>& tokens);
+    const vector<shared_ptr<value_pair>> _tokens_to_args(const vector<token>& tokens);
 
     shared_ptr<value_pair> _append_code(const vector<shared_ptr<code>>& code);
 
