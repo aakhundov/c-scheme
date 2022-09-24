@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -6,10 +7,12 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <utility>
 #include <vector>
 
 #include "code.hpp"
 #include "constants.hpp"
+#include "machine.hpp"
 #include "parse.hpp"
 #include "value.hpp"
 
@@ -19,10 +22,12 @@ using std::cerr;
 using std::cout;
 using std::function;
 using std::ostringstream;
+using std::pair;
 using std::setfill;
 using std::setw;
 using std::shared_ptr;
 using std::string;
+using std::tuple;
 using std::filesystem::directory_iterator;
 using std::filesystem::path;
 
@@ -117,7 +122,7 @@ void assert_parse(string text, const shared_ptr<value_pair>& expected) {
 
     if (*values != *expected) {
         // the parsed values don't equal to the expected
-        cerr << RED("expected \"" + expected->str() + "\"");
+        cerr << RED("expected \"" + expected->str() + "\"\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -799,11 +804,127 @@ void test_code() {
         auto code = translate_to_code(source);
 
         auto running = source;
-        for (const auto& translated_line : code) {
+        for (const auto& translated : code) {
             // compare each line of the code with the original
             const auto& original_line = running->car();
-            assert(*translated_line->to_value() == *original_line);
+            const auto& translated_line = *translated->to_value();
+
+            if (translated_line != *original_line) {
+                cerr << RED("" + translated_line.str() + " != " + original_line->str() + "") << '\n';
+                exit(EXIT_FAILURE);
+            }
+
             running = running->pcdr();
+        }
+    }
+}
+
+void test_machine() {
+    vector<tuple<path, string, vector<pair<vector<pair<string, shared_ptr<value>>>, shared_ptr<value>>>>> data = {
+        {
+            "./lib/machines/gcd.scm",
+            "a",
+            {
+                {{{"a", make_number(24)}, {"b", make_number(36)}}, make_number(12)},
+                {{{"a", make_number(9)}, {"b", make_number(16)}}, make_number(1)},
+                {{{"a", make_number(10)}, {"b", make_number(10)}}, make_number(10)},
+                {{{"a", make_number(72)}, {"b", make_number(54)}}, make_number(18)},
+                {{{"a", make_number(5)}, {"b", make_number(125)}}, make_number(5)},
+            },
+        },
+        {
+            "./lib/machines/factorial.scm",
+            "val",
+            {
+                {{{"n", make_number(1)}}, make_number(1)},
+                {{{"n", make_number(2)}}, make_number(2)},
+                {{{"n", make_number(3)}}, make_number(6)},
+                {{{"n", make_number(5)}}, make_number(120)},
+                {{{"n", make_number(7)}}, make_number(5040)},
+                {{{"n", make_number(10)}}, make_number(3628800)},
+            },
+        },
+        {
+            "./lib/machines/fibonacci.scm",
+            "val",
+            {
+                {{{"n", make_number(0)}}, make_number(0)},
+                {{{"n", make_number(1)}}, make_number(1)},
+                {{{"n", make_number(2)}}, make_number(1)},
+                {{{"n", make_number(5)}}, make_number(5)},
+                {{{"n", make_number(8)}}, make_number(21)},
+                {{{"n", make_number(10)}}, make_number(55)},
+            },
+        },
+    };
+
+    auto add = [](const vector<const shared_ptr<value_pair>>& args) -> shared_ptr<value> {
+        return make_number(
+            to<value_number>(args[0]->car())->number() +
+            to<value_number>(args[1]->car())->number());
+    };
+
+    auto subtract = [](const vector<const shared_ptr<value_pair>>& args) -> shared_ptr<value> {
+        return make_number(
+            to<value_number>(args[0]->car())->number() -
+            to<value_number>(args[1]->car())->number());
+    };
+
+    auto multiply = [](const vector<const shared_ptr<value_pair>>& args) -> shared_ptr<value> {
+        return make_number(
+            to<value_number>(args[0]->car())->number() *
+            to<value_number>(args[1]->car())->number());
+    };
+
+    auto remainder = [](const vector<const shared_ptr<value_pair>>& args) -> shared_ptr<value> {
+        return make_number(std::fmod(
+            to<value_number>(args[0]->car())->number(),
+            to<value_number>(args[1]->car())->number()));
+    };
+
+    auto equal = [](const vector<const shared_ptr<value_pair>>& args) -> shared_ptr<value> {
+        return (to<value_number>(args[0]->car())->number() ==
+                to<value_number>(args[1]->car())->number())
+                   ? true_
+                   : false_;
+    };
+
+    auto less = [](const vector<const shared_ptr<value_pair>>& args) -> shared_ptr<value> {
+        return (to<value_number>(args[0]->car())->number() <
+                to<value_number>(args[1]->car())->number())
+                   ? true_
+                   : false_;
+    };
+
+    for (const auto& [path, output_register, test_cases] : data) {
+        shared_ptr<value_pair> source = parse_values_from(path);
+        std::vector<shared_ptr<code>> code = translate_to_code(source);
+        machine m{code};
+
+        m.bind_op("+", add);
+        m.bind_op("-", subtract);
+        m.bind_op("*", multiply);
+        m.bind_op("rem", remainder);
+        m.bind_op("=", equal);
+        m.bind_op("<", less);
+
+        for (const auto& [inputs, expected] : test_cases) {
+            auto result = m.run(inputs, output_register);
+
+            // contruct the report line
+            ostringstream s;
+            s << path.filename().stem().string() << "(";  // filename
+            for (const auto& p : inputs) {
+                s << *p.second << ", ";  // input
+            }
+            s.seekp(-2, s.cur);      // drop trailing ", "
+            s << ") = " << *result;  // output
+            report_test(s.str());
+
+            if (*result != *expected) {
+                cerr << RED("expected \"" + expected->str() + "\"") << '\n';
+                exit(EXIT_FAILURE);
+            }
         }
     }
 }
@@ -815,6 +936,7 @@ int main() {
     RUN_TEST_FUNCTION(test_to_str);
     RUN_TEST_FUNCTION(test_parse);
     RUN_TEST_FUNCTION(test_code);
+    RUN_TEST_FUNCTION(test_machine);
 
     cout << "all tests have been passed!\n";
 

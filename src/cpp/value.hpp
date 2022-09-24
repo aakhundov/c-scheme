@@ -279,13 +279,13 @@ class value_pair : public value {
     }
 
     // setters
-    void car(shared_ptr<value> car) {
+    void car(const shared_ptr<value>& car) {
         _throw_on_cycle_from(car);
-        _car = move(car);
+        _car = car;
     }
-    void cdr(shared_ptr<value> cdr) {
+    void cdr(const shared_ptr<value>& cdr) {
         _throw_on_cycle_from(cdr);
-        _cdr = move(cdr);
+        _cdr = cdr;
     }
 
     ostream& write(ostream& os) const override;
