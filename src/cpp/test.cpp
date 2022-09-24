@@ -208,7 +208,7 @@ void test_value() {
     shared_ptr<value_string> str1, str2;
     ASSERT_TO_STR(*(str1 = make_string("abc")), "\"abc\"");
     ASSERT_TRUE(str1->type() == value_t::string);
-    ASSERT_EQUAL(str1->string(), "abc");
+    ASSERT_EQUAL(str1->string_(), "abc");
     ASSERT_TO_STR(*(str2 = make_string("abc")), "\"abc\"");
     ASSERT_TRUE(*str1 == *str2);
     ASSERT_FALSE(str1 == str2);
@@ -217,7 +217,7 @@ void test_value() {
     shared_ptr<value_error> error1, error2;
     ASSERT_TO_STR(*(error1 = make_error("hello '%g'", 3.14)), BOLD(RED("error:") " " WHITE("hello '3.14'")));
     ASSERT_TRUE(error1->type() == value_t::error);
-    ASSERT_EQUAL(error1->string(), "hello '3.14'");
+    ASSERT_EQUAL(error1->string_(), "hello '3.14'");
     ASSERT_TO_STR(*(error2 = make_error("hello '%g'", 3.14)), BOLD(RED("error:") " " WHITE("hello '3.14'")));
     ASSERT_TRUE(*error1 == *error2);
     ASSERT_FALSE(error1 == error2);
@@ -226,7 +226,7 @@ void test_value() {
     shared_ptr<value_info> info1, info2;
     ASSERT_TO_STR(*(info1 = make_info("hello '%g'", 3.14)), GREEN("hello '3.14'"));
     ASSERT_TRUE(info1->type() == value_t::info);
-    ASSERT_EQUAL(info1->string(), "hello '3.14'");
+    ASSERT_EQUAL(info1->string_(), "hello '3.14'");
     ASSERT_TO_STR(*(info2 = make_info("hello '%g'", 3.14)), GREEN("hello '3.14'"));
     ASSERT_TRUE(*info1 == *info2);
     ASSERT_FALSE(info1 == info2);

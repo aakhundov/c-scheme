@@ -109,10 +109,10 @@ class value_symbol : public value {
 
 class value_string : public value {
    public:
-    value_string(const string& string) : value(value_t::string), _string(string) {}
+    value_string(const string& string_) : value(value_t::string), _string(string_) {}
 
-    const string& string() const { return _string; }
-    void string(const std::string& string) { _string = string; }
+    const string& string_() const { return _string; }
+    void string_(const string& string_) { _string = string_; }
 
     ostream& write(ostream& os) const override;
     bool equals(const value& other) const override;
@@ -120,7 +120,7 @@ class value_string : public value {
    protected:
     value_string(value_t type) : value(type) {}
 
-    std::string _string;
+    string _string;
 };
 
 class value_format : public value_string {
@@ -376,17 +376,17 @@ inline const shared_ptr<value_symbol>& make_symbol(const string& symbol) {
     return make_value(symbol.c_str());
 }
 
-inline shared_ptr<value_string> make_value(const string& string) {
+inline shared_ptr<value_string> make_value(const string& string_) {
     // from the string
-    return make_shared<value_string>(string);
+    return make_shared<value_string>(string_);
 }
 
-inline shared_ptr<value_string> make_string(const char* string) {
-    return make_value(std::string(string));
+inline shared_ptr<value_string> make_string(const char* string_) {
+    return make_value(string(string_));
 }
 
-inline shared_ptr<value_string> make_string(const string& string) {
-    return make_value(string);
+inline shared_ptr<value_string> make_string(const string& string_) {
+    return make_value(string_);
 }
 
 inline const shared_ptr<value_bool>& make_value(bool truth) {
