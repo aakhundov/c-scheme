@@ -121,20 +121,20 @@ class code_assign_call : public code {
     code_assign_call(
         const string& reg,
         const string& op,
-        const vector<const token>& args)
+        const vector<token>& args)
         : code(code_t::assign_call), _reg{reg}, _op{op}, _args{args} {}
     code_assign_call(const shared_ptr<value_pair>& v);
 
     const string& reg() const { return _reg; }
     const string& op() const { return _op; }
-    vector<const token>& args() { return _args; }
+    vector<token>& args() { return _args; }
 
     shared_ptr<value> to_value() const override;
 
    private:
     string _reg;
     string _op;
-    vector<const token> _args;
+    vector<token> _args;
 };
 
 class code_assign_copy : public code {
@@ -157,18 +157,18 @@ class code_perform : public code {
    public:
     code_perform(
         const string& op,
-        const vector<const token>& args)
+        const vector<token>& args)
         : code(code_t::assign_call), _op{op}, _args{args} {}
     code_perform(const shared_ptr<value_pair>& v);
 
     const string& op() const { return _op; }
-    vector<const token>& args() { return _args; }
+    vector<token>& args() { return _args; }
 
     shared_ptr<value> to_value() const override;
 
    private:
     string _op;
-    vector<const token> _args;
+    vector<token> _args;
 };
 
 class code_branch : public code {
@@ -176,20 +176,20 @@ class code_branch : public code {
     code_branch(
         const string& label,
         const string& op,
-        const vector<const token>& args)
+        const vector<token>& args)
         : code(code_t::branch), _label{label}, _op{op}, _args{args} {}
     code_branch(const shared_ptr<value_pair>& v);
 
     const string& label() const { return _label; }
     const string& op() const { return _op; }
-    vector<const token>& args() { return _args; }
+    vector<token>& args() { return _args; }
 
     shared_ptr<value> to_value() const override;
 
    private:
     string _label;
     string _op;
-    vector<const token> _args;
+    vector<token> _args;
 };
 
 class code_goto : public code {

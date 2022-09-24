@@ -225,7 +225,7 @@ const shared_ptr<value_pair> machine::_token_to_arg(const token& t) {
     }
 }
 
-const vector<const shared_ptr<value_pair>> machine::_tokens_to_args(const vector<const token>& tokens) {
+const vector<const shared_ptr<value_pair>> machine::_tokens_to_args(const vector<token>& tokens) {
     vector<const shared_ptr<value_pair>> result;
 
     for (auto& t : tokens) {

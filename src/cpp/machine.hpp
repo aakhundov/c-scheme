@@ -126,7 +126,7 @@ class machine {
     shared_ptr<value_machine_op> _get_op(const string& name);
 
     const shared_ptr<value_pair> _token_to_arg(const token& t);
-    const vector<const shared_ptr<value_pair>> _tokens_to_args(const vector<const token>& tokens);
+    const vector<const shared_ptr<value_pair>> _tokens_to_args(const vector<token>& tokens);
 
     shared_ptr<value_pair> _append_code(const vector<shared_ptr<code>>& code);
 
