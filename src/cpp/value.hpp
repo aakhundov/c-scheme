@@ -24,7 +24,7 @@ enum class value_t {
     bool_,
     nil,
     pair,
-    instruction,
+    external,
 };
 
 using std::enable_if;
@@ -60,6 +60,8 @@ class value {
     }
 
     value_t type() const { return _type; }
+
+    explicit operator bool() const;
 
    protected:
     value(value_t type) : _type{type} {}
