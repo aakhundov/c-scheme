@@ -801,10 +801,9 @@ void test_code() {
         auto running = source;
         for (const auto& translated_line : code) {
             // compare each line of the code with the original
-            const auto pair = to<value_pair>(running);
-            const auto& original_line = pair->car();
+            const auto& original_line = running->car();
             assert(*translated_line->to_value() == *original_line);
-            running = pair->cdr();
+            running = running->pcdr();
         }
     }
 }

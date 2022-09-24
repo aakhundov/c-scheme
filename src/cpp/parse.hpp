@@ -15,10 +15,10 @@ using std::filesystem::path;
 
 // parsing functions
 
-shared_ptr<value> parse_values_from(istream& is);
-shared_ptr<value> parse_values_from(const string& s);
-shared_ptr<value> parse_values_from(const char* s);
-shared_ptr<value> parse_values_from(const path& p);
+shared_ptr<value_pair> parse_values_from(istream& is);
+shared_ptr<value_pair> parse_values_from(const string& s);
+shared_ptr<value_pair> parse_values_from(const char* s);
+shared_ptr<value_pair> parse_values_from(const path& p);
 
 // exceptions
 

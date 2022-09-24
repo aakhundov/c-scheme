@@ -272,10 +272,10 @@ class value_pair : public value {
 
     // pair getters
     const shared_ptr<value_pair> pcar() const {
-        return _car->type() == value_t::pair ? reinterpret_pointer_cast<value_pair>(_car) : nullptr;
+        return reinterpret_pointer_cast<value_pair>(_car);
     }
     const shared_ptr<value_pair> pcdr() const {
-        return _cdr->type() == value_t::pair ? reinterpret_pointer_cast<value_pair>(_cdr) : nullptr;
+        return reinterpret_pointer_cast<value_pair>(_cdr);
     }
 
     // setters

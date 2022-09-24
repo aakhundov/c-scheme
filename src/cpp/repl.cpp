@@ -19,18 +19,15 @@ using std::string;
 
 void handle_repl_input(const string& input, string& history) {
     try {
-        shared_ptr<value> result = parse_values_from(input);
-        if (result->type() == value_t::pair) {
-            // there are items (not nil)
-            auto list = to<value_pair>(result);
-            for (const auto& item : *list) {
-                // print one item per line
-                cout << item << '\n';
-            }
+        shared_ptr<value_pair> list = parse_values_from(input);
 
-            history = list->str();                              // clean history
-            history = history.substr(1, history.length() - 2);  // drop outermost brackets
+        for (const auto& item : *list) {
+            // print one item per line
+            cout << item << '\n';
         }
+
+        history = list->str();                              // clean history
+        history = history.substr(1, history.length() - 2);  // drop outermost brackets
     } catch (exception& e) {
         auto error = make_error(e.what());
         cout << *error << '\n';  // print the error

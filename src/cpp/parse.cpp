@@ -262,7 +262,7 @@ shared_ptr<value> parse_list(istream& is) {
 
 }  // namespace
 
-shared_ptr<value> parse_values_from(istream& is) {
+shared_ptr<value_pair> parse_values_from(istream& is) {
     // parse the whole string content as a list
     shared_ptr<value> result = parse_list(is);
 
@@ -271,29 +271,29 @@ shared_ptr<value> parse_values_from(istream& is) {
         throw parsing_error("premature end of list");
     }
 
-    return result;
+    return to<value_pair>(result);
 }
 
-shared_ptr<value> parse_values_from(const string& str) {
+shared_ptr<value_pair> parse_values_from(const string& str) {
     istringstream s{str};
     return parse_values_from(s);
 }
 
-shared_ptr<value> parse_values_from(const char* str) {
+shared_ptr<value_pair> parse_values_from(const char* str) {
     return parse_values_from(string(str));
 }
 
-shared_ptr<value> parse_values_from(const path& p) {
+shared_ptr<value_pair> parse_values_from(const path& p) {
     if (!exists(p)) {
-        return make_error("the path does not exist: '%s'", p.c_str());
+        throw parsing_error("the path does not exist: '%s'", p.c_str());
     } else if (!is_regular_file(p)) {
-        return make_error("the path is not a file: '%s'", p.c_str());
+        throw parsing_error("the path is not a file: '%s'", p.c_str());
     }
 
     ifstream f{p};
 
     if (!f.is_open()) {
-        return make_error("failed to open the file: '%s'", p.c_str());
+        throw parsing_error("failed to open the file: '%s'", p.c_str());
     }
 
     return parse_values_from(f);
