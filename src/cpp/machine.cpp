@@ -1,13 +1,17 @@
 #include "machine.hpp"
 
+#include <iostream>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "code.hpp"
+#include "constants.hpp"
 #include "value.hpp"
 
+using std::cout;
+using std::ios_base;
 using std::make_shared;
 using std::pair;
 using std::shared_ptr;
@@ -16,13 +20,30 @@ using std::vector;
 
 // instruction hierarchy
 
+namespace {
+
+void annotate_register(ostream& os, const shared_ptr<value_pair>& reg) {
+    os << BLUE("[");
+    if (reg->car()->type() == value_t::pair &&
+        to<value_pair>(reg)->pcar()->car()->type() == value_t::custom) {
+        // the register points to code
+        os << "<code>";
+    } else {
+        os << *reg->car();
+    }
+    os << BLUE("]");
+}
+
+}  // namespace
+
 class machine::instruction_assign_call : public value_instruction {
    public:
     instruction_assign_call(machine& machine, const shared_ptr<code_assign_call>& code)
-        : value_instruction(machine, code),
+        : value_instruction(machine),
           _reg(machine._get_register(code->reg())),
           _op(machine._get_op(code->op())),
-          _args(machine._tokens_to_args(code->args())) {}
+          _args(machine._tokens_to_args(code->args())),
+          _code(code) {}
 
     void execute() const override {
         auto result = _machine._call_op(_op, _args);
@@ -38,18 +59,53 @@ class machine::instruction_assign_call : public value_instruction {
         }
     }
 
+    void report_before(ostream& os) const override {
+        os << "(" << BLUE("assign");
+        os << " " << _code->reg();            // register
+        os << " (op " << _code->op() << ")";  // op
+
+        size_t i = 0;
+        for (auto& t : _code->args()) {
+            os << " " << t;
+            if (t.type() == token_t::reg) {
+                annotate_register(os, _args[i]);  // argument
+            }
+            i++;
+        }
+
+        os << ")";
+    }
+
+    void report_after(ostream& os) const override {
+        os << BLUE(" == ");
+        if (_machine._output->car()->type() == value_t::error) {
+            // error occured
+            os << *_machine._output->car();
+        } else if (_reg) {
+            if (_reg->car()->type() == value_t::pair &&
+                to<value_pair>(_reg)->pcar()->car()->type() == value_t::custom) {
+                // code returned
+                os << "<code>";
+            } else {
+                os << *_reg->car();
+            }
+        }
+    }
+
    private:
     const shared_ptr<value_pair> _reg;
     const shared_ptr<value_machine_op> _op;
     const vector<shared_ptr<value_pair>> _args;
+    const shared_ptr<code_assign_call> _code;
 };
 
 class machine::instruction_assign_copy : public value_instruction {
    public:
     instruction_assign_copy(machine& machine, const shared_ptr<code_assign_copy>& code)
-        : value_instruction(machine, code),
+        : value_instruction(machine),
           _reg(machine._get_register(code->reg())),
-          _src(machine._token_to_arg(code->src())) {}
+          _src(machine._token_to_arg(code->src())),
+          _code(code) {}
 
     void execute() const override {
         // assign from source
@@ -57,17 +113,34 @@ class machine::instruction_assign_copy : public value_instruction {
         _machine._advance_pc();
     }
 
+    void report_before(ostream& os) const override {
+        os << "(" << BLUE("assign");
+        os << " " << _code->reg();  // register
+
+        os << " " << _code->src();
+        if (_code->src().type() == token_t::reg) {
+            annotate_register(os, _src);  // source
+        }
+
+        os << ")";
+    }
+
+    void report_after(ostream& os) const override {
+    }
+
    private:
     const shared_ptr<value_pair> _reg;
     const shared_ptr<value_pair> _src;
+    const shared_ptr<code_assign_copy> _code;
 };
 
 class machine::instruction_perform : public value_instruction {
    public:
     instruction_perform(machine& machine, const shared_ptr<code_perform>& code)
-        : value_instruction(machine, code),
+        : value_instruction(machine),
           _op(machine._get_op(code->op())),
-          _args(machine._tokens_to_args(code->args())) {}
+          _args(machine._tokens_to_args(code->args())),
+          _code(code) {}
 
     void execute() const override {
         auto result = _machine._call_op(_op, _args);
@@ -82,18 +155,43 @@ class machine::instruction_perform : public value_instruction {
         }
     }
 
+    void report_before(ostream& os) const override {
+        os << "(" << BLUE("perform");
+        os << " (op " << _code->op() << ")";  // op
+
+        size_t i = 0;
+        for (auto& t : _code->args()) {
+            os << " " << t;
+            if (t.type() == token_t::reg) {
+                annotate_register(os, _args[i]);  // argument
+            }
+            i++;
+        }
+
+        os << ")";
+    }
+
+    void report_after(ostream& os) const override {
+        if (_machine._output->car()->type() == value_t::error) {
+            // error occured
+            os << BLUE(" == ") << *_machine._output->car();
+        }
+    }
+
    private:
     const shared_ptr<value_machine_op> _op;
     const vector<shared_ptr<value_pair>> _args;
+    const shared_ptr<code_perform> _code;
 };
 
 class machine::instruction_branch : public value_instruction {
    public:
     instruction_branch(machine& machine, const shared_ptr<code_branch>& code)
-        : value_instruction(machine, code),
+        : value_instruction(machine),
           _label(machine._get_label(code->label())),
           _op(machine._get_op(code->op())),
-          _args(machine._tokens_to_args(code->args())) {}
+          _args(machine._tokens_to_args(code->args())),
+          _code(code) {}
 
     void execute() const override {
         auto result = _machine._call_op(_op, _args);
@@ -111,32 +209,76 @@ class machine::instruction_branch : public value_instruction {
         }
     }
 
+    void report_before(ostream& os) const override {
+        os << "(" << BLUE("branch");
+        os << " (label " << _code->label() << ")";  // label
+        os << " (op " << _code->op() << ")";        // op
+
+        size_t i = 0;
+        for (auto& t : _code->args()) {
+            os << " " << t;
+            if (t.type() == token_t::reg) {
+                annotate_register(os, _args[i]);  // argument
+            }
+            i++;
+        }
+
+        os << ")";
+    }
+
+    void report_after(ostream& os) const override {
+        os << BLUE(" -> ");
+        if (_machine._output->car()->type() == value_t::error) {
+            // error ocurred
+            os << *_machine._output->car();
+        } else if (_machine._pc == _label->car()) {
+            // test has passed
+            os << GREEN("yes");
+        } else {
+            // test has failed
+            os << RED("no");
+        }
+    }
+
    private:
     const shared_ptr<value_pair> _label;
     const shared_ptr<value_machine_op> _op;
     const vector<shared_ptr<value_pair>> _args;
+    const shared_ptr<code_branch> _code;
 };
 
 class machine::instruction_goto : public value_instruction {
    public:
     instruction_goto(machine& machine, const shared_ptr<code_goto>& code)
-        : value_instruction(machine, code),
-          _target{machine._token_to_arg(code->target())} {}
+        : value_instruction(machine),
+          _target(machine._token_to_arg(code->target())),
+          _code(code) {}
 
     void execute() const override {
         // jump to the target: label or register
         _machine._pc = _target->pcar();
     }
 
+    void report_before(ostream& os) const override {
+        os << "(" << BLUE("goto") " ";
+        os << _code->target();  // target
+        os << ")";
+    }
+
+    void report_after(ostream& os) const override {
+    }
+
    private:
     const shared_ptr<value_pair> _target;
+    const shared_ptr<code_goto> _code;
 };
 
 class machine::instruction_save : public value_instruction {
    public:
     instruction_save(machine& machine, const shared_ptr<code_save>& code)
-        : value_instruction(machine, code),
-          _reg{machine._get_register(code->reg())} {}
+        : value_instruction(machine),
+          _reg(machine._get_register(code->reg())),
+          _code(code) {}
 
     void execute() const override {
         // save the register's content
@@ -144,15 +286,34 @@ class machine::instruction_save : public value_instruction {
         _machine._advance_pc();
     }
 
+    void report_before(ostream& os) const override {
+        os << "(" << BLUE("save") " ";
+        os << _code->reg();  // register
+        os << ")";
+    }
+
+    void report_after(ostream& os) const override {
+        os << BLUE(" >> ");
+        if (_reg->car()->type() == value_t::pair &&
+            to<value_pair>(_reg)->pcar()->car()->type() == value_t::custom) {
+            // code saved
+            os << "<code>";
+        } else {
+            os << *_reg->car();
+        }
+    }
+
    private:
     const shared_ptr<value_pair> _reg;
+    const shared_ptr<code_save> _code;
 };
 
 class machine::instruction_restore : public value_instruction {
    public:
     instruction_restore(machine& machine, const shared_ptr<code_restore>& code)
-        : value_instruction(machine, code),
-          _reg{machine._get_register(code->reg())} {}
+        : value_instruction(machine),
+          _reg(machine._get_register(code->reg())),
+          _code(code) {}
 
     void execute() const override {
         // restore the register's content
@@ -160,8 +321,26 @@ class machine::instruction_restore : public value_instruction {
         _machine._advance_pc();
     }
 
+    void report_before(ostream& os) const override {
+        os << "(" << BLUE("restore") " ";
+        os << _code->reg();  // register
+        os << ")";
+    }
+
+    void report_after(ostream& os) const override {
+        os << BLUE(" << ");
+        if (_reg->car()->type() == value_t::pair &&
+            to<value_pair>(_reg)->pcar()->car()->type() == value_t::custom) {
+            // code restored
+            os << "<code>";
+        } else {
+            os << *_reg->car();
+        }
+    }
+
    private:
     const shared_ptr<value_pair> _reg;
+    const shared_ptr<code_restore> _code;
 };
 
 // machine
@@ -315,10 +494,6 @@ shared_ptr<value_pair> machine::_append_code(const vector<shared_ptr<code>>& cod
     return head;
 }
 
-machine::machine(const vector<shared_ptr<code>>& code) {
-    _append_code(code);
-}
-
 machine::~machine() {
     // cleanup registers, labels, etc. before implicit destruction
     for (auto p = _registers->begin(); p != _registers->end(); p++) p.ptr(nullptr);
@@ -329,39 +504,37 @@ machine::~machine() {
     for (auto p = _stack->begin(); p != _stack->end(); p++) p.ptr(nullptr);
 }
 
-void machine::bind_op(const string& name, machine_op const op) {
-    _get_op(name)->op(op);
-}
-
-shared_ptr<value> machine::read_from_register(const string& name) {
-    return _get_register(name)->car();
-}
-
-void machine::write_to_register(const string& name, const shared_ptr<value>& v) {
-    _get_register(name)->car(v);
-}
-
-void machine::append_and_jump(const vector<shared_ptr<code>>& code) {
-    auto code_head = _append_code(code);  // append
-    _pc = code_head;                      // jump
-}
-
-shared_ptr<value> machine::run(
-    const vector<pair<string, shared_ptr<value>>>& inputs,
-    const string& output_register) {
-    // write the inputs to the designated registers
+shared_ptr<value> machine::run(const vector<pair<string, shared_ptr<value>>>& inputs, const string& output_register) {
+    // write the inputs one by one
+    // to the designated registers
     for (const auto& [input_register, v] : inputs) {
         write_to_register(input_register, v);
     }
 
     _pc = _code_head;                          // set the pc to the code head
     _output = _get_register(output_register);  // set the output register
+    _counter = 0;                              // reset the instruction counter
 
-    while (_pc != nil) {
-        auto instruction = to<value_instruction>(_pc->car());
-        instruction->execute();  // instruction moves the pc
+    if (_trace != machine_trace::code) {
+        // without code tracing
+        while (_pc != nil) {
+            auto instruction = to<value_instruction>(_pc->car());
+            instruction->execute();  // instruction moves the pc
+        }
+    } else {
+        // with code tracing
+        ios_base::sync_with_stdio(false);
+        while (_pc != nil) {
+            auto instruction = to<value_instruction>(_pc->car());
+
+            _report_before(cout, instruction);
+            instruction->execute();
+            _report_after(cout, instruction);
+        }
+        ios_base::sync_with_stdio(true);
     }
 
-    // read the output from the designated register
+    // read and return the output
+    // from the designated register
     return read_from_register(output_register);
 }

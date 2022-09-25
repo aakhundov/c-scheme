@@ -35,8 +35,7 @@ static size_t test_counter = 0;
 
 void report_test(string message) {
     // increment the test_counter and report
-    cout << setfill('0') << setw(5)
-         << BLUE(<< ++test_counter <<) << " "
+    cout << BLUE(<< setfill('0') << setw(5) << ++test_counter <<) << " "
          << message << '\n';
 }
 
@@ -820,6 +819,7 @@ void test_code() {
 }
 
 void test_machine() {
+    // data for the machine unit tests
     vector<tuple<path, string, vector<pair<vector<pair<string, shared_ptr<value>>>, shared_ptr<value>>>>> data = {
         {
             "./lib/machines/gcd.scm",
@@ -857,6 +857,8 @@ void test_machine() {
             },
         },
     };
+
+    // primitives to bind for the tests
 
     auto add = [](const vector<shared_ptr<value_pair>>& args) -> shared_ptr<value> {
         return make_number(
@@ -897,10 +899,12 @@ void test_machine() {
     };
 
     for (const auto& [path, output_register, test_cases] : data) {
+        // create the machine from source
         shared_ptr<value_pair> source = parse_values_from(path);
         std::vector<shared_ptr<code>> code = translate_to_code(source);
         machine m{code};
 
+        // bind the primitives
         m.bind_op("+", add);
         m.bind_op("-", subtract);
         m.bind_op("*", multiply);

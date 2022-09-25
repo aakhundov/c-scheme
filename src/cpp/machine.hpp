@@ -1,6 +1,8 @@
 #ifndef MACHINE_HPP_
 #define MACHINE_HPP_
 
+#include <iomanip>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -8,9 +10,12 @@
 #include <vector>
 
 #include "code.hpp"
+#include "constants.hpp"
 #include "value.hpp"
 
 using std::pair;
+using std::setfill;
+using std::setw;
 using std::shared_ptr;
 using std::string;
 using std::unordered_map;
@@ -27,21 +32,46 @@ class machine_error : public format_exception {
 
 using machine_op = shared_ptr<value> (*)(const vector<shared_ptr<value_pair>>&);
 
+enum class machine_trace {
+    off,
+    code,
+};
+
 class machine {
    public:
-    machine(const vector<shared_ptr<code>>& code);
+    machine(const vector<shared_ptr<code>>& code) {
+        _append_code(code);
+    }
+
     ~machine();
 
-    void bind_op(const string& name, machine_op const op);
-    shared_ptr<value> read_from_register(const string& name);
-    void write_to_register(const string& name, const shared_ptr<value>& v);
-    void append_and_jump(const vector<shared_ptr<code>>& code);
+    void bind_op(const string& name, machine_op const op) {
+        _get_op(name)->op(op);
+    }
+
+    shared_ptr<value> read_from_register(const string& name) {
+        return _get_register(name)->car();
+    }
+
+    void write_to_register(const string& name, const shared_ptr<value>& v) {
+        _get_register(name)->car(v);
+    }
+
+    void append_and_jump(const vector<shared_ptr<code>>& code) {
+        auto code_head = _append_code(code);  // append
+        _pc = code_head;                      // jump
+    }
+
+    void set_trace(machine_trace trace) {
+        _trace = trace;
+    }
 
     shared_ptr<value> run(
         const vector<pair<string, shared_ptr<value>>>& inputs,
         const string& output_register);
 
    private:
+    // value wrapper for machine_ops
     class value_machine_op : public value {
        public:
         // create with a name, add op later
@@ -61,20 +91,25 @@ class machine {
         machine_op _op{nullptr};
     };
 
+    // abstact base class for the instructions
     class value_instruction : public value {
        public:
-        value_instruction(machine& machine, const shared_ptr<code>& code)
-            : value(value_t::custom), _machine(machine), _code{code} {}
+        value_instruction(machine& machine)
+            : value(value_t::custom), _machine(machine) {}
 
         virtual void execute() const = 0;
 
         ostream& write(ostream& os) const override {
-            return (os << *_code);
+            report_before(os);
+            return os;
         }
+
+        // for tracing of the instructions
+        virtual void report_before(ostream& os) const = 0;
+        virtual void report_after(ostream& os) const = 0;
 
        protected:
         machine& _machine;
-        const shared_ptr<code> _code;
     };
 
     // concrete instruction classes
@@ -121,6 +156,16 @@ class machine {
         }
     }
 
+    void _report_before(ostream& os, const shared_ptr<value_instruction>& instruction) {
+        os << BLUE(<< setfill('0') << setw(5) << ++_counter <<) " ";
+        instruction->report_before(os);
+    }
+
+    void _report_after(ostream& os, const shared_ptr<value_instruction>& instruction) {
+        instruction->report_after(os);
+        os << '\n';
+    }
+
     shared_ptr<value_pair> _get_constant(shared_ptr<value> val);
     shared_ptr<value_pair> _get_register(const string& name);
     shared_ptr<value_pair> _get_label(const string& name);
@@ -145,6 +190,9 @@ class machine {
     shared_ptr<value_pair> _stack{nil};      // stack as a chain of pairs
     shared_ptr<value_pair> _pc;              // curent code position
     shared_ptr<value_pair> _output;          // output register
+
+    machine_trace _trace{machine_trace::off};  // machine tracing flag
+    size_t _counter{0};                        // instruction counter
 };
 
 #endif  // MACHINE_HPP_
