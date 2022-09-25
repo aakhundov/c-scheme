@@ -97,16 +97,17 @@ class machine {
         value_instruction(machine& machine)
             : value(value_t::instruction), _machine(machine) {}
 
-        virtual void execute() const = 0;
-
         ostream& write(ostream& os) const override {
-            report_before(os);
+            trace_before(os);
             return os;
         }
 
-        // for tracing of the instructions
-        virtual void report_before(ostream& os) const = 0;
-        virtual void report_after(ostream& os) const = 0;
+        // execute the instruction
+        virtual void execute() const = 0;
+
+        // for tracing before and after execution
+        virtual void trace_before(ostream& os) const = 0;
+        virtual void trace_after(ostream& os) const = 0;
 
        protected:
         machine& _machine;
@@ -156,13 +157,13 @@ class machine {
         }
     }
 
-    void _report_before(ostream& os, const shared_ptr<value_instruction>& instruction) {
+    void _trace_before(ostream& os, const shared_ptr<value_instruction>& instruction) {
         os << BLUE(<< setfill('0') << setw(5) << ++_counter <<) " ";
-        instruction->report_before(os);
+        instruction->trace_before(os);
     }
 
-    void _report_after(ostream& os, const shared_ptr<value_instruction>& instruction) {
-        instruction->report_after(os);
+    void _trace_after(ostream& os, const shared_ptr<value_instruction>& instruction) {
+        instruction->trace_after(os);
         os << '\n';
     }
 

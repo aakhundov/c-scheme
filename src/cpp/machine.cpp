@@ -59,7 +59,7 @@ class machine::instruction_assign_call : public value_instruction {
         }
     }
 
-    void report_before(ostream& os) const override {
+    void trace_before(ostream& os) const override {
         os << "(" << BLUE("assign");
         os << " " << _code->reg();            // register
         os << " (op " << _code->op() << ")";  // op
@@ -76,7 +76,7 @@ class machine::instruction_assign_call : public value_instruction {
         os << ")";
     }
 
-    void report_after(ostream& os) const override {
+    void trace_after(ostream& os) const override {
         os << BLUE(" == ");
         if (_machine._output->car()->type() == value_t::error) {
             // error occured
@@ -113,7 +113,7 @@ class machine::instruction_assign_copy : public value_instruction {
         _machine._advance_pc();
     }
 
-    void report_before(ostream& os) const override {
+    void trace_before(ostream& os) const override {
         os << "(" << BLUE("assign");
         os << " " << _code->reg();  // register
 
@@ -125,7 +125,7 @@ class machine::instruction_assign_copy : public value_instruction {
         os << ")";
     }
 
-    void report_after(ostream& os) const override {
+    void trace_after(ostream& os) const override {
     }
 
    private:
@@ -155,7 +155,7 @@ class machine::instruction_perform : public value_instruction {
         }
     }
 
-    void report_before(ostream& os) const override {
+    void trace_before(ostream& os) const override {
         os << "(" << BLUE("perform");
         os << " (op " << _code->op() << ")";  // op
 
@@ -171,7 +171,7 @@ class machine::instruction_perform : public value_instruction {
         os << ")";
     }
 
-    void report_after(ostream& os) const override {
+    void trace_after(ostream& os) const override {
         if (_machine._output->car()->type() == value_t::error) {
             // error occured
             os << BLUE(" == ") << *_machine._output->car();
@@ -209,7 +209,7 @@ class machine::instruction_branch : public value_instruction {
         }
     }
 
-    void report_before(ostream& os) const override {
+    void trace_before(ostream& os) const override {
         os << "(" << BLUE("branch");
         os << " (label " << _code->label() << ")";  // label
         os << " (op " << _code->op() << ")";        // op
@@ -226,7 +226,7 @@ class machine::instruction_branch : public value_instruction {
         os << ")";
     }
 
-    void report_after(ostream& os) const override {
+    void trace_after(ostream& os) const override {
         os << BLUE(" -> ");
         if (_machine._output->car()->type() == value_t::error) {
             // error ocurred
@@ -259,13 +259,13 @@ class machine::instruction_goto : public value_instruction {
         _machine._pc = _target->pcar();
     }
 
-    void report_before(ostream& os) const override {
+    void trace_before(ostream& os) const override {
         os << "(" << BLUE("goto") " ";
         os << _code->target();  // target
         os << ")";
     }
 
-    void report_after(ostream& os) const override {
+    void trace_after(ostream& os) const override {
     }
 
    private:
@@ -286,13 +286,13 @@ class machine::instruction_save : public value_instruction {
         _machine._advance_pc();
     }
 
-    void report_before(ostream& os) const override {
+    void trace_before(ostream& os) const override {
         os << "(" << BLUE("save") " ";
         os << _code->reg();  // register
         os << ")";
     }
 
-    void report_after(ostream& os) const override {
+    void trace_after(ostream& os) const override {
         os << BLUE(" >> ");
         if (_reg->car()->type() == value_t::pair &&
             to<value_pair>(_reg)->pcar()->car()->type() == value_t::instruction) {
@@ -321,13 +321,13 @@ class machine::instruction_restore : public value_instruction {
         _machine._advance_pc();
     }
 
-    void report_before(ostream& os) const override {
+    void trace_before(ostream& os) const override {
         os << "(" << BLUE("restore") " ";
         os << _code->reg();  // register
         os << ")";
     }
 
-    void report_after(ostream& os) const override {
+    void trace_after(ostream& os) const override {
         os << BLUE(" << ");
         if (_reg->car()->type() == value_t::pair &&
             to<value_pair>(_reg)->pcar()->car()->type() == value_t::instruction) {
@@ -527,9 +527,9 @@ shared_ptr<value> machine::run(const vector<pair<string, shared_ptr<value>>>& in
         while (_pc != nil) {
             auto instruction = to<value_instruction>(_pc->car());
 
-            _report_before(cout, instruction);
+            _trace_before(cout, instruction);
             instruction->execute();
-            _report_after(cout, instruction);
+            _trace_after(cout, instruction);
         }
         ios_base::sync_with_stdio(true);
     }
