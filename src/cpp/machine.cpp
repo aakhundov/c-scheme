@@ -26,7 +26,7 @@ namespace {
 void annotate_register(ostream& os, const value_pair* reg) {
     os << BLUE("[");
     if (reg->car()->type() == value_t::pair &&
-        to_ptr<value_pair>(reg->car())->car()->type() == value_t::instruction) {
+        reg->pcar()->car()->type() == value_t::instruction) {
         // the register points to code
         os << "<code>";
     } else {
@@ -84,7 +84,7 @@ class machine::instruction_assign_call : public value_instruction {
             os << *_machine._output->car();
         } else if (_reg) {
             if (_reg->car()->type() == value_t::pair &&
-                to_ptr<value_pair>(_reg->car())->car()->type() == value_t::instruction) {
+                _reg->pcar()->car()->type() == value_t::instruction) {
                 // code returned
                 os << "<code>";
             } else {
@@ -296,7 +296,7 @@ class machine::instruction_save : public value_instruction {
     void trace_after(ostream& os) const override {
         os << BLUE(" >> ");
         if (_reg->car()->type() == value_t::pair &&
-            to_ptr<value_pair>(_reg->car())->car()->type() == value_t::instruction) {
+            _reg->pcar()->car()->type() == value_t::instruction) {
             // code saved
             os << "<code>";
         } else {
@@ -331,7 +331,7 @@ class machine::instruction_restore : public value_instruction {
     void trace_after(ostream& os) const override {
         os << BLUE(" << ");
         if (_reg->car()->type() == value_t::pair &&
-            to_ptr<value_pair>(_reg->car())->car()->type() == value_t::instruction) {
+            _reg->pcar()->car()->type() == value_t::instruction) {
             // code restored
             os << "<code>";
         } else {
@@ -420,19 +420,19 @@ const vector<value_pair*> machine::_tokens_to_args(const vector<token>& tokens) 
 shared_ptr<machine::value_instruction> machine::_make_instruction(const shared_ptr<code>& line) {
     switch (line->type()) {
         case code_t::assign_call:
-            return make_shared<instruction_assign_call>(*this, to<code_assign_call>(line));
+            return make_shared<instruction_assign_call>(*this, to_sptr<code_assign_call>(line));
         case code_t::assign_copy:
-            return make_shared<instruction_assign_copy>(*this, to<code_assign_copy>(line));
+            return make_shared<instruction_assign_copy>(*this, to_sptr<code_assign_copy>(line));
         case code_t::perform:
-            return make_shared<instruction_perform>(*this, to<code_perform>(line));
+            return make_shared<instruction_perform>(*this, to_sptr<code_perform>(line));
         case code_t::branch:
-            return make_shared<instruction_branch>(*this, to<code_branch>(line));
+            return make_shared<instruction_branch>(*this, to_sptr<code_branch>(line));
         case code_t::goto_:
-            return make_shared<instruction_goto>(*this, to<code_goto>(line));
+            return make_shared<instruction_goto>(*this, to_sptr<code_goto>(line));
         case code_t::save:
-            return make_shared<instruction_save>(*this, to<code_save>(line));
+            return make_shared<instruction_save>(*this, to_sptr<code_save>(line));
         case code_t::restore:
-            return make_shared<instruction_restore>(*this, to<code_restore>(line));
+            return make_shared<instruction_restore>(*this, to_sptr<code_restore>(line));
         default:
             throw machine_error(
                 "can't create an instruction from '%s'",
@@ -448,7 +448,7 @@ value_pair* machine::_append_code(const vector<shared_ptr<code>>& code) {
     for (const auto& line : code) {
         if (line->type() == code_t::label) {
             // label: add to the queue and go the the next line
-            label_queue.push_back(to<code_label>(line)->label());
+            label_queue.push_back(to_sptr<code_label>(line)->label());
             continue;
         }
 

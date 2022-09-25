@@ -103,7 +103,7 @@ code_assign_call::code_assign_call(const value_pair* statement) : code(code_t::a
         // at least three items
         auto second = statement->pcdr()->car();
         auto third = statement->pcdr()->pcdr()->car();
-        auto rest = statement->pcdr()->pcdr()->cdr();
+        auto rest = statement->pcdr()->pcdr()->pcdr();
 
         if (second->type() == value_t::symbol) {
             // the second item is a symbol
@@ -112,10 +112,9 @@ code_assign_call::code_assign_call(const value_pair* statement) : code(code_t::a
             if (op_token.type() == token_t::op) {
                 // the third item is an op token
                 _op = op_token.name();
-                while (rest != nil) {
+                while (rest->type() != value_t::nil) {
                     // there is another arg
-                    auto pair = to_ptr<value_pair>(rest);
-                    token arg_token{pair->car()};
+                    token arg_token{rest->car()};
                     if (arg_token.type() != token_t::op) {
                         // the arg is not an op token
                         _args.push_back(arg_token);
@@ -124,7 +123,7 @@ code_assign_call::code_assign_call(const value_pair* statement) : code(code_t::a
                             "assign by call statement's args may not be op tokens: %s",
                             statement->str().c_str());
                     }
-                    rest = pair->cdr();
+                    rest = rest->pcdr();
                 }
             } else {
                 throw code_error(
@@ -149,7 +148,7 @@ shared_ptr<value> code_assign_call::to_value() const {
         make_symbol(_reg),                   // register
         make_list("op", make_symbol(_op)));  // op
 
-    auto tail = to<value_pair>(result->pcdr()->cdr());
+    auto tail = to_sptr<value_pair>(result->pcdr()->cdr());
     for (const auto& arg : _args) {
         auto arg_pair = make_vpair(arg.to_value(), nil);  // arg
         tail->cdr(arg_pair);
@@ -204,16 +203,15 @@ code_perform::code_perform(const value_pair* statement) : code(code_t::perform) 
     if (statement->length() >= 2) {
         // at least two items
         auto second = statement->pcdr()->car();
-        auto rest = statement->pcdr()->cdr();
+        auto rest = statement->pcdr()->pcdr();
 
         token op_token{second};
         if (op_token.type() == token_t::op) {
             // the second item is an op token
             _op = op_token.name();
-            while (rest != nil) {
+            while (rest->type() != value_t::nil) {
                 // there is another arg
-                auto pair = to_ptr<value_pair>(rest);
-                token arg_token{pair->car()};
+                token arg_token{rest->car()};
                 if (arg_token.type() != token_t::op) {
                     // the arg is not an op token
                     _args.push_back(arg_token);
@@ -222,7 +220,7 @@ code_perform::code_perform(const value_pair* statement) : code(code_t::perform) 
                         "perform statement's args may not be op tokens: %s",
                         statement->str().c_str());
                 }
-                rest = pair->cdr();
+                rest = rest->pcdr();
             }
         } else {
             throw code_error(
@@ -241,7 +239,7 @@ shared_ptr<value> code_perform::to_value() const {
         "perform",                           // header
         make_list("op", make_symbol(_op)));  // op
 
-    auto tail = to<value_pair>(result->cdr());
+    auto tail = to_sptr<value_pair>(result->cdr());
     for (const auto& arg : _args) {
         auto arg_pair = make_vpair(arg.to_value(), nil);  // arg
         tail->cdr(arg_pair);
@@ -258,7 +256,7 @@ code_branch::code_branch(const value_pair* statement) : code(code_t::branch) {
         // at least three items
         auto second = statement->pcdr()->car();
         auto third = statement->pcdr()->pcdr()->car();
-        auto rest = statement->pcdr()->pcdr()->cdr();
+        auto rest = statement->pcdr()->pcdr()->pcdr();
 
         token label_token{second};
         if (label_token.type() == token_t::label) {
@@ -268,10 +266,9 @@ code_branch::code_branch(const value_pair* statement) : code(code_t::branch) {
             if (op_token.type() == token_t::op) {
                 // the third item is an op token
                 _op = op_token.name();
-                while (rest != nil) {
+                while (rest->type() != value_t::nil) {
                     // there is another arg
-                    auto pair = to_ptr<value_pair>(rest);
-                    token arg_token{pair->car()};
+                    token arg_token{rest->car()};
                     if (arg_token.type() != token_t::op) {
                         // the arg is not an op token
                         _args.push_back(arg_token);
@@ -280,7 +277,7 @@ code_branch::code_branch(const value_pair* statement) : code(code_t::branch) {
                             "branch statement's args may not be op tokens: %s",
                             statement->str().c_str());
                     }
-                    rest = pair->cdr();
+                    rest = rest->pcdr();
                 }
             } else {
                 throw code_error(
@@ -305,7 +302,7 @@ shared_ptr<value> code_branch::to_value() const {
         make_list("label", make_symbol(_label)),  // label
         make_list("op", make_symbol(_op)));       // op
 
-    auto tail = to<value_pair>(result->pcdr()->cdr());
+    auto tail = to_sptr<value_pair>(result->pcdr()->cdr());
     for (const auto& arg : _args) {
         auto arg_pair = make_vpair(arg.to_value(), nil);  // arg
         tail->cdr(arg_pair);

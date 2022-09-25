@@ -466,7 +466,7 @@ template <typename T,
           typename enable_if<
               is_base_of<value, T>::value,
               bool>::type = true>  // poor man's concept
-inline shared_ptr<T> to(const shared_ptr<value>& v) {
+inline shared_ptr<T> to_sptr(const shared_ptr<value>& v) {
     return reinterpret_pointer_cast<T>(v);
 }
 

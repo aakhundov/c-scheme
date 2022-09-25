@@ -124,7 +124,7 @@ class machine {
 
     void _advance_pc() {
         // move the pc forward
-        _pc = to_ptr<value_pair>(_pc->cdr());
+        _pc = _pc->pcdr();
     }
 
     void _move_pc(const shared_ptr<value>& position) {
@@ -204,8 +204,8 @@ class machine {
 
     vector<shared_ptr<value>> _stack;  // stack of values
 
-    value_pair* _pc;      // curent code position
-    value_pair* _output;  // output register
+    const value_pair* _pc;  // curent code position
+    value_pair* _output;    // output register
 
     machine_trace _trace{machine_trace::off};  // machine tracing flag
     size_t _counter{0};                        // instruction counter

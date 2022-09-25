@@ -143,7 +143,7 @@ ostream& value_pair::write(ostream& os) const {
         value_t cdr_type = running->cdr()->type();
         if (cdr_type == value_t::pair) {
             // go to the next cdr
-            running = to_ptr<value_pair>(running->cdr());
+            running = running->pcdr();
             // write the next car
             os << " ";
             running->car()->write(os);
@@ -189,7 +189,7 @@ bool value_pair::is_list() const {
         value_t cdr_type = running->cdr()->type();
         if (cdr_type == value_t::pair) {
             // the cdr is a pair: go to the next cdr
-            running = to_ptr<value_pair>(running->cdr());
+            running = running->pcdr();
         } else {
             // the cdr is not a pair: check if it is nil
             return cdr_type == value_t::nil;
@@ -205,7 +205,7 @@ size_t value_pair::length() const {
         auto cdr_type = running->cdr()->type();
         if (cdr_type == value_t::pair) {
             // the cdr is a pair: go to the next cdr
-            running = to_ptr<value_pair>(running->cdr());
+            running = running->pcdr();
         } else {
             // the cdr is not a pair
             if (cdr_type != value_t::nil) {

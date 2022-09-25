@@ -141,9 +141,9 @@ shared_ptr<value> replace_dots_in_list(shared_ptr<value> v) {
 
     while (running != nil) {
         // iterate over the items of the list v
-        auto pair = to<value_pair>(running);
+        auto pair = to_sptr<value_pair>(running);
         if (pair->car()->type() == value_t::symbol &&
-            to<value_symbol>(pair->car())->symbol() == dot_symbol) {
+            to_sptr<value_symbol>(pair->car())->symbol() == dot_symbol) {
             // current item is a dot symbol
             if (pair->cdr() == nil) {
                 // no next item: (x .)
@@ -159,7 +159,7 @@ shared_ptr<value> replace_dots_in_list(shared_ptr<value> v) {
                     dot_symbol.c_str(), v->str().c_str());
             }
             if (cdr->car()->type() == value_t::symbol &&
-                to<value_symbol>(cdr->car())->symbol() == dot_symbol) {
+                to_sptr<value_symbol>(cdr->car())->symbol() == dot_symbol) {
                 // next item is a dot symbol: (x . .)
                 throw parsing_error(
                     "%s followed by %s in %s",
@@ -275,7 +275,7 @@ shared_ptr<value_pair> parse_values_from(istream& is) {
         throw parsing_error("premature end of list");
     }
 
-    return to<value_pair>(result);
+    return to_sptr<value_pair>(result);
 }
 
 shared_ptr<value_pair> parse_values_from(const string& str) {
