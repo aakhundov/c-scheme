@@ -413,7 +413,7 @@ vector<shared_ptr<code>> translate_to_code(const shared_ptr<value>& source) {
         if (source->type() == value_t::pair) {
             // source is a list
             auto lines = to_ptr<value_pair>(source);
-            for (auto p = lines->begin(); p != lines->end(); p++) {
+            for (auto p = lines->begin(); p != lines->end(); ++p) {
                 // there is another statement
                 if (p->type() == value_t::symbol) {
                     // the statement is a symbol

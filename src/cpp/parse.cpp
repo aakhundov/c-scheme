@@ -209,7 +209,7 @@ shared_ptr<value> parse_list(istream& is) {
                 break;
             case quote_char:
                 // next item will be quoted
-                number_of_quotes++;
+                ++number_of_quotes;
                 break;
             case string_delim_char:
                 item = parse_string(is);  // parse nested string

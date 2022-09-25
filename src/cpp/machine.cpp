@@ -71,7 +71,7 @@ class machine::instruction_assign_call : public value_instruction {
             if (t.type() == token_t::reg) {
                 annotate_register(os, _args[i]);  // argument
             }
-            i++;
+            ++i;
         }
 
         os << ")";
@@ -166,7 +166,7 @@ class machine::instruction_perform : public value_instruction {
             if (t.type() == token_t::reg) {
                 annotate_register(os, _args[i]);  // argument
             }
-            i++;
+            ++i;
         }
 
         os << ")";
@@ -221,7 +221,7 @@ class machine::instruction_branch : public value_instruction {
             if (t.type() == token_t::reg) {
                 annotate_register(os, _args[i]);  // argument
             }
-            i++;
+            ++i;
         }
 
         os << ")";
@@ -498,11 +498,11 @@ value_pair* machine::_append_code(const vector<shared_ptr<code>>& code) {
 
 machine::~machine() {
     // cleanup registers, labels, etc. before implicit destruction
-    for (auto p = _registers->begin(); p != _registers->end(); p++) p.ptr(nullptr);
-    for (auto p = _labels->begin(); p != _labels->end(); p++) p.ptr(nullptr);
-    for (auto p = _constants->begin(); p != _constants->end(); p++) p.ptr(nullptr);
-    for (auto p = _ops->begin(); p != _ops->end(); p++) p.ptr(nullptr);
-    for (auto p = _code_head->begin(); p != _code_head->end(); p++) p.ptr(nullptr);
+    for (auto p = _registers->begin(); p != _registers->end(); ++p) p.ptr(nullptr);
+    for (auto p = _labels->begin(); p != _labels->end(); ++p) p.ptr(nullptr);
+    for (auto p = _constants->begin(); p != _constants->end(); ++p) p.ptr(nullptr);
+    for (auto p = _ops->begin(); p != _ops->end(); ++p) p.ptr(nullptr);
+    for (auto p = _code_head->begin(); p != _code_head->end(); ++p) p.ptr(nullptr);
 
     _stack.clear();
 }

@@ -201,7 +201,7 @@ size_t value_pair::length() const {
     size_t result = 0;
     const value_pair* running{this};
     while (true) {
-        result++;  // increment the length
+        ++result;  // increment the length
         auto cdr_type = running->cdr()->type();
         if (cdr_type == value_t::pair) {
             // the cdr is a pair: go to the next cdr
@@ -210,7 +210,7 @@ size_t value_pair::length() const {
             // the cdr is not a pair
             if (cdr_type != value_t::nil) {
                 // count the non-nil terminating cdr
-                result++;
+                ++result;
             }
             return result;
         }
