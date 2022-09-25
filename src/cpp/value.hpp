@@ -271,12 +271,12 @@ class value_pair : public value {
     const shared_ptr<value>& car() const { return _car; }
     const shared_ptr<value>& cdr() const { return _cdr; }
 
-    // pair getters
-    const shared_ptr<value_pair> pcar() const {
-        return reinterpret_pointer_cast<value_pair>(_car);
+    // naked pair getters
+    const value_pair* pcar() const {
+        return reinterpret_cast<value_pair*>(_car.get());
     }
-    const shared_ptr<value_pair> pcdr() const {
-        return reinterpret_pointer_cast<value_pair>(_cdr);
+    const value_pair* pcdr() const {
+        return reinterpret_cast<value_pair*>(_cdr.get());
     }
 
     // setters

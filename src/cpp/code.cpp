@@ -149,7 +149,7 @@ shared_ptr<value> code_assign_call::to_value() const {
         make_symbol(_reg),                   // register
         make_list("op", make_symbol(_op)));  // op
 
-    auto tail = result->pcdr()->pcdr();
+    auto tail = to<value_pair>(result->pcdr()->cdr());
     for (const auto& arg : _args) {
         auto arg_pair = make_vpair(arg.to_value(), nil);  // arg
         tail->cdr(arg_pair);
@@ -241,7 +241,7 @@ shared_ptr<value> code_perform::to_value() const {
         "perform",                           // header
         make_list("op", make_symbol(_op)));  // op
 
-    auto tail = result->pcdr();
+    auto tail = to<value_pair>(result->cdr());
     for (const auto& arg : _args) {
         auto arg_pair = make_vpair(arg.to_value(), nil);  // arg
         tail->cdr(arg_pair);
@@ -305,7 +305,7 @@ shared_ptr<value> code_branch::to_value() const {
         make_list("label", make_symbol(_label)),  // label
         make_list("op", make_symbol(_op)));       // op
 
-    auto tail = result->pcdr()->pcdr();
+    auto tail = to<value_pair>(result->pcdr()->cdr());
     for (const auto& arg : _args) {
         auto arg_pair = make_vpair(arg.to_value(), nil);  // arg
         tail->cdr(arg_pair);

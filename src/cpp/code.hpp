@@ -14,6 +14,7 @@
 using std::get;
 using std::ostream;
 using std::ostringstream;
+using std::reinterpret_pointer_cast;
 using std::shared_ptr;
 using std::string;
 using std::variant;

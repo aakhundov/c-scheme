@@ -802,7 +802,7 @@ void test_code() {
         auto source = parse_values_from(code_file.path());
         auto code = translate_to_code(source);
 
-        auto running = source;
+        const value_pair* running = source.get();
         for (const auto& translated : code) {
             // compare each line of the code with the original
             const auto& original_line = running->car();
