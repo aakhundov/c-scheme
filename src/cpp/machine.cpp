@@ -13,6 +13,7 @@
 using std::cout;
 using std::ios_base;
 using std::make_shared;
+using std::move;
 using std::pair;
 using std::shared_ptr;
 using std::string;
@@ -22,10 +23,11 @@ using std::vector;
 
 namespace {
 
-void annotate_register(ostream& os, const shared_ptr<value_pair>& reg) {
+void annotate_register(ostream& os, const value_pair* reg) {
     os << BLUE("[");
     if (reg->car()->type() == value_t::pair &&
-        to<value_pair>(reg)->pcar()->car()->type() == value_t::instruction) {
+        reinterpret_cast<value_pair*>(reg->car().get())->car()->type() ==
+            value_t::instruction) {
         // the register points to code
         os << "<code>";
     } else {
@@ -51,7 +53,7 @@ class machine::instruction_assign_call : public value_instruction {
         if (result->type() == value_t::error) {
             // halt the program
             _machine._output->car(result);
-            _machine._pc = nil;
+            _machine._move_pc_to_end();
         } else {
             // assign the result
             _reg->car(result);
@@ -83,7 +85,8 @@ class machine::instruction_assign_call : public value_instruction {
             os << *_machine._output->car();
         } else if (_reg) {
             if (_reg->car()->type() == value_t::pair &&
-                to<value_pair>(_reg)->pcar()->car()->type() == value_t::instruction) {
+                reinterpret_cast<value_pair*>(_reg->car().get())->car()->type() ==
+                    value_t::instruction) {
                 // code returned
                 os << "<code>";
             } else {
@@ -93,9 +96,9 @@ class machine::instruction_assign_call : public value_instruction {
     }
 
    private:
-    const shared_ptr<value_pair> _reg;
-    const shared_ptr<value_machine_op> _op;
-    const vector<shared_ptr<value_pair>> _args;
+    value_pair* _reg;
+    const value_machine_op* _op;
+    const vector<value_pair*> _args;
     const shared_ptr<code_assign_call> _code;
 };
 
@@ -129,8 +132,8 @@ class machine::instruction_assign_copy : public value_instruction {
     }
 
    private:
-    const shared_ptr<value_pair> _reg;
-    const shared_ptr<value_pair> _src;
+    value_pair* _reg;
+    const value_pair* _src;
     const shared_ptr<code_assign_copy> _code;
 };
 
@@ -148,7 +151,7 @@ class machine::instruction_perform : public value_instruction {
         if (result->type() == value_t::error) {
             // halt the program
             _machine._output->car(result);
-            _machine._pc = nil;
+            _machine._move_pc_to_end();
         } else {
             // just move the pc
             _machine._advance_pc();
@@ -179,8 +182,8 @@ class machine::instruction_perform : public value_instruction {
     }
 
    private:
-    const shared_ptr<value_machine_op> _op;
-    const vector<shared_ptr<value_pair>> _args;
+    const value_machine_op* _op;
+    const vector<value_pair*> _args;
     const shared_ptr<code_perform> _code;
 };
 
@@ -199,10 +202,10 @@ class machine::instruction_branch : public value_instruction {
         if (result->type() == value_t::error) {
             // halt the program
             _machine._output->car(result);
-            _machine._pc = nil;
+            _machine._move_pc_to_end();
         } else if (*result) {
             // jump to the label
-            _machine._pc = _label->pcar();
+            _machine._move_pc(_label->car());
         } else {
             // move the pc to the next
             _machine._advance_pc();
@@ -231,7 +234,7 @@ class machine::instruction_branch : public value_instruction {
         if (_machine._output->car()->type() == value_t::error) {
             // error ocurred
             os << *_machine._output->car();
-        } else if (_machine._pc == _label->car()) {
+        } else if (_machine._pc == _label->car().get()) {
             // test has passed
             os << GREEN("yes");
         } else {
@@ -241,9 +244,9 @@ class machine::instruction_branch : public value_instruction {
     }
 
    private:
-    const shared_ptr<value_pair> _label;
-    const shared_ptr<value_machine_op> _op;
-    const vector<shared_ptr<value_pair>> _args;
+    const value_pair* _label;
+    const value_machine_op* _op;
+    const vector<value_pair*> _args;
     const shared_ptr<code_branch> _code;
 };
 
@@ -256,7 +259,7 @@ class machine::instruction_goto : public value_instruction {
 
     void execute() const override {
         // jump to the target: label or register
-        _machine._pc = _target->pcar();
+        _machine._move_pc(_target->car());
     }
 
     void trace_before(ostream& os) const override {
@@ -269,7 +272,7 @@ class machine::instruction_goto : public value_instruction {
     }
 
    private:
-    const shared_ptr<value_pair> _target;
+    const value_pair* _target;
     const shared_ptr<code_goto> _code;
 };
 
@@ -295,7 +298,8 @@ class machine::instruction_save : public value_instruction {
     void trace_after(ostream& os) const override {
         os << BLUE(" >> ");
         if (_reg->car()->type() == value_t::pair &&
-            to<value_pair>(_reg)->pcar()->car()->type() == value_t::instruction) {
+            reinterpret_cast<value_pair*>(_reg->car().get())->car()->type() ==
+                value_t::instruction) {
             // code saved
             os << "<code>";
         } else {
@@ -304,7 +308,7 @@ class machine::instruction_save : public value_instruction {
     }
 
    private:
-    const shared_ptr<value_pair> _reg;
+    const value_pair* _reg;
     const shared_ptr<code_save> _code;
 };
 
@@ -330,7 +334,8 @@ class machine::instruction_restore : public value_instruction {
     void trace_after(ostream& os) const override {
         os << BLUE(" << ");
         if (_reg->car()->type() == value_t::pair &&
-            to<value_pair>(_reg)->pcar()->car()->type() == value_t::instruction) {
+            reinterpret_cast<value_pair*>(_reg->car().get())->car()->type() ==
+                value_t::instruction) {
             // code restored
             os << "<code>";
         } else {
@@ -339,56 +344,59 @@ class machine::instruction_restore : public value_instruction {
     }
 
    private:
-    const shared_ptr<value_pair> _reg;
+    value_pair* _reg;
     const shared_ptr<code_restore> _code;
 };
 
 // machine
 
-shared_ptr<value_pair> machine::_get_constant(shared_ptr<value> val) {
+value_pair* machine::_get_constant(shared_ptr<value> val) {
     // create and return a new constant
-    _constants = make_vpair(val, _constants);
-    return _constants;
+    _constants = make_vpair(move(val), _constants);
+    return _constants.get();
 }
 
-shared_ptr<value_pair> machine::_get_register(const string& name) {
-    if (_register_map.count(name)) {
+value_pair* machine::_get_register(const string& name) {
+    auto iter = _register_map.find(name);
+    if (iter != _register_map.end()) {
         // return existing register
-        return _register_map[name];
+        return iter->second;
     } else {
         // create a new register with a nil
         _registers = make_vpair(nil, _registers);
-        _register_map[name] = _registers;
-        return _registers;
+        _register_map[name] = _registers.get();
+        return _registers.get();
     }
 }
 
-shared_ptr<value_pair> machine::_get_label(const string& name) {
-    if (_label_map.count(name)) {
+value_pair* machine::_get_label(const string& name) {
+    auto iter = _label_map.find(name);
+    if (iter != _label_map.end()) {
         // return existing label
-        return _label_map[name];
+        return iter->second;
     } else {
         // create a new label pointing to nil
         _labels = make_vpair(nil, _labels);
-        _label_map[name] = _labels;
-        return _labels;
+        _label_map[name] = _labels.get();
+        return _labels.get();
     }
 }
 
-shared_ptr<machine::value_machine_op> machine::_get_op(const string& name) {
-    if (_op_map.count(name)) {
+machine::value_machine_op* machine::_get_op(const string& name) {
+    auto iter = _op_map.find(name);
+    if (iter != _op_map.end()) {
         // return existing op
-        return _op_map[name];
+        return iter->second;
     } else {
         // create a new unbound op
         auto op = make_shared<value_machine_op>(name);
         _ops = make_vpair(op, _ops);
-        _op_map[name] = op;
-        return op;
+        _op_map[name] = op.get();
+        return op.get();
     }
 }
 
-const shared_ptr<value_pair> machine::_token_to_arg(const token& t) {
+value_pair* machine::_token_to_arg(const token& t) {
     // convert code token to a machine arg
     switch (t.type()) {
         case token_t::reg:
@@ -398,14 +406,12 @@ const shared_ptr<value_pair> machine::_token_to_arg(const token& t) {
         case token_t::const_:
             return _get_constant(t.val());
         default:
-            throw machine_error(
-                "illegal token type for the argument: %d",
-                t.type());
+            throw machine_error("illegal token: %s", t.str().c_str());
     }
 }
 
-const vector<shared_ptr<value_pair>> machine::_tokens_to_args(const vector<token>& tokens) {
-    vector<shared_ptr<value_pair>> result;
+const vector<value_pair*> machine::_tokens_to_args(const vector<token>& tokens) {
+    vector<value_pair*> result;
 
     for (auto& t : tokens) {
         // create an arg for every token
@@ -415,43 +421,43 @@ const vector<shared_ptr<value_pair>> machine::_tokens_to_args(const vector<token
     return result;
 }
 
-shared_ptr<value_pair> machine::_append_code(const vector<shared_ptr<code>>& code) {
+shared_ptr<machine::value_instruction> machine::_make_instruction(const shared_ptr<code>& line) {
+    switch (line->type()) {
+        case code_t::assign_call:
+            return make_shared<instruction_assign_call>(*this, to<code_assign_call>(line));
+        case code_t::assign_copy:
+            return make_shared<instruction_assign_copy>(*this, to<code_assign_copy>(line));
+        case code_t::perform:
+            return make_shared<instruction_perform>(*this, to<code_perform>(line));
+        case code_t::branch:
+            return make_shared<instruction_branch>(*this, to<code_branch>(line));
+        case code_t::goto_:
+            return make_shared<instruction_goto>(*this, to<code_goto>(line));
+        case code_t::save:
+            return make_shared<instruction_save>(*this, to<code_save>(line));
+        case code_t::restore:
+            return make_shared<instruction_restore>(*this, to<code_restore>(line));
+        default:
+            throw machine_error(
+                "can't create an instruction from '%s'",
+                line->str().c_str());
+    }
+}
+
+value_pair* machine::_append_code(const vector<shared_ptr<code>>& code) {
     shared_ptr<value_pair> head{nullptr};
     shared_ptr<value_pair> tail{nullptr};
 
     vector<string> label_queue;
     for (const auto& line : code) {
-        shared_ptr<value_instruction> instruction;
-        switch (line->type()) {
-            case code_t::label:
-                // label: add to the queue and go the the next line
-                label_queue.push_back(to<code_label>(line)->label());
-                continue;
-            case code_t::assign_call:
-                instruction = make_shared<instruction_assign_call>(*this, to<code_assign_call>(line));
-                break;
-            case code_t::assign_copy:
-                instruction = make_shared<instruction_assign_copy>(*this, to<code_assign_copy>(line));
-                break;
-            case code_t::perform:
-                instruction = make_shared<instruction_perform>(*this, to<code_perform>(line));
-                break;
-            case code_t::branch:
-                instruction = make_shared<instruction_branch>(*this, to<code_branch>(line));
-                break;
-            case code_t::goto_:
-                instruction = make_shared<instruction_goto>(*this, to<code_goto>(line));
-                break;
-            case code_t::save:
-                instruction = make_shared<instruction_save>(*this, to<code_save>(line));
-                break;
-            case code_t::restore:
-                instruction = make_shared<instruction_restore>(*this, to<code_restore>(line));
-                break;
+        if (line->type() == code_t::label) {
+            // label: add to the queue and go the the next line
+            label_queue.push_back(to<code_label>(line)->label());
+            continue;
         }
 
-        // a new code pair with the new instruction to add to the chain
-        shared_ptr<value_pair> new_pair = make_vpair(instruction, nil);
+        // make an instruction and add it to a new pair (to be appended to the code)
+        shared_ptr<value_pair> new_pair = make_vpair(_make_instruction(line), nil);
 
         if (!head) {
             head = new_pair;  // first (non-label) line of the code
@@ -460,7 +466,7 @@ shared_ptr<value_pair> machine::_append_code(const vector<shared_ptr<code>>& cod
         }
         tail = new_pair;  // set the new tail
 
-        if (label_queue.size() > 0) {
+        if (!label_queue.empty()) {
             // point the labels in the queued to
             // the following instruction (new_pair)
             // and clear the queue
@@ -476,7 +482,7 @@ shared_ptr<value_pair> machine::_append_code(const vector<shared_ptr<code>>& cod
         throw machine_error("can't append empty code");
     }
 
-    if (label_queue.size() > 0) {
+    if (!label_queue.empty()) {
         // if there are still queued labels,
         // point them to nil (end of the program)
         for (const auto& label_str : label_queue) {
@@ -491,7 +497,7 @@ shared_ptr<value_pair> machine::_append_code(const vector<shared_ptr<code>>& cod
     }
     _code_tail = tail;  // set the new code tail
 
-    return head;
+    return head.get();
 }
 
 machine::~machine() {
@@ -501,31 +507,34 @@ machine::~machine() {
     for (auto p = _constants->begin(); p != _constants->end(); p++) p.ptr(nullptr);
     for (auto p = _ops->begin(); p != _ops->end(); p++) p.ptr(nullptr);
     for (auto p = _code_head->begin(); p != _code_head->end(); p++) p.ptr(nullptr);
-    for (auto p = _stack->begin(); p != _stack->end(); p++) p.ptr(nullptr);
+
+    _stack.clear();
 }
 
 shared_ptr<value> machine::run(const vector<pair<string, shared_ptr<value>>>& inputs, const string& output_register) {
     // write the inputs one by one
     // to the designated registers
     for (const auto& [input_register, v] : inputs) {
-        write_to_register(input_register, v);
+        write_to(input_register, v);
     }
 
-    _pc = _code_head;                          // set the pc to the code head
-    _output = _get_register(output_register);  // set the output register
+    _stack.clear();                            // clear the stack
+    _move_pc_to_beginning();                   // set the pc to program start
+    _output = _get_register(output_register);  // define the output register
     _counter = 0;                              // reset the instruction counter
 
     if (_trace != machine_trace::code) {
         // without code tracing
-        while (_pc != nil) {
-            auto instruction = to<value_instruction>(_pc->car());
-            instruction->execute();  // instruction moves the pc
+        while (_pc != nilptr) {
+            // low-level reinterpret_cast for efficiency
+            // execution of the instruction moves the pc
+            (reinterpret_cast<const value_instruction*>(_pc->car().get()))->execute();
         }
     } else {
         // with code tracing
         ios_base::sync_with_stdio(false);
-        while (_pc != nil) {
-            auto instruction = to<value_instruction>(_pc->car());
+        while (_pc != nilptr) {
+            auto instruction = reinterpret_cast<const value_instruction*>(_pc->car().get());
 
             _trace_before(cout, instruction);
             instruction->execute();
@@ -536,5 +545,5 @@ shared_ptr<value> machine::run(const vector<pair<string, shared_ptr<value>>>& in
 
     // read and return the output
     // from the designated register
-    return read_from_register(output_register);
+    return read_from(output_register);
 }

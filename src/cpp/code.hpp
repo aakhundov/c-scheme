@@ -56,6 +56,13 @@ class token {
         return (os << _str);
     };
 
+    string str() const {
+        ostringstream s;
+        write(s);
+
+        return s.str();
+    }
+
     // for temporarily undefined token
     friend class code_assign_copy;
     friend class code_goto;

@@ -344,6 +344,7 @@ class value_nil : public value_pair {
 
 // singleton nil
 const shared_ptr<value_pair> nil = value_nil::get();
+value_pair* const nilptr = nil.get();
 
 // factory functions
 

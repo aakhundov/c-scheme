@@ -860,38 +860,38 @@ void test_machine() {
 
     // primitives to bind for the tests
 
-    auto add = [](const vector<shared_ptr<value_pair>>& args) -> shared_ptr<value> {
+    auto add = [](const vector<value_pair*>& args) -> shared_ptr<value> {
         return make_number(
             to<value_number>(args[0]->car())->number() +
             to<value_number>(args[1]->car())->number());
     };
 
-    auto subtract = [](const vector<shared_ptr<value_pair>>& args) -> shared_ptr<value> {
+    auto subtract = [](const vector<value_pair*>& args) -> shared_ptr<value> {
         return make_number(
             to<value_number>(args[0]->car())->number() -
             to<value_number>(args[1]->car())->number());
     };
 
-    auto multiply = [](const vector<shared_ptr<value_pair>>& args) -> shared_ptr<value> {
+    auto multiply = [](const vector<value_pair*>& args) -> shared_ptr<value> {
         return make_number(
             to<value_number>(args[0]->car())->number() *
             to<value_number>(args[1]->car())->number());
     };
 
-    auto remainder = [](const vector<shared_ptr<value_pair>>& args) -> shared_ptr<value> {
+    auto remainder = [](const vector<value_pair*>& args) -> shared_ptr<value> {
         return make_number(std::fmod(
             to<value_number>(args[0]->car())->number(),
             to<value_number>(args[1]->car())->number()));
     };
 
-    auto equal = [](const vector<shared_ptr<value_pair>>& args) -> shared_ptr<value> {
+    auto equal = [](const vector<value_pair*>& args) -> shared_ptr<value> {
         return (to<value_number>(args[0]->car())->number() ==
                 to<value_number>(args[1]->car())->number())
                    ? true_
                    : false_;
     };
 
-    auto less = [](const vector<shared_ptr<value_pair>>& args) -> shared_ptr<value> {
+    auto less = [](const vector<value_pair*>& args) -> shared_ptr<value> {
         return (to<value_number>(args[0]->car())->number() <
                 to<value_number>(args[1]->car())->number())
                    ? true_
