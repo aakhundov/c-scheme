@@ -30,10 +30,10 @@ enum class token_t {
 
 class token {
    public:
-    token(token_t type, const string& name) : _type(type), _content(name) {
+    token(token_t type, const string& name) : _type(type), _content(name), _str(to_value()->str()) {
         assert(type == token_t::op || type == token_t::reg || type == token_t::label);
     }
-    token(token_t type, const shared_ptr<value>& val) : _type(type), _content(val) {
+    token(token_t type, const shared_ptr<value>& val) : _type(type), _content(val), _str(to_value()->str()) {
         assert(type == token_t::const_);
     }
     token(const shared_ptr<value>& v);
@@ -52,6 +52,10 @@ class token {
 
     shared_ptr<value> to_value() const;
 
+    ostream& write(ostream& os) const {
+        return (os << _str);
+    };
+
     // for temporarily undefined token
     friend class code_assign_copy;
     friend class code_goto;
@@ -62,6 +66,7 @@ class token {
 
     token_t _type;
     variant<string, shared_ptr<value>> _content;
+    string _str;  // string representation
 };
 
 // code hierarchy
@@ -239,6 +244,10 @@ class code_restore : public code {
 // helper functions
 
 vector<shared_ptr<code>> translate_to_code(const shared_ptr<value>& source);
+
+inline ostream& operator<<(ostream& os, const token& t) {
+    return t.write(os);
+}
 
 inline ostream& operator<<(ostream& os, const code& c) {
     return c.write(os);

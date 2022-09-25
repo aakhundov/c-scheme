@@ -65,6 +65,8 @@ token::token(const shared_ptr<value>& v) {
             "token must be a list: %s",
             v->str().c_str());
     }
+
+    _str = v->str();
 }
 
 shared_ptr<value> token::to_value() const {
