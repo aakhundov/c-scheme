@@ -24,7 +24,8 @@ enum class value_t {
     bool_,
     nil,
     pair,
-    custom,
+    machine_op,
+    instruction,
 };
 
 using std::enable_if;
@@ -458,7 +459,7 @@ inline bool operator!=(const value& v1, const value& v2) {
     return (&v1 != &v2 && !v1.equals(v2));
 }
 
-ostream& operator<<(ostream& os, const value_t& t);
+ostream& operator<<(ostream& os, value_t t);
 
 template <typename T,
           typename enable_if<

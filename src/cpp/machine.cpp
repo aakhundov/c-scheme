@@ -25,7 +25,7 @@ namespace {
 void annotate_register(ostream& os, const shared_ptr<value_pair>& reg) {
     os << BLUE("[");
     if (reg->car()->type() == value_t::pair &&
-        to<value_pair>(reg)->pcar()->car()->type() == value_t::custom) {
+        to<value_pair>(reg)->pcar()->car()->type() == value_t::instruction) {
         // the register points to code
         os << "<code>";
     } else {
@@ -83,7 +83,7 @@ class machine::instruction_assign_call : public value_instruction {
             os << *_machine._output->car();
         } else if (_reg) {
             if (_reg->car()->type() == value_t::pair &&
-                to<value_pair>(_reg)->pcar()->car()->type() == value_t::custom) {
+                to<value_pair>(_reg)->pcar()->car()->type() == value_t::instruction) {
                 // code returned
                 os << "<code>";
             } else {
@@ -295,7 +295,7 @@ class machine::instruction_save : public value_instruction {
     void report_after(ostream& os) const override {
         os << BLUE(" >> ");
         if (_reg->car()->type() == value_t::pair &&
-            to<value_pair>(_reg)->pcar()->car()->type() == value_t::custom) {
+            to<value_pair>(_reg)->pcar()->car()->type() == value_t::instruction) {
             // code saved
             os << "<code>";
         } else {
@@ -330,7 +330,7 @@ class machine::instruction_restore : public value_instruction {
     void report_after(ostream& os) const override {
         os << BLUE(" << ");
         if (_reg->car()->type() == value_t::pair &&
-            to<value_pair>(_reg)->pcar()->car()->type() == value_t::custom) {
+            to<value_pair>(_reg)->pcar()->car()->type() == value_t::instruction) {
             // code restored
             os << "<code>";
         } else {

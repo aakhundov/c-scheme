@@ -243,7 +243,7 @@ const shared_ptr<value_nil>& value_nil::get() {
 
 // helper functions
 
-ostream& operator<<(ostream& os, const value_t& t) {
+ostream& operator<<(ostream& os, value_t t) {
     switch (t) {
         case value_t::number:
             os << "number";
@@ -271,6 +271,12 @@ ostream& operator<<(ostream& os, const value_t& t) {
             break;
         case value_t::pair:
             os << "pair";
+            break;
+        case value_t::machine_op:
+            os << "machine_op";
+            break;
+        case value_t::instruction:
+            os << "instruction";
             break;
         default:
             os << "unknown";

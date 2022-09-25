@@ -76,7 +76,7 @@ class machine {
        public:
         // create with a name, add op later
         value_machine_op(string name)
-            : value(value_t::custom), _name{name} {}
+            : value(value_t::machine_op), _name{name} {}
 
         ostream& write(ostream& os) const override {
             return (os << "<machine op '" << _name << "'>");
@@ -95,7 +95,7 @@ class machine {
     class value_instruction : public value {
        public:
         value_instruction(machine& machine)
-            : value(value_t::custom), _machine(machine) {}
+            : value(value_t::instruction), _machine(machine) {}
 
         virtual void execute() const = 0;
 
