@@ -125,10 +125,10 @@ void value_pair::iterator::_advance() {
 }
 
 ostream& value_pair::write(ostream& os) const {
-    if (car()->type() == value_t::symbol &&              // first item is a symbol
-        to<value_symbol>(car())->symbol() == "quote" &&  // first item is a quote symbol
-        cdr()->type() == value_t::pair &&                // there is a second item
-        pcdr()->cdr() == nil) {                          // there is no third item
+    if (car()->type() == value_t::symbol &&                  // first item is a symbol
+        to_ptr<value_symbol>(car())->symbol() == "quote" &&  // first item is a quote symbol
+        cdr()->type() == value_t::pair &&                    // there is a second item
+        pcdr()->cdr() == nil) {                              // there is no third item
         // (quote x) -> 'x
         // (quote (x y z)) -> '(x y z)
         os << '\'' << pcdr()->car()->str();
@@ -137,18 +137,23 @@ ostream& value_pair::write(ostream& os) const {
     }
 
     os << "(";
-    car()->write(os);  // write the first car
-    shared_ptr<value> running{cdr()};
-    while (running != nil) {
-        if (running->type() == value_t::pair) {
-            auto pair = to<value_pair>(running);
+    const value_pair* running{this};
+    running->car()->write(os);  // write the first car
+    while (true) {
+        value_t cdr_type = running->cdr()->type();
+        if (cdr_type == value_t::pair) {
+            // go to the next cdr
+            running = to_ptr<value_pair>(running->cdr());
+            // write the next car
             os << " ";
-            pair->car()->write(os);  // write the next car
-            running = pair->cdr();   // go to the following cdr
+            running->car()->write(os);
         } else {
-            os << " . ";
-            running->write(os);  // write the non-pair cdr
-            break;               // and stop
+            if (cdr_type != value_t::nil) {
+                // write the non-pair cdr
+                os << " . ";
+                running->cdr()->write(os);
+            }
+            break;
         }
     }
     os << ")";
@@ -179,37 +184,37 @@ bool value_pair::equals(const value& other) const {
 }
 
 bool value_pair::is_list() const {
-    shared_ptr<value> running{cdr()};
-    while (running != nil) {
-        if (running->type() == value_t::pair) {
+    const value_pair* running{this};
+    while (true) {
+        value_t cdr_type = running->cdr()->type();
+        if (cdr_type == value_t::pair) {
             // the cdr is a pair: go to the next cdr
-            running = to<value_pair>(running)->cdr();
+            running = to_ptr<value_pair>(running->cdr());
         } else {
-            // the (terminating) cdr is not a pair
-            return false;  // this is not a list
+            // the cdr is not a pair: check if it is nil
+            return cdr_type == value_t::nil;
         }
     }
-
-    return true;
 }
 
 size_t value_pair::length() const {
-    // at least one pair
-    size_t result = 1;
-
-    shared_ptr<value> running{cdr()};
-    while (running != nil) {
-        result += 1;  // increment the length
-        if (running->type() == value_t::pair) {
+    size_t result = 0;
+    const value_pair* running{this};
+    while (true) {
+        result++;  // increment the length
+        auto cdr_type = running->cdr()->type();
+        if (cdr_type == value_t::pair) {
             // the cdr is a pair: go to the next cdr
-            running = to<value_pair>(running)->cdr();
+            running = to_ptr<value_pair>(running->cdr());
         } else {
-            // the (terminating) cdr is not a pair
-            break;  // stop the counting
+            // the cdr is not a pair
+            if (cdr_type != value_t::nil) {
+                // count the non-nil terminating cdr
+                result++;
+            }
+            return result;
         }
     }
-
-    return result;
 }
 
 void value_pair::_throw_on_cycle_from(const shared_ptr<value>& other) {

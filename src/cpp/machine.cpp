@@ -26,8 +26,7 @@ namespace {
 void annotate_register(ostream& os, const value_pair* reg) {
     os << BLUE("[");
     if (reg->car()->type() == value_t::pair &&
-        reinterpret_cast<value_pair*>(reg->car().get())->car()->type() ==
-            value_t::instruction) {
+        to_ptr<value_pair>(reg->car())->car()->type() == value_t::instruction) {
         // the register points to code
         os << "<code>";
     } else {
@@ -85,8 +84,7 @@ class machine::instruction_assign_call : public value_instruction {
             os << *_machine._output->car();
         } else if (_reg) {
             if (_reg->car()->type() == value_t::pair &&
-                reinterpret_cast<value_pair*>(_reg->car().get())->car()->type() ==
-                    value_t::instruction) {
+                to_ptr<value_pair>(_reg->car())->car()->type() == value_t::instruction) {
                 // code returned
                 os << "<code>";
             } else {
@@ -298,8 +296,7 @@ class machine::instruction_save : public value_instruction {
     void trace_after(ostream& os) const override {
         os << BLUE(" >> ");
         if (_reg->car()->type() == value_t::pair &&
-            reinterpret_cast<value_pair*>(_reg->car().get())->car()->type() ==
-                value_t::instruction) {
+            to_ptr<value_pair>(_reg->car())->car()->type() == value_t::instruction) {
             // code saved
             os << "<code>";
         } else {
@@ -334,8 +331,7 @@ class machine::instruction_restore : public value_instruction {
     void trace_after(ostream& os) const override {
         os << BLUE(" << ");
         if (_reg->car()->type() == value_t::pair &&
-            reinterpret_cast<value_pair*>(_reg->car().get())->car()->type() ==
-                value_t::instruction) {
+            to_ptr<value_pair>(_reg->car())->car()->type() == value_t::instruction) {
             // code restored
             os << "<code>";
         } else {
@@ -526,15 +522,14 @@ shared_ptr<value> machine::run(const vector<pair<string, shared_ptr<value>>>& in
     if (_trace != machine_trace::code) {
         // without code tracing
         while (_pc != nilptr) {
-            // low-level reinterpret_cast for efficiency
             // execution of the instruction moves the pc
-            (reinterpret_cast<const value_instruction*>(_pc->car().get()))->execute();
+            (to_ptr<const value_instruction>(_pc->car()))->execute();
         }
     } else {
         // with code tracing
         ios_base::sync_with_stdio(false);
         while (_pc != nilptr) {
-            auto instruction = reinterpret_cast<const value_instruction*>(_pc->car().get());
+            auto instruction = to_ptr<const value_instruction>(_pc->car());
 
             _trace_before(cout, instruction);
             instruction->execute();

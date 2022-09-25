@@ -124,12 +124,12 @@ class machine {
 
     void _advance_pc() {
         // move the pc forward
-        _pc = reinterpret_cast<value_pair*>(_pc->cdr().get());
+        _pc = to_ptr<value_pair>(_pc->cdr());
     }
 
     void _move_pc(const shared_ptr<value>& position) {
         // set the pc to a given position
-        _pc = reinterpret_cast<value_pair*>(position.get());
+        _pc = to_ptr<value_pair>(position);
     }
 
     void _move_pc_to_beginning() {

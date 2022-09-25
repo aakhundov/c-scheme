@@ -17,12 +17,12 @@ using std::vector;
 token::token(const shared_ptr<value>& v) {
     if (v->type() == value_t::pair) {
         // v is a pair
-        auto pair = to<value_pair>(v);
+        auto pair = to_ptr<value_pair>(v);
         if (pair->is_list() and pair->length() == 2) {
             // v is a two-item list
             if (pair->car()->type() == value_t::symbol) {
                 // the first item is a symbol
-                string type_symbol = to<value_symbol>(pair->car())->symbol();
+                string type_symbol = to_ptr<value_symbol>(pair->car())->symbol();
                 if (type_symbol == "op") {
                     _type = token_t::op;
                 } else if (type_symbol == "reg") {
@@ -43,7 +43,7 @@ token::token(const shared_ptr<value>& v) {
                 } else {
                     if (pair->pcdr()->car()->type() == value_t::symbol) {
                         // the second item (name) is a string
-                        _content = to<value_symbol>(pair->pcdr()->car())->symbol();
+                        _content = to_ptr<value_symbol>(pair->pcdr()->car())->symbol();
                     } else {
                         throw code_error(
                             "non-const token's second item must be a string: %s",
@@ -88,7 +88,7 @@ shared_ptr<value> token::to_value() const {
 
 // code_label
 
-code_label::code_label(const shared_ptr<value_symbol>& statement) : code(code_t::label) {
+code_label::code_label(const value_symbol* statement) : code(code_t::label) {
     _label = statement->symbol();
 }
 
@@ -98,7 +98,7 @@ shared_ptr<value> code_label::to_value() const {
 
 // code_assign_call
 
-code_assign_call::code_assign_call(const shared_ptr<value_pair>& statement) : code(code_t::assign_call) {
+code_assign_call::code_assign_call(const value_pair* statement) : code(code_t::assign_call) {
     if (statement->length() >= 3) {
         // at least three items
         auto second = statement->pcdr()->car();
@@ -107,14 +107,14 @@ code_assign_call::code_assign_call(const shared_ptr<value_pair>& statement) : co
 
         if (second->type() == value_t::symbol) {
             // the second item is a symbol
-            _reg = to<value_symbol>(second)->symbol();  // register
+            _reg = to_ptr<value_symbol>(second)->symbol();  // register
             token op_token{third};
             if (op_token.type() == token_t::op) {
                 // the third item is an op token
                 _op = op_token.name();
                 while (rest != nil) {
                     // there is another arg
-                    auto pair = to<value_pair>(rest);
+                    auto pair = to_ptr<value_pair>(rest);
                     token arg_token{pair->car()};
                     if (arg_token.type() != token_t::op) {
                         // the arg is not an op token
@@ -161,7 +161,7 @@ shared_ptr<value> code_assign_call::to_value() const {
 
 // code_assign_copy
 
-code_assign_copy::code_assign_copy(const shared_ptr<value_pair>& statement) : code(code_t::assign_copy) {
+code_assign_copy::code_assign_copy(const value_pair* statement) : code(code_t::assign_copy) {
     if (statement->length() == 3) {
         // exactly three items
         auto second = statement->pcdr()->car();
@@ -169,7 +169,7 @@ code_assign_copy::code_assign_copy(const shared_ptr<value_pair>& statement) : co
 
         if (second->type() == value_t::symbol) {
             // the second item is a symbol
-            _reg = to<value_symbol>(second)->symbol();  // register
+            _reg = to_ptr<value_symbol>(second)->symbol();  // register
             token src_token{third};
             if (src_token.type() != token_t::op) {
                 // the source is not an op token
@@ -200,7 +200,7 @@ shared_ptr<value> code_assign_copy::to_value() const {
 
 // code_perform
 
-code_perform::code_perform(const shared_ptr<value_pair>& statement) : code(code_t::perform) {
+code_perform::code_perform(const value_pair* statement) : code(code_t::perform) {
     if (statement->length() >= 2) {
         // at least two items
         auto second = statement->pcdr()->car();
@@ -212,7 +212,7 @@ code_perform::code_perform(const shared_ptr<value_pair>& statement) : code(code_
             _op = op_token.name();
             while (rest != nil) {
                 // there is another arg
-                auto pair = to<value_pair>(rest);
+                auto pair = to_ptr<value_pair>(rest);
                 token arg_token{pair->car()};
                 if (arg_token.type() != token_t::op) {
                     // the arg is not an op token
@@ -253,7 +253,7 @@ shared_ptr<value> code_perform::to_value() const {
 
 // code_branch
 
-code_branch::code_branch(const shared_ptr<value_pair>& statement) : code(code_t::branch) {
+code_branch::code_branch(const value_pair* statement) : code(code_t::branch) {
     if (statement->length() >= 3) {
         // at least three items
         auto second = statement->pcdr()->car();
@@ -270,7 +270,7 @@ code_branch::code_branch(const shared_ptr<value_pair>& statement) : code(code_t:
                 _op = op_token.name();
                 while (rest != nil) {
                     // there is another arg
-                    auto pair = to<value_pair>(rest);
+                    auto pair = to_ptr<value_pair>(rest);
                     token arg_token{pair->car()};
                     if (arg_token.type() != token_t::op) {
                         // the arg is not an op token
@@ -317,7 +317,7 @@ shared_ptr<value> code_branch::to_value() const {
 
 // code_goto
 
-code_goto::code_goto(const shared_ptr<value_pair>& statement) : code(code_t::goto_) {
+code_goto::code_goto(const value_pair* statement) : code(code_t::goto_) {
     if (statement->length() == 2) {
         // exactly two items
         auto second = statement->pcdr()->car();
@@ -337,14 +337,14 @@ shared_ptr<value> code_goto::to_value() const {
 
 // code_save
 
-code_save::code_save(const shared_ptr<value_pair>& statement) : code(code_t::save) {
+code_save::code_save(const value_pair* statement) : code(code_t::save) {
     if (statement->length() == 2) {
         // exactly two items
         auto second = statement->pcdr()->car();
 
         if (second->type() == value_t::symbol) {
             // the second item is a symbol
-            _reg = to<value_symbol>(second)->symbol();
+            _reg = to_ptr<value_symbol>(second)->symbol();
         } else {
             throw code_error(
                 "save statement's second item (register) must be a string: %s",
@@ -365,14 +365,14 @@ shared_ptr<value> code_save::to_value() const {
 
 // code_restore
 
-code_restore::code_restore(const shared_ptr<value_pair>& statement) : code(code_t::restore) {
+code_restore::code_restore(const value_pair* statement) : code(code_t::restore) {
     if (statement->length() == 2) {
         // exactly two items
         auto second = statement->pcdr()->car();
 
         if (second->type() == value_t::symbol) {
             // the second item is a symbol
-            _reg = to<value_symbol>(second)->symbol();
+            _reg = to_ptr<value_symbol>(second)->symbol();
         } else {
             throw code_error(
                 "restore statement's second item (register) must be a string: %s",
@@ -395,7 +395,7 @@ shared_ptr<value> code_restore::to_value() const {
 
 namespace {
 
-bool is_assign_call(const shared_ptr<value_pair>& statement) {
+bool is_assign_call(const value_pair* statement) {
     if (statement->length() >= 3) {
         // at least three items
         token s{statement->pcdr()->pcdr()->car()};  // a token from the third item
@@ -415,19 +415,19 @@ vector<shared_ptr<code>> translate_to_code(const shared_ptr<value>& source) {
     if (source != nil) {
         if (source->type() == value_t::pair) {
             // source is a list
-            auto lines = to<value_pair>(source);
+            auto lines = to_ptr<value_pair>(source);
             for (auto p = lines->begin(); p != lines->end(); p++) {
                 // there is another statement
                 if (p->type() == value_t::symbol) {
                     // the statement is a symbol
-                    auto label = to<value_symbol>(p.ptr());
+                    auto label = to_ptr<const value_symbol>(p.ptr());
                     result.push_back(make_shared<code_label>(label));
                 } else if (p->type() == value_t::pair) {
                     // the statement is a list
-                    auto statement = to<value_pair>(p.ptr());
+                    auto statement = to_ptr<const value_pair>(p.ptr());
                     if (statement->car()->type() == value_t::symbol) {
                         // the statement header is a symbol
-                        string header = to<value_symbol>(statement->car())->symbol();
+                        string header = to_ptr<value_symbol>(statement->car())->symbol();
                         if (header == "assign") {
                             if (is_assign_call(statement)) {
                                 result.push_back(make_shared<code_assign_call>(statement));

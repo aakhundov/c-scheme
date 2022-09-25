@@ -118,7 +118,7 @@ class code_label : public code {
    public:
     code_label(const string& label)
         : code(code_t::label), _label{label} {}
-    code_label(const shared_ptr<value_symbol>& v);
+    code_label(const value_symbol* v);
 
     const string& label() const { return _label; }
 
@@ -135,7 +135,7 @@ class code_assign_call : public code {
         const string& op,
         const vector<token>& args)
         : code(code_t::assign_call), _reg{reg}, _op{op}, _args{args} {}
-    code_assign_call(const shared_ptr<value_pair>& v);
+    code_assign_call(const value_pair* v);
 
     const string& reg() const { return _reg; }
     const string& op() const { return _op; }
@@ -153,7 +153,7 @@ class code_assign_copy : public code {
    public:
     code_assign_copy(const string& reg, token src)
         : code(code_t::assign_copy), _reg{reg}, _src{src} {}
-    code_assign_copy(const shared_ptr<value_pair>& v);
+    code_assign_copy(const value_pair* v);
 
     const string& reg() const { return _reg; }
     const token& src() const { return _src; }
@@ -171,7 +171,7 @@ class code_perform : public code {
         const string& op,
         const vector<token>& args)
         : code(code_t::assign_call), _op{op}, _args{args} {}
-    code_perform(const shared_ptr<value_pair>& v);
+    code_perform(const value_pair* v);
 
     const string& op() const { return _op; }
     vector<token>& args() { return _args; }
@@ -190,7 +190,7 @@ class code_branch : public code {
         const string& op,
         const vector<token>& args)
         : code(code_t::branch), _label{label}, _op{op}, _args{args} {}
-    code_branch(const shared_ptr<value_pair>& v);
+    code_branch(const value_pair* v);
 
     const string& label() const { return _label; }
     const string& op() const { return _op; }
@@ -208,7 +208,7 @@ class code_goto : public code {
    public:
     code_goto(token target)
         : code(code_t::goto_), _target{target} {}
-    code_goto(const shared_ptr<value_pair>& v);
+    code_goto(const value_pair* v);
 
     const token& target() const { return _target; }
 
@@ -222,8 +222,7 @@ class code_save : public code {
    public:
     code_save(const string& reg)
         : code(code_t::save), _reg{reg} {}
-
-    code_save(const shared_ptr<value_pair>& v);
+    code_save(const value_pair* v);
 
     const string& reg() const { return _reg; }
 
@@ -237,8 +236,7 @@ class code_restore : public code {
    public:
     code_restore(const string& reg)
         : code(code_t::restore), _reg{reg} {}
-
-    code_restore(const shared_ptr<value_pair>& v);
+    code_restore(const value_pair* v);
 
     const string& reg() const { return _reg; }
 

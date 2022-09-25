@@ -470,6 +470,14 @@ inline shared_ptr<T> to(const shared_ptr<value>& v) {
     return reinterpret_pointer_cast<T>(v);
 }
 
+template <typename T,
+          typename enable_if<
+              is_base_of<value, T>::value,
+              bool>::type = true>  // poor man's concept
+inline T* to_ptr(const shared_ptr<value>& v) {
+    return reinterpret_cast<T*>(v.get());
+}
+
 // exceptions
 
 class cycle_error : public str_exception {
