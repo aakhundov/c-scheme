@@ -13,6 +13,7 @@ using std::setprecision;
 using std::shared_ptr;
 using std::string;
 using std::unordered_map;
+using std::vector;
 
 // value
 
@@ -249,42 +250,29 @@ const shared_ptr<value_nil>& value_nil::get() {
 // helper functions
 
 ostream& operator<<(ostream& os, value_t t) {
-    switch (t) {
-        case value_t::number:
-            os << "number";
-            break;
-        case value_t::symbol:
-            os << "symbol";
-            break;
-        case value_t::string:
-            os << "string";
-            break;
-        case value_t::format:
-            os << "format";
-            break;
-        case value_t::error:
-            os << "error";
-            break;
-        case value_t::info:
-            os << "info";
-            break;
-        case value_t::bool_:
-            os << "bool";
-            break;
-        case value_t::nil:
-            os << "nil";
-            break;
-        case value_t::pair:
-            os << "pair";
-            break;
-        case value_t::machine_op:
-            os << "machine_op";
-            break;
-        case value_t::instruction:
-            os << "instruction";
-            break;
-        default:
-            os << "unknown";
+    static unordered_map<value_t, string> value_t_names = {
+        {value_t::number, "number"},
+        {value_t::symbol, "symbol"},
+        {value_t::string, "string"},
+        {value_t::format, "format"},
+        {value_t::error, "error"},
+        {value_t::info, "info"},
+        {value_t::bool_, "bool"},
+        {value_t::nil, "nil"},
+        {value_t::pair, "pair"},
+        {value_t::machine_op, "machine op"},
+        {value_t::instruction, "instruction"},
+        {value_t::environment, "environment"},
+        {value_t::primitive_op, "primitive op"},
+        {value_t::compound_op, "compound op"},
+        {value_t::compiled_op, "compiled op"},
+    };
+
+    auto iter = value_t_names.find(t);
+    if (iter != value_t_names.end()) {
+        os << iter->second;
+    } else {
+        os << "unknown";
     }
 
     return os;

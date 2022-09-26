@@ -26,6 +26,10 @@ enum class value_t {
     pair,
     machine_op,
     instruction,
+    environment,
+    primitive_op,
+    compound_op,
+    compiled_op,
 };
 
 using std::enable_if;
@@ -403,6 +407,11 @@ inline const shared_ptr<value_bool>& make_bool(bool truth) {
 inline const shared_ptr<value_nil>& make_nil() {
     // from the singleton
     return value_nil::get();
+}
+
+inline shared_ptr<value> make_value(const shared_ptr<value>& val) {
+    // from const lvalue reference: copy
+    return val;
 }
 
 inline shared_ptr<value>& make_value(shared_ptr<value>& val) {
