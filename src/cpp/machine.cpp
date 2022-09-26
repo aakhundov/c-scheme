@@ -498,11 +498,11 @@ value_pair* machine::_append_code(const vector<shared_ptr<code>>& code) {
 
 machine::~machine() {
     // cleanup registers, labels, etc. before implicit destruction
-    for (auto p = _registers->begin(); p != _registers->end(); ++p) p.ptr(nullptr);
-    for (auto p = _labels->begin(); p != _labels->end(); ++p) p.ptr(nullptr);
-    for (auto p = _constants->begin(); p != _constants->end(); ++p) p.ptr(nullptr);
-    for (auto p = _ops->begin(); p != _ops->end(); ++p) p.ptr(nullptr);
-    for (auto p = _code_head->begin(); p != _code_head->end(); ++p) p.ptr(nullptr);
+    for (auto p = _registers; p != nil; p = to_sptr<value_pair>(p->cdr())) p->car(nil);
+    for (auto p = _labels; p != nil; p = to_sptr<value_pair>(p->cdr())) p->car(nil);
+    for (auto p = _constants; p != nil; p = to_sptr<value_pair>(p->cdr())) p->car(nil);
+    for (auto p = _ops; p != nil; p = to_sptr<value_pair>(p->cdr())) p->car(nil);
+    for (auto p = _code_head; p != nil; p = to_sptr<value_pair>(p->cdr())) p->car(nil);
 
     _stack.clear();
 }

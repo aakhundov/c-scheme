@@ -335,13 +335,6 @@ void test_pair() {
         number->number(number->number() * number->number());
     }
     ASSERT_ITERATOR(val, "1, 4, 9, 16, 25");
-    for (auto p = val.begin(); p != val.end(); ++p) {
-        // replace the value in the shared_ptr with iterator's ptr()
-        auto old_number = to_sptr<value_number>(p.ptr());
-        auto new_number = make_number(2 * old_number->number());
-        p.ptr(new_number);
-    }
-    ASSERT_ITERATOR(val, "2, 8, 18, 32, 50");
 
     // cycle
     shared_ptr<value_pair> v1, v2, v3, v4;

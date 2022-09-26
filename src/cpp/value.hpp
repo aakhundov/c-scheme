@@ -235,15 +235,6 @@ class value_pair : public value {
             return a._ptr != b._ptr || a._at_cdr != b._at_cdr;
         };
 
-        const shared_ptr<value>& ptr() const {
-            return _at_cdr ? _ptr->_cdr : _ptr->_car;
-        }
-
-        void ptr(const shared_ptr<value>& p) {
-            auto ptr = const_cast<value_pair*>(_ptr);  // a hack
-            (_at_cdr ? ptr->_cdr : ptr->_car) = p;
-        }
-
        private:
         void _advance() {
             // move the iterator one step forward.

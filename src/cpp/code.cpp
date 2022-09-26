@@ -413,15 +413,15 @@ vector<shared_ptr<code>> translate_to_code(const shared_ptr<value>& source) {
         if (source->type() == value_t::pair) {
             // source is a list
             auto lines = to_ptr<value_pair>(source);
-            for (auto p = lines->begin(); p != lines->end(); ++p) {
+            for (const auto& line : *lines) {
                 // there is another statement
-                if (p->type() == value_t::symbol) {
+                if (line.type() == value_t::symbol) {
                     // the statement is a symbol
-                    auto label = to_ptr<const value_symbol>(p.ptr());
+                    auto label = reinterpret_cast<const value_symbol*>(&line);
                     result.push_back(make_shared<code_label>(label));
-                } else if (p->type() == value_t::pair) {
+                } else if (line.type() == value_t::pair) {
                     // the statement is a list
-                    auto statement = to_ptr<const value_pair>(p.ptr());
+                    auto statement = reinterpret_cast<const value_pair*>(&line);
                     if (statement->car()->type() == value_t::symbol) {
                         // the statement header is a symbol
                         string header = to_ptr<value_symbol>(statement->car())->symbol();
@@ -454,7 +454,7 @@ vector<shared_ptr<code>> translate_to_code(const shared_ptr<value>& source) {
                 } else {
                     throw code_error(
                         "statement must be a symbol or a list: %s",
-                        p->str().c_str());
+                        line.str().c_str());
                 }
             }
         } else {
