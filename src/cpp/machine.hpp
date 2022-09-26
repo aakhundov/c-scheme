@@ -179,7 +179,7 @@ class machine {
         os << '\n';
     }
 
-    value_pair* _get_constant(shared_ptr<value> val);
+    value_pair* _get_constant(const shared_ptr<value>& val);
     value_pair* _get_register(const string& name);
     value_pair* _get_label(const string& name);
     value_machine_op* _get_op(const string& name);

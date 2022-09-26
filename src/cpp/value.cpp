@@ -105,26 +105,6 @@ ostream& value_bool::write(ostream& os) const {
 
 // value_pair
 
-void value_pair::iterator::_advance() {
-    if (_ptr->cdr()->type() == value_t::pair) {
-        _ptr = reinterpret_cast<value_pair*>(_ptr->cdr().get());  // cdr is a pair
-    } else {
-        if (_ptr->cdr() == nil) {
-            // the list terminates: stop here
-            _ptr = nullptr;
-        } else if (!_at_cdr) {
-            // the terminal cdr is not a pair: return it next
-            _at_cdr = true;
-        } else {
-            // already returned the cdr: stop here
-            _ptr = nullptr;
-            // reset _at_cdr to false for equivalence
-            // with end() iterator with false by default
-            _at_cdr = false;
-        }
-    }
-}
-
 ostream& value_pair::write(ostream& os) const {
     if (car()->type() == value_t::symbol &&                  // first item is a symbol
         to_ptr<value_symbol>(car())->symbol() == "quote" &&  // first item is a quote symbol

@@ -196,41 +196,42 @@ const shared_ptr<value_bool> false_ = value_bool::get(false);
 
 class value_pair : public value {
    public:
-    struct iterator {
+    template <typename T>
+    struct value_iterator {
        public:
         // iterator traits
         using iterator_category = forward_iterator_tag;
         using difference_type = ptrdiff_t;
-        using value_type = value;
-        using pointer = shared_ptr<value>;
-        using reference = value&;
+        using value_type = T;
+        using pointer = T*;
+        using reference = T&;
 
-        iterator(value_pair* ptr) : _ptr(ptr) {}
+        value_iterator(const value_pair* ptr) : _ptr(ptr) {}
 
         reference operator*() const {
             return *(_at_cdr ? _ptr->_cdr : _ptr->_car);
         }
 
         pointer operator->() {
-            return _at_cdr ? _ptr->_cdr : _ptr->_car;
+            return (_at_cdr ? _ptr->_cdr : _ptr->_car).get();
         }
 
-        iterator& operator++() {
+        value_iterator<T>& operator++() {
             _advance();
             return *this;
         }
 
-        iterator operator++(int) {
-            iterator tmp = *this;
+        value_iterator<T> operator++(int) {
+            value_iterator<T> tmp = *this;
             _advance();
             return tmp;
         }
 
-        friend bool operator==(const iterator& a, const iterator& b) {
+        friend bool operator==(const value_iterator<T>& a, const value_iterator<T>& b) {
             return a._ptr == b._ptr && a._at_cdr == b._at_cdr;
         };
 
-        friend bool operator!=(const iterator& a, const iterator& b) {
+        friend bool operator!=(const value_iterator<T>& a, const value_iterator<T>& b) {
             return a._ptr != b._ptr || a._at_cdr != b._at_cdr;
         };
 
@@ -239,18 +240,40 @@ class value_pair : public value {
         }
 
         void ptr(const shared_ptr<value>& p) {
-            (_at_cdr ? _ptr->_cdr : _ptr->_car) = p;
+            auto ptr = const_cast<value_pair*>(_ptr);  // a hack
+            (_at_cdr ? ptr->_cdr : ptr->_car) = p;
         }
 
        private:
-        // move the iterator
-        // if the terminal cdr is not a pair,
-        // return it before terminating
-        void _advance();
+        void _advance() {
+            // move the iterator one step forward.
+            // if the terminal cdr is not a pair,
+            // return it before terminating
+            value_t cdr_type = _ptr->cdr()->type();
+            if (cdr_type == value_t::pair) {
+                // cdr is a pair
+                _ptr = reinterpret_cast<value_pair*>(_ptr->cdr().get());
+            } else if (cdr_type == value_t::nil) {
+                // the list terminates: stop here
+                _ptr = nullptr;
+            } else if (!_at_cdr) {
+                // the terminal cdr is not a pair: return it next
+                _at_cdr = true;
+            } else {
+                // already returned the cdr: stop here
+                _ptr = nullptr;
+                // reset _at_cdr to false for equivalence
+                // with end() iterator with false by default
+                _at_cdr = false;
+            }
+        }
 
-        value_pair* _ptr;
+        const value_pair* _ptr;
         bool _at_cdr{false};
     };
+
+    using iterator = value_iterator<value>;
+    using const_iterator = value_iterator<const value>;
 
     // car and cdr shared ptrs are passed by copying
     value_pair(
@@ -263,12 +286,20 @@ class value_pair : public value {
         const shared_ptr<value>& cdr)
         : value_pair(value_t::pair, car, cdr) {}
 
-    virtual iterator begin() {
+    virtual iterator begin() const {
         return iterator(this);
     }
 
-    iterator end() {
+    iterator end() const {
         return iterator(nullptr);
+    }
+
+    virtual const_iterator cbegin() const {
+        return const_iterator(this);
+    }
+
+    const_iterator cend() const {
+        return const_iterator(nullptr);
     }
 
     // getters
@@ -317,8 +348,12 @@ class value_nil : public value_pair {
     value_nil(value_nil&&) = delete;
     void operator=(value_nil&&) = delete;
 
-    iterator begin() override {
+    iterator begin() const override {
         return iterator(nullptr);
+    }
+
+    const_iterator cbegin() const override {
+        return const_iterator(nullptr);
     }
 
     ostream& write(ostream& os) const override {

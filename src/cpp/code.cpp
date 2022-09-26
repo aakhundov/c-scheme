@@ -112,7 +112,7 @@ code_assign_call::code_assign_call(const value_pair* statement) : code(code_t::a
             if (op_token.type() == token_t::op) {
                 // the third item is an op token
                 _op = op_token.name();
-                while (rest->type() != value_t::nil) {
+                while (rest != nilptr) {
                     // there is another arg
                     token arg_token{rest->car()};
                     if (arg_token.type() != token_t::op) {
@@ -209,7 +209,7 @@ code_perform::code_perform(const value_pair* statement) : code(code_t::perform) 
         if (op_token.type() == token_t::op) {
             // the second item is an op token
             _op = op_token.name();
-            while (rest->type() != value_t::nil) {
+            while (rest != nilptr) {
                 // there is another arg
                 token arg_token{rest->car()};
                 if (arg_token.type() != token_t::op) {
@@ -266,7 +266,7 @@ code_branch::code_branch(const value_pair* statement) : code(code_t::branch) {
             if (op_token.type() == token_t::op) {
                 // the third item is an op token
                 _op = op_token.name();
-                while (rest->type() != value_t::nil) {
+                while (rest != nilptr) {
                     // there is another arg
                     token arg_token{rest->car()};
                     if (arg_token.type() != token_t::op) {

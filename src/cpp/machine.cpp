@@ -346,9 +346,9 @@ class machine::instruction_restore : public value_instruction {
 
 // machine
 
-value_pair* machine::_get_constant(shared_ptr<value> val) {
+value_pair* machine::_get_constant(const shared_ptr<value>& val) {
     // create and return a new constant
-    _constants = make_vpair(move(val), _constants);
+    _constants = make_vpair(val, _constants);
     return _constants.get();
 }
 
