@@ -9,6 +9,7 @@
 #include <variant>
 #include <vector>
 
+#include "error.hpp"
 #include "value.hpp"
 
 using std::get;
@@ -19,6 +20,13 @@ using std::shared_ptr;
 using std::string;
 using std::variant;
 using std::vector;
+
+// exceptions
+
+class code_error : public scheme_error {
+   public:
+    using scheme_error::scheme_error;
+};
 
 // token
 
@@ -266,12 +274,5 @@ template <typename T,
 inline shared_ptr<T> to_sptr(const shared_ptr<code>& v) {
     return reinterpret_pointer_cast<T>(v);
 }
-
-// exceptions
-
-class code_error : public format_exception {
-   public:
-    using format_exception::format_exception;
-};
 
 #endif  // CODE_HPP_

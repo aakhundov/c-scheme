@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 
-#include "exception.hpp"
 #include "value.hpp"
 
 using std::make_shared;

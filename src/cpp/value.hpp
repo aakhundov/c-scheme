@@ -10,7 +10,14 @@
 #include <string>
 
 #include "constants.hpp"
-#include "exception.hpp"
+#include "error.hpp"
+
+// exceptions
+
+class cycle_error : public scheme_error {
+   public:
+    using scheme_error::scheme_error;
+};
 
 // value hierarchy
 
@@ -134,13 +141,11 @@ class value_format : public value_string {
     template <typename... Args>
     value_format(value_t type, const char* format, Args&&... args) : value_string(type) {
         static char buffer[65536];
-
         if constexpr (sizeof...(args) > 0) {
             snprintf(buffer, sizeof(buffer), format, forward<Args>(args)...);
         } else {
             snprintf(buffer, sizeof(buffer), "%s", format);
         }
-
         _string = buffer;
     }
 
@@ -512,16 +517,5 @@ template <typename T,
 inline T* to_ptr(const shared_ptr<value>& v) {
     return reinterpret_cast<T*>(v.get());
 }
-
-// exceptions
-
-class cycle_error : public str_exception {
-   public:
-    cycle_error(const value_pair* from)
-        : str_exception(_make_message(from)) {}
-
-   private:
-    string _make_message(const value_pair* from);
-};
 
 #endif  // VALUE_HPP_

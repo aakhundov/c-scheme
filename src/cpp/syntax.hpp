@@ -1,7 +1,15 @@
 #ifndef SYNTAX_HPP_
 #define SYNTAX_HPP_
 
+#include "error.hpp"
 #include "value.hpp"
+
+// exceptions
+
+class syntax_error : public scheme_error {
+   public:
+    using scheme_error::scheme_error;
+};
 
 // helper functions
 
@@ -90,12 +98,5 @@ shared_ptr<value> make_empty_arglist();
 shared_ptr<value> adjoin_arg(
     const shared_ptr<value>& arg,
     const shared_ptr<value>& arg_list);
-
-// exceptions
-
-class syntax_error : public format_exception {
-   public:
-    using format_exception::format_exception;
-};
 
 #endif  // SYNTAX_HPP_

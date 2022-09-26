@@ -207,7 +207,7 @@ void value_pair::_throw_on_cycle_from(const shared_ptr<value>& other) {
                 const value_pair* pair = reinterpret_cast<value_pair*>(running.get());
 
                 if (pair == this) {
-                    throw cycle_error(this);
+                    throw cycle_error("cycle from %s (%p)", this->str().c_str(), this);
                 }
 
                 _throw_on_cycle_from(pair->car());
@@ -257,12 +257,4 @@ ostream& operator<<(ostream& os, value_t t) {
     }
 
     return os;
-}
-
-// exceptions
-
-string cycle_error::_make_message(const value_pair* from) {
-    ostringstream s;
-    s << "cycle from " << *from << " (" << from << ")";
-    return s.str();
 }

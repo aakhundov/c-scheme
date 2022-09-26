@@ -12,6 +12,7 @@
 
 #include "code.hpp"
 #include "constants.hpp"
+#include "error.hpp"
 #include "value.hpp"
 
 using std::pair;
@@ -24,9 +25,9 @@ using std::vector;
 
 // exceptions
 
-class machine_error : public format_exception {
+class machine_error : public scheme_error {
    public:
-    using format_exception::format_exception;
+    using scheme_error::scheme_error;
 };
 
 // machine
