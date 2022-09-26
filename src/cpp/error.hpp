@@ -2,7 +2,7 @@
 #define ERROR_HPP_
 
 #include <cstdio>
-#include <exception>
+#include <stdexcept>
 #include <string>
 
 using std::forward;
