@@ -229,7 +229,8 @@ const shared_ptr<value_nil>& value_nil::get() {
 
 // helper functions
 
-ostream& operator<<(ostream& os, value_t t) {
+const char* get_type_name(value_t t) {
+    static string unknown_name = "unknown";
     static unordered_map<value_t, string> value_t_names = {
         {value_t::number, "number"},
         {value_t::symbol, "symbol"},
@@ -250,10 +251,8 @@ ostream& operator<<(ostream& os, value_t t) {
 
     auto iter = value_t_names.find(t);
     if (iter != value_t_names.end()) {
-        os << iter->second;
+        return iter->second.c_str();
     } else {
-        os << "unknown";
+        return unknown_name.c_str();
     }
-
-    return os;
 }

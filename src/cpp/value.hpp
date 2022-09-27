@@ -91,6 +91,8 @@ class value_number : public value {
     double number() const { return _number; }
     void number(double number) { _number = number; }
 
+    operator double() const { return _number; }
+
     ostream& write(ostream& os) const override;
     bool equals(const value& other) const override;
 
@@ -112,6 +114,8 @@ class value_symbol : public value {
     value_symbol(value_symbol&&) = delete;
     void operator=(value_symbol&&) = delete;
 
+    operator string() const { return _symbol; }
+
     ostream& write(ostream& os) const override;
 
    private:
@@ -127,6 +131,8 @@ class value_string : public value {
 
     const string& string_() const { return _string; }
     void string_(const string& string_) { _string = string_; }
+
+    operator string() const { return _string; }
 
     ostream& write(ostream& os) const override;
     bool equals(const value& other) const override;
@@ -511,7 +517,11 @@ inline bool operator!=(const value& v1, const value& v2) {
     return (&v1 != &v2 && !v1.equals(v2));
 }
 
-ostream& operator<<(ostream& os, value_t t);
+const char* get_type_name(value_t t);
+
+inline ostream& operator<<(ostream& os, value_t t) {
+    return (os << get_type_name(t));
+}
 
 template <typename T,
           typename enable_if<

@@ -23,6 +23,10 @@ using std::string;
 using std::unordered_map;
 using std::vector;
 
+// types
+
+using machine_op = shared_ptr<value> (*)(const vector<value_pair*>&);
+
 // exceptions
 
 class machine_error : public scheme_error {
@@ -33,8 +37,6 @@ class machine_error : public scheme_error {
 };
 
 // machine
-
-using machine_op = shared_ptr<value> (*)(const vector<value_pair*>&);
 
 enum class machine_trace {
     off,
