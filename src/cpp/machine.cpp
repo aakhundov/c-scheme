@@ -51,11 +51,11 @@ class machine::instruction_assign_call : public value_instruction {
 
         if (result->type() == value_t::error) {
             // halt the program
-            _machine._output->car(result);
+            _machine._output->car(result, false);
             _machine._move_pc_to_end();
         } else {
             // assign the result
-            _reg->car(result);
+            _reg->car(result, false);
             _machine._advance_pc();
         }
     }
@@ -110,7 +110,7 @@ class machine::instruction_assign_copy : public value_instruction {
 
     void execute() const override {
         // assign from source
-        _reg->car(_src->car());
+        _reg->car(_src->car(), false);
         _machine._advance_pc();
     }
 
@@ -148,7 +148,7 @@ class machine::instruction_perform : public value_instruction {
 
         if (result->type() == value_t::error) {
             // halt the program
-            _machine._output->car(result);
+            _machine._output->car(result, false);
             _machine._move_pc_to_end();
         } else {
             // just move the pc
@@ -199,7 +199,7 @@ class machine::instruction_branch : public value_instruction {
 
         if (result->type() == value_t::error) {
             // halt the program
-            _machine._output->car(result);
+            _machine._output->car(result, false);
             _machine._move_pc_to_end();
         } else if (*result) {
             // jump to the label
@@ -318,7 +318,7 @@ class machine::instruction_restore : public value_instruction {
 
     void execute() const override {
         // restore the register's content
-        _reg->car(_machine._pop_from_stack());
+        _reg->car(_machine._pop_from_stack(), false);
         _machine._advance_pc();
     }
 
