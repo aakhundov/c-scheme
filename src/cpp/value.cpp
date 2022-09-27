@@ -33,7 +33,7 @@ ostream& value_number::write(ostream& os) const {
 
 bool value_number::equals(const value& other) const {
     if (other.type() == value_t::number) {
-        return (reinterpret_cast<const value_number*>(&other)->_number == _number);
+        return (reinterpret_cast<const value_number&>(other)._number == _number);
     } else {
         return false;
     }
@@ -69,7 +69,7 @@ ostream& value_string::write(ostream& os) const {
 
 bool value_string::equals(const value& other) const {
     if (other.type() == this->type()) {
-        return (reinterpret_cast<const value_string*>(&other)->_string == _string);
+        return (reinterpret_cast<const value_string&>(other)._string == _string);
     } else {
         return false;
     }

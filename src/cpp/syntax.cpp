@@ -293,7 +293,7 @@ void check_lambda(const shared_ptr<value>& exp) {
                     "lambda: some parameters are not symbols in %s",
                     exp->str().c_str());
             }
-            auto name = reinterpret_cast<const value_symbol*>(&param)->symbol();
+            auto name = reinterpret_cast<const value_symbol&>(param).symbol();
             if (seen.count(name) > 0) {
                 throw syntax_error(
                     "lambda: duplicate parameter names in %s",
@@ -368,10 +368,10 @@ shared_ptr<value> transform_let(const shared_ptr<value>& let) {
 
     auto let_list = to_ptr<value_pair>(let);
     for (const auto& variable : *let_list->pcdr()->pcar()) {
-        auto param_and_arg = reinterpret_cast<const value_pair*>(&variable);
+        auto param_and_arg = reinterpret_cast<const value_pair&>(variable);
 
         // append to params
-        auto next_param = make_vpair(param_and_arg->car(), nil);
+        auto next_param = make_vpair(param_and_arg.car(), nil);
         if (!params_tail) {
             params = next_param;
         } else {
@@ -380,7 +380,7 @@ shared_ptr<value> transform_let(const shared_ptr<value>& let) {
         params_tail = next_param;
 
         // append to args
-        auto next_arg = make_vpair(param_and_arg->pcdr()->car(), nil);
+        auto next_arg = make_vpair(param_and_arg.pcdr()->car(), nil);
         if (!args_tail) {
             args = next_arg;
         } else {

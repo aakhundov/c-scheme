@@ -13,7 +13,7 @@
 #include "code.hpp"
 #include "constants.hpp"
 #include "machine.hpp"
-#include "parse.hpp"
+#include "parsing.hpp"
 #include "value.hpp"
 
 using namespace std::literals;
@@ -333,8 +333,8 @@ void test_pair() {
     ASSERT_ITERATOR(val, "1, 2, 3, 4, 5");
     for (value& item : val) {
         // mutate the value in-place with a setter
-        auto number = reinterpret_cast<value_number*>(&item);
-        number->number(number->number() * number->number());
+        auto number = reinterpret_cast<value_number&>(item);
+        number.number(number.number() * number.number());
     }
     ASSERT_ITERATOR(val, "1, 4, 9, 16, 25");
 
