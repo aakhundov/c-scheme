@@ -30,6 +30,9 @@ void handle_repl_input(const string& input, string& history) {
         history = history.substr(1, history.length() - 2);  // drop outermost brackets
     } catch (exception& e) {
         auto error = make_error(e.what());
+        if (auto se = dynamic_cast<scheme_error*>(&e)) {
+            error->topic(se->topic());
+        }
         cout << *error << '\n';  // print the error
         history = input;         // history as is
     }

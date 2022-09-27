@@ -8,7 +8,9 @@
 
 class syntax_error : public scheme_error {
    public:
-    using scheme_error::scheme_error;
+    template <typename... Args>
+    syntax_error(const char* format, Args&&... args)
+        : scheme_error("syntax error", format, forward<Args>(args)...) {}
 };
 
 // helper functions

@@ -214,10 +214,12 @@ void test_value() {
 
     // error
     shared_ptr<value_error> error1, error2;
-    ASSERT_TO_STR(*(error1 = make_error("hello '%g'", 3.14)), BOLD(RED("error:") " " WHITE("hello '3.14'")));
+    ASSERT_TO_STR(*(error1 = make_error("hello '%g'", 3.14)),
+                  BOLD(RED("error:")) " " BOLD(WHITE("hello '3.14'")));
     ASSERT_TRUE(error1->type() == value_t::error);
     ASSERT_EQUAL(error1->string_(), "hello '3.14'");
-    ASSERT_TO_STR(*(error2 = make_error("hello '%g'", 3.14)), BOLD(RED("error:") " " WHITE("hello '3.14'")));
+    ASSERT_TO_STR(*(error2 = make_error("hello '%g'", 3.14)),
+                  BOLD(RED("error:")) " " BOLD(WHITE("hello '3.14'")));
     ASSERT_TRUE(*error1 == *error2);
     ASSERT_FALSE(error1 == error2);
 
@@ -572,12 +574,18 @@ void test_to_str() {
     ASSERT_TO_STR(*make_value("!@#$%"s), "\"!@#$%\"");
 
     // error
-    ASSERT_TO_STR(*make_error(""), BOLD(RED("error:") " " WHITE("")));
-    ASSERT_TO_STR(*make_error("message"), BOLD(RED("error:") " " WHITE("message")));
-    ASSERT_TO_STR(*make_error("hello world"), BOLD(RED("error:") " " WHITE("hello world")));
-    ASSERT_TO_STR(*make_error("hello '%s'", "world"), BOLD(RED("error:") " " WHITE("hello 'world'")));
-    ASSERT_TO_STR(*make_error("hello '%g'", 3.14), BOLD(RED("error:") " " WHITE("hello '3.14'")));
-    ASSERT_TO_STR(*make_error("hi %d, %d, %d bye", 1, 2, 3), BOLD(RED("error:") " " WHITE("hi 1, 2, 3 bye")));
+    ASSERT_TO_STR(*make_error(""),
+                  BOLD(RED("error:")) " " BOLD(WHITE("")));
+    ASSERT_TO_STR(*make_error("message"),
+                  BOLD(RED("error:")) " " BOLD(WHITE("message")));
+    ASSERT_TO_STR(*make_error("hello world"),
+                  BOLD(RED("error:")) " " BOLD(WHITE("hello world")));
+    ASSERT_TO_STR(*make_error("hello '%s'", "world"),
+                  BOLD(RED("error:")) " " BOLD(WHITE("hello 'world'")));
+    ASSERT_TO_STR(*make_error("hello '%g'", 3.14),
+                  BOLD(RED("error:")) " " BOLD(WHITE("hello '3.14'")));
+    ASSERT_TO_STR(*make_error("hi %d, %d, %d bye", 1, 2, 3),
+                  BOLD(RED("error:")) " " BOLD(WHITE("hi 1, 2, 3 bye")));
 
     // info
     ASSERT_TO_STR(*make_info(""), GREEN(""));

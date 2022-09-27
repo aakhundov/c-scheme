@@ -79,7 +79,7 @@ bool value_string::equals(const value& other) const {
 
 ostream& value_error::write(ostream& os) const {
     // the red/white and bold error text
-    return (os << BOLD(RED("error:") " " WHITE(<< _string <<)));
+    return (os << BOLD(RED(<< _topic << ":")) " " BOLD(WHITE(<< _string <<)));
 }
 
 // value_info

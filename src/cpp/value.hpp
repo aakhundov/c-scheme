@@ -16,7 +16,9 @@
 
 class cycle_error : public scheme_error {
    public:
-    using scheme_error::scheme_error;
+    template <typename... Args>
+    cycle_error(const char* format, Args&&... args)
+        : scheme_error("cycle error", format, forward<Args>(args)...) {}
 };
 
 // value hierarchy
@@ -161,6 +163,11 @@ class value_error : public value_format {
         : value_format(value_t::error, format, forward<Args>(args)...) {}
 
     ostream& write(ostream& os) const override;
+
+    void topic(const string& topic) { _topic = topic; }
+
+   private:
+    string _topic{"error"};
 };
 
 class value_info : public value_format {

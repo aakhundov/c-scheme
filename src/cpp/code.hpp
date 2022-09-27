@@ -25,7 +25,9 @@ using std::vector;
 
 class code_error : public scheme_error {
    public:
-    using scheme_error::scheme_error;
+    template <typename... Args>
+    code_error(const char* format, Args&&... args)
+        : scheme_error("code error", format, forward<Args>(args)...) {}
 };
 
 // token

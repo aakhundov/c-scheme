@@ -12,8 +12,10 @@ using std::string;
 class scheme_error : public runtime_error {
    public:
     template <typename... Args>
-    scheme_error(const char* format, Args&&... args)
-        : runtime_error(_format(format, forward<Args>(args)...)) {}
+    scheme_error(string topic, const char* format, Args&&... args)
+        : runtime_error(_format(format, forward<Args>(args)...)), _topic(topic) {}
+
+    const string& topic() const { return _topic; }
 
    private:
     template <typename... Args>
@@ -26,6 +28,8 @@ class scheme_error : public runtime_error {
         }
         return string(buffer);
     }
+
+    string _topic{"scheme error"};
 };
 
 #endif  // ERROR_HPP_
