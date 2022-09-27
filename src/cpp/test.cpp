@@ -942,15 +942,19 @@ void test_machine() {
 }
 
 int main() {
-    RUN_TEST_FUNCTION(test_value);
-    RUN_TEST_FUNCTION(test_pair);
-    RUN_TEST_FUNCTION(test_equal);
-    RUN_TEST_FUNCTION(test_to_str);
-    RUN_TEST_FUNCTION(test_parse);
-    RUN_TEST_FUNCTION(test_code);
-    RUN_TEST_FUNCTION(test_machine);
+    try {
+        RUN_TEST_FUNCTION(test_value);
+        RUN_TEST_FUNCTION(test_pair);
+        RUN_TEST_FUNCTION(test_equal);
+        RUN_TEST_FUNCTION(test_to_str);
+        RUN_TEST_FUNCTION(test_parse);
+        RUN_TEST_FUNCTION(test_code);
+        RUN_TEST_FUNCTION(test_machine);
 
-    cout << "all tests have been passed!\n";
-
-    return EXIT_SUCCESS;
+        cout << "all tests have passed!\n";
+        return EXIT_SUCCESS;
+    } catch (test_error&) {
+        cout << "a test has failed.\n";
+        return EXIT_FAILURE;
+    }
 }
