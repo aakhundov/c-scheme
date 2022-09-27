@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -23,6 +24,7 @@ using std::cout;
 using std::function;
 using std::ostringstream;
 using std::pair;
+using std::runtime_error;
 using std::setfill;
 using std::setw;
 using std::shared_ptr;
@@ -30,6 +32,11 @@ using std::string;
 using std::tuple;
 using std::filesystem::directory_iterator;
 using std::filesystem::path;
+
+class test_error : runtime_error {
+   public:
+    test_error() : runtime_error("a test has failed") {}
+};
 
 static size_t test_counter = 0;
 
@@ -54,7 +61,7 @@ void assert_true(bool result, string expr_str) {
     if (!result) {
         // the result is false
         cerr << RED("expected true") << '\n';
-        exit(EXIT_FAILURE);
+        throw test_error();
     }
 }
 
@@ -64,7 +71,7 @@ void assert_false(bool result, string expr_str) {
     if (result) {
         // the result is true
         cerr << RED("expected false") << '\n';
-        exit(EXIT_FAILURE);
+        throw test_error();
     }
 }
 
@@ -79,7 +86,7 @@ void assert_equal(T1 expr, T2 expected, string expr_str, string expected_str) {
     if ((expr) != (expected)) {
         // the expr is not equal to the expected
         cerr << RED("expected " + expected_str +) << '\n';
-        exit(EXIT_FAILURE);
+        throw test_error();
     }
 }
 
@@ -91,7 +98,7 @@ void assert_to_str(const value& v, string expected, string v_str) {
     if (str_result != expected) {
         // string version of v is not equal to the expected
         cerr << RED("expected \"" + expected + "\"") << '\n';
-        exit(EXIT_FAILURE);
+        throw test_error();
     }
 }
 
@@ -110,7 +117,7 @@ void assert_iterator(value_pair& v, string str_expected, string v_str) {
     if (str_result != str_expected) {
         // ", "-joined items of v don't equal the str_expected
         cerr << RED("expected \"" + str_expected + "\"") << '\n';
-        exit(EXIT_FAILURE);
+        throw test_error();
     }
 }
 
@@ -122,7 +129,7 @@ void assert_parse(string text, const shared_ptr<value_pair>& expected) {
     if (*values != *expected) {
         // the parsed values don't equal to the expected
         cerr << RED("expected \"" + expected->str() + "\"\n");
-        exit(EXIT_FAILURE);
+        throw test_error();
     }
 }
 
@@ -132,7 +139,7 @@ void assert_exception_thrown(string code, string type, string what, string subst
     if (what.find(substring) == string::npos) {
         // the expected exception was thrown, but the substring not in e.what()
         cerr << RED("expected " + type + " with \"" + substring + "\"") << '\n';
-        exit(EXIT_FAILURE);
+        throw test_error();
     }
 }
 
@@ -141,7 +148,7 @@ void assert_exception_not_thrown(string code, string type, string substring) {
 
     // the expected expection was not thrown
     cerr << RED("expected " + type + " with \"" + substring + "\"") << '\n';
-    exit(EXIT_FAILURE);
+    throw test_error();
 }
 
 #define RUN_TEST_FUNCTION(fn) \
@@ -811,7 +818,7 @@ void test_code() {
 
             if (*translated_line != *original_line) {
                 cerr << RED("" + translated_line->str() + " != " + original_line->str() + "") << '\n';
-                exit(EXIT_FAILURE);
+                throw test_error();
             }
 
             running = running->pcdr();
@@ -928,7 +935,7 @@ void test_machine() {
 
             if (*result != *expected) {
                 cerr << RED("expected \"" + expected->str() + "\"") << '\n';
-                exit(EXIT_FAILURE);
+                throw test_error();
             }
         }
     }
