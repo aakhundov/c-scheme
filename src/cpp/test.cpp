@@ -333,7 +333,7 @@ void test_pair() {
     ASSERT_ITERATOR(val, "1, 2, 3, 4, 5");
     for (value& item : val) {
         // mutate the value in-place with a setter
-        auto number = reinterpret_cast<value_number&>(item);
+        auto& number = reinterpret_cast<value_number&>(item);
         number.number(number.number() * number.number());
     }
     ASSERT_ITERATOR(val, "1, 4, 9, 16, 25");

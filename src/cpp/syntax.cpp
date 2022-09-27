@@ -368,7 +368,7 @@ shared_ptr<value> transform_let(const shared_ptr<value>& let) {
 
     auto let_list = to_ptr<value_pair>(let);
     for (const auto& variable : *let_list->pcdr()->pcar()) {
-        auto param_and_arg = reinterpret_cast<const value_pair&>(variable);
+        auto& param_and_arg = reinterpret_cast<const value_pair&>(variable);
 
         // append to params
         auto next_param = make_vpair(param_and_arg.car(), nil);
