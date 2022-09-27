@@ -7,6 +7,7 @@
 
 using std::forward;
 using std::runtime_error;
+using std::snprintf;
 using std::string;
 
 class scheme_error : public runtime_error {

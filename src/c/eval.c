@@ -438,6 +438,7 @@ static value* op_define_variable(machine* m, const value* args) {
 
         if (record == NULL) {
             env_add_value(env, name->symbol, val, m->pool);
+
             return pool_new_info(m->pool, "%s is defined", name->symbol);
         } else {
             env_update_value(record, val);

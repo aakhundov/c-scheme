@@ -112,7 +112,7 @@ class value_symbol : public value {
     value_symbol(const value_symbol&) = delete;
     void operator=(value_symbol const&) = delete;
     value_symbol(value_symbol&&) = delete;
-    void operator=(value_symbol&&) = delete;
+    value_symbol& operator=(value_symbol&&) = delete;
 
     operator string() const { return _symbol; }
 
@@ -197,7 +197,7 @@ class value_bool : public value {
     value_bool(const value_bool&) = delete;
     void operator=(value_bool const&) = delete;
     value_bool(value_bool&&) = delete;
-    void operator=(value_bool&&) = delete;
+    value_bool& operator=(value_bool&&) = delete;
 
     ostream& write(ostream& os) const override;
 
@@ -359,7 +359,7 @@ class value_nil : public value_pair {
     value_nil(const value_nil&) = delete;
     void operator=(value_nil const&) = delete;
     value_nil(value_nil&&) = delete;
-    void operator=(value_nil&&) = delete;
+    value_nil& operator=(value_nil&&) = delete;
 
     iterator begin() const override {
         return iterator(nullptr);

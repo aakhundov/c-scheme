@@ -51,7 +51,13 @@ class machine {
 
     ~machine();
 
-    void bind_op(const string& name, machine_op op) {
+    // can't copy, can move
+    machine(const machine&) = delete;
+    void operator=(machine const&) = delete;
+    machine(machine&&) = default;
+    machine& operator=(machine&&) = default;
+
+    void bind_op(const string& name, const machine_op& op) {
         _get_op(name)->op(op);
     }
 

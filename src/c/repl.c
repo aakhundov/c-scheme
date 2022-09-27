@@ -295,7 +295,7 @@ int main(int argc, char** argv) {
                 eval_reset_env(e);
                 load_from_path(e, LIBRARY_PATH, 0);
                 load_from_path(e, TESTS_PATH, 0);
-                printf("menvironment was reset\n");
+                printf("environment was reset\n");
                 hist_add(h, input);
                 break;
             case COMMAND_LOAD:
