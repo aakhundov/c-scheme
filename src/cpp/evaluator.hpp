@@ -15,8 +15,6 @@ using std::string;
 using std::unordered_map;
 using std::filesystem::path;
 
-using namespace std::placeholders;
-
 class evaluator {
    public:
     evaluator(path path_to_code)

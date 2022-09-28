@@ -14,8 +14,6 @@
 #include "syntax.hpp"
 #include "value.hpp"
 
-using namespace std::placeholders;
-
 using std::make_shared;
 using std::shared_ptr;
 using std::snprintf;
