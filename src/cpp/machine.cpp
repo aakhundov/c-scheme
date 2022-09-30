@@ -505,12 +505,6 @@ machine::~machine() {
     for (auto p = _code_head; p != nil; p = to_sptr<value_pair>(p->cdr())) p->car(nil);
 
     _stack.clear();
-    _registers.reset();
-    _labels.reset();
-    _constants.reset();
-    _ops.reset();
-    _code_head.reset();
-    _code_tail.reset();
 }
 
 shared_ptr<value> machine::run(const vector<pair<string, shared_ptr<value>>>& inputs, const string& output_register) {

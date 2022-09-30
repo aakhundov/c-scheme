@@ -24,7 +24,7 @@ class evaluator {
     }
 
     ~evaluator() {
-        _global.reset();
+        _global->clear();
     }
 
     // can't copy, can move
@@ -55,13 +55,6 @@ class evaluator {
         value_environment() : value(value_t::environment) {}
         value_environment(shared_ptr<value_environment> base)
             : value(value_t::environment), _base(base) {}
-
-        ~value_environment() {
-            _base.reset();
-            for (auto& record : _values) {
-                record.second.reset();
-            }
-        }
 
         ostream& write(ostream& os) const override {
             if (!_base) {
@@ -107,6 +100,10 @@ class evaluator {
             return _values;
         }
 
+        void clear() {
+            _values.clear();
+        }
+
        private:
         unordered_map<string, shared_ptr<value>> _values;
         shared_ptr<value_environment> _base{nullptr};
@@ -136,12 +133,6 @@ class evaluator {
             const shared_ptr<value>& body,
             const shared_ptr<value_environment>& env)
             : value(value_t::compound_op), _params(params), _body(body), _env(env) {}
-
-        ~value_compound_op() {
-            _params.reset();
-            _body.reset();
-            _env.reset();
-        }
 
         ostream& write(ostream& os) const override {
             string body = _body->str();
