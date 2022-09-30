@@ -10,7 +10,7 @@ using std::unordered_set;
 namespace {
 
 const value_pair* to_list(const shared_ptr<value>& v) {
-    if (v->type() == value_t::pair) {
+    if (v == nil || v->type() == value_t::pair) {
         auto pair = to_ptr<value_pair>(v);
         return (pair->is_list() ? pair : nullptr);
     } else {
@@ -281,30 +281,33 @@ void check_lambda(const shared_ptr<value>& exp) {
         throw syntax_error("lambda: no parameters in %s", exp->str().c_str());
     } else if (lambda->pcdr()->cdr() == nil) {
         throw syntax_error("lambda: no body in %s", exp->str().c_str());
-    } else if (lambda->pcdr()->car()->type() == value_t::symbol) {
-        // parameters are symbol: stop here
-        return;
-    } else if (lambda->pcdr()->car()->type() == value_t::pair) {
-        // parameters are a (possibly non-nil-terminated) list
-        unordered_set<string> seen;
-        for (const auto& param : *lambda->pcdr()->pcar()) {
-            if (param.type() != value_t::symbol) {
-                throw syntax_error(
-                    "lambda: some parameters are not symbols in %s",
-                    exp->str().c_str());
-            }
-            auto name = reinterpret_cast<const value_symbol&>(param).symbol();
-            if (seen.count(name) > 0) {
-                throw syntax_error(
-                    "lambda: duplicate parameter names in %s",
-                    exp->str().c_str());
-            }
-            seen.insert(name);
-        }
     } else {
-        throw syntax_error(
-            "lambda: some parameters are not symbols in %s",
-            exp->str().c_str());
+        value_t params_type = lambda->pcdr()->car()->type();
+        if (params_type == value_t::nil || params_type == value_t::symbol) {
+            // no parameters or a symbol: stop here
+            return;
+        } else if (lambda->pcdr()->car()->type() == value_t::pair) {
+            // parameters are a (possibly non-nil-terminated) list
+            unordered_set<string> seen;
+            for (const auto& param : *lambda->pcdr()->pcar()) {
+                if (param.type() != value_t::symbol) {
+                    throw syntax_error(
+                        "lambda: some parameters are not symbols in %s",
+                        exp->str().c_str());
+                }
+                auto name = reinterpret_cast<const value_symbol&>(param).symbol();
+                if (seen.count(name) > 0) {
+                    throw syntax_error(
+                        "lambda: duplicate parameter names in %s",
+                        exp->str().c_str());
+                }
+                seen.insert(name);
+            }
+        } else {
+            throw syntax_error(
+                "lambda: some parameters are not symbols in %s",
+                exp->str().c_str());
+        }
     }
 }
 
@@ -342,8 +345,6 @@ void check_let(const shared_ptr<value>& exp) {
     auto variables = to_list(let->pcdr()->car());
     if (!variables) {
         throw syntax_error("let: non-list variables in %s", exp->str().c_str());
-    } else if (variables == nilptr) {
-        throw syntax_error("let: no variable name in %s", exp->str().c_str());
     }
     for (const auto& variable : *variables) {
         auto pair = to_list(variable);
@@ -367,6 +368,8 @@ shared_ptr<value> transform_let(const shared_ptr<value>& let) {
     shared_ptr<value_pair> args_tail;
 
     auto let_list = to_ptr<value_pair>(let);
+    auto body = let_list->pcdr()->cdr();
+
     for (const auto& variable : *let_list->pcdr()->pcar()) {
         auto& param_and_arg = reinterpret_cast<const value_pair&>(variable);
 
@@ -389,11 +392,13 @@ shared_ptr<value> transform_let(const shared_ptr<value>& let) {
         args_tail = next_arg;
     }
 
-    return make_vpair(
-        make_lambda(
-            params,
-            let_list->pcdr()->cdr()),  // body
-        args);
+    if (params) {
+        return make_vpair(
+            make_lambda(params, body),
+            args);
+    } else {
+        return transform_sequence(body);
+    }
 }
 
 void check_begin(const shared_ptr<value>& exp) {
@@ -536,7 +541,7 @@ void check_application(const shared_ptr<value>& exp) {
     if (exp == nil) {
         throw syntax_error("bad application %s", exp->str().c_str());
     } else if (!to_list(exp)) {
-        throw syntax_error("can't apply to %s", exp->str().c_str());
+        throw syntax_error("can't apply to %s", to_ptr<value_pair>(exp)->cdr()->str().c_str());
     }
 }
 

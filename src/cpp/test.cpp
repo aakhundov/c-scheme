@@ -13,6 +13,7 @@
 
 #include "code.hpp"
 #include "constants.hpp"
+#include "evaluator.hpp"
 #include "machine.hpp"
 #include "parsing.hpp"
 #include "value.hpp"
@@ -49,9 +50,15 @@ void report_test(string message) {
 void run_test_function(function<void(void)> fn, string fn_str) {
     cout << "[" << fn_str << "]\n";
     cout << "==============================\n";
-
     fn();
+    cout << '\n';
+}
 
+void run_eval_test_function(evaluator& e, function<void(evaluator&)> fn, string fn_str) {
+    cout << "[" << fn_str << "]\n";
+    cout << "==============================\n";
+    e.reset();
+    fn(e);
     cout << '\n';
 }
 
@@ -90,7 +97,7 @@ void assert_equal(T1 expr, T2 expected, string expr_str, string expected_str) {
     }
 }
 
-void assert_to_str(const value& v, string expected, string v_str) {
+void assert_to_str(const value& v, const string& expected, string v_str) {
     string str_result = v.str();
 
     report_test(BLUE("[") + v_str + BLUE("] --> [") + str_result + BLUE("]"));
@@ -102,7 +109,7 @@ void assert_to_str(const value& v, string expected, string v_str) {
     }
 }
 
-void assert_iterator(value_pair& v, string str_expected, string v_str) {
+void assert_iterator(const value_pair& v, const string& str_expected, string v_str) {
     // join v's items with ", "
     string str_result;
     for (const auto& item : v) {
@@ -121,16 +128,100 @@ void assert_iterator(value_pair& v, string str_expected, string v_str) {
     }
 }
 
-void assert_parse(string text, const shared_ptr<value_pair>& expected) {
-    shared_ptr<value> values = parse_values_from(text);
+void assert_parse_output(const string& text, const shared_ptr<value_pair>& expected) {
+    try {
+        shared_ptr<value> values = parse_values_from(text);
+        report_test(BLUE("[") + text + BLUE("] --> [") + values->str() + BLUE("]"));
 
-    report_test(BLUE("[") + text + BLUE("] --> [") + values->str() + BLUE("]"));
-
-    if (*values != *expected) {
-        // the parsed values don't equal to the expected
-        cerr << RED("expected \"" + expected->str() + "\"\n");
-        throw test_error();
+        if (*values == *expected) {
+            return;
+        }
+    } catch (scheme_error& e) {
+        report_test(BLUE("[") + text + BLUE("] --> [") RED("" + e.topic() + ": " + e.what() + "") BLUE("]"));
     }
+
+    // the parsed values don't match or exception thrown
+    cerr << RED("expected " + expected->str() + "\n");
+    throw test_error();
+}
+
+void assert_parse_error(const string& text, const string& substring) {
+    try {
+        shared_ptr<value> values = parse_values_from(text);
+        report_test(BLUE("[") + text + BLUE("] --> [") + values->str() + BLUE("]"));
+    } catch (scheme_error& e) {
+        report_test(BLUE("[") + text + BLUE("] --> [") RED("" + e.topic() + ": " + e.what() + "") BLUE("]"));
+
+        if (parsing_error* pe = dynamic_cast<parsing_error*>(&e)) {
+            string what = pe->what();
+            if (what.find(substring) != string::npos) {
+                return;
+            }
+        }
+    }
+
+    // no exception or wrong exception or no substring in what
+    cerr << RED("expected error with \"" + substring + "\"\n");
+    throw test_error();
+}
+
+void assert_eval_output(evaluator& e, const string& input, const shared_ptr<value>& expected) {
+    try {
+        auto output = e.evaluate(parse_values_from(input)->car());
+        report_test(BLUE("[") + input + BLUE("] --> [") + output->str() + BLUE("]"));
+
+        if (*output == *expected) {
+            return;
+        }
+    } catch (scheme_error& e) {
+        report_test(BLUE("[") + input + BLUE("] --> [") RED("" + e.topic() + ": " + e.what() + "") BLUE("]"));
+    }
+
+    // the output doesn't match or exception thrown
+    cerr << RED("expected " + expected->str() + "\n");
+    throw test_error();
+}
+
+void assert_eval_to_str(evaluator& e, const string& input, const string& expected) {
+    try {
+        auto output = e.evaluate(parse_values_from(input)->car());
+        report_test(BLUE("[") + input + BLUE("] --> [") + output->str() + BLUE("]"));
+
+        if (output->str() == expected) {
+            return;
+        }
+    } catch (scheme_error& e) {
+        report_test(BLUE("[") + input + BLUE("] --> [") RED("" + e.topic() + ": " + e.what() + "") BLUE("]"));
+    }
+
+    // the str output doesn't match or exception thrown
+    cerr << RED("expected \"" + expected + "\"\n");
+    throw test_error();
+}
+
+void assert_eval_error(evaluator& e, const string& input, const string& substring) {
+    try {
+        auto output = e.evaluate(parse_values_from(input)->car());
+        report_test(BLUE("[") + input + BLUE("] --> [") + output->str() + BLUE("]"));
+
+        if (output->type() == value_t::error) {
+            auto error = to_ptr<value_error>(output);
+            if (error->string_().find(substring) != string::npos) {
+                return;
+            }
+        }
+    } catch (scheme_error& e) {
+        report_test(BLUE("[") + input + BLUE("] --> [") RED("" + e.topic() + ": " + e.what() + "") BLUE("]"));
+
+        string what = e.what();
+        if (what.find(substring) != string::npos) {
+            return;
+        }
+    }
+
+    // no error / exception or no substring in the error text
+    cerr << RED("expected error with \"" + substring + "\"\n");
+    throw test_error();
 }
 
 void assert_exception_thrown(string code, string type, string what, string substring) {
@@ -154,6 +245,9 @@ void assert_exception_not_thrown(string code, string type, string substring) {
 #define RUN_TEST_FUNCTION(fn) \
     { run_test_function(fn, #fn); }
 
+#define RUN_EVAL_TEST_FUNCTION(e, fn) \
+    { run_eval_test_function(e, fn, #fn); }
+
 #define ASSERT_TRUE(expr) \
     { assert_true((expr), #expr); }
 
@@ -169,8 +263,20 @@ void assert_exception_not_thrown(string code, string type, string substring) {
 #define ASSERT_ITERATOR(expr, str_expected) \
     { assert_iterator((expr), (str_expected), #expr); }
 
-#define ASSERT_PARSE(text, ...) \
-    { assert_parse(text, make_list(__VA_ARGS__)); }
+#define ASSERT_PARSE_OUTPUT(text, ...) \
+    { assert_parse_output(text, make_list(__VA_ARGS__)); }
+
+#define ASSERT_PARSE_ERROR(text, substring) \
+    { assert_parse_error((text), (substring)); }
+
+#define ASSERT_EVAL_OUTPUT(e, input, expected) \
+    { assert_eval_output((e), (input), (expected)); }
+
+#define ASSERT_EVAL_TO_STR(e, input, expected) \
+    { assert_eval_to_str((e), (input), (expected)); }
+
+#define ASSERT_EVAL_ERROR(e, input, substring) \
+    { assert_eval_error((e), (input), (substring)); }
 
 #define ASSERT_EXCEPTION(code, type, substring)                         \
     {                                                                   \
@@ -184,11 +290,6 @@ void assert_exception_not_thrown(string code, string type, string substring) {
         if (!thrown) {                                                  \
             assert_exception_not_thrown(#code, #type, substring);       \
         }                                                               \
-    }
-
-#define ASSERT_PARSE_ERROR(text, substring)                                       \
-    {                                                                             \
-        ASSERT_EXCEPTION({ parse_values_from(text); }, parsing_error, substring); \
     }
 
 void test_value() {
@@ -655,121 +756,121 @@ void test_to_str() {
 
 void test_parse() {
     // nil
-    ASSERT_PARSE("()", nil);
-    ASSERT_PARSE("(  )", nil);
-    ASSERT_PARSE("  (  )   ", nil);
-    ASSERT_PARSE("()()", nil, nil);
-    ASSERT_PARSE("() ()", nil, nil);
-    ASSERT_PARSE(" ()  ()  ", nil, nil);
-    ASSERT_PARSE("(()())", make_list(nil, nil));
-    ASSERT_PARSE("(() ((()) () ())) ()", make_list(nil, make_list(make_list(nil), nil, nil)), nil);
-    ASSERT_PARSE(" ( () ( (( )) ()  () ) )  () ", make_list(nil, make_list(make_list(nil), nil, nil)), nil);
+    ASSERT_PARSE_OUTPUT("()", nil);
+    ASSERT_PARSE_OUTPUT("(  )", nil);
+    ASSERT_PARSE_OUTPUT("  (  )   ", nil);
+    ASSERT_PARSE_OUTPUT("()()", nil, nil);
+    ASSERT_PARSE_OUTPUT("() ()", nil, nil);
+    ASSERT_PARSE_OUTPUT(" ()  ()  ", nil, nil);
+    ASSERT_PARSE_OUTPUT("(()())", make_list(nil, nil));
+    ASSERT_PARSE_OUTPUT("(() ((()) () ())) ()", make_list(nil, make_list(make_list(nil), nil, nil)), nil);
+    ASSERT_PARSE_OUTPUT(" ( () ( (( )) ()  () ) )  () ", make_list(nil, make_list(make_list(nil), nil, nil)), nil);
 
     // integers
-    ASSERT_PARSE("1", 1);
-    ASSERT_PARSE("1 2", 1, 2);
-    ASSERT_PARSE("123", 123);
-    ASSERT_PARSE("123456789", 123456789);
-    ASSERT_PARSE("1234 56789", 1234, 56789);
-    ASSERT_PARSE("(1)", make_list(1));
-    ASSERT_PARSE("(1 2)", make_list(1, 2));
-    ASSERT_PARSE("((1))", make_list(make_list(1)));
-    ASSERT_PARSE("((1) (2))", make_list(make_list(1), make_list(2)));
-    ASSERT_PARSE("(1 () 2)", make_list(1, nil, 2));
-    ASSERT_PARSE("1 2 3", 1, 2, 3);
-    ASSERT_PARSE("(1 2 3)", make_list(1, 2, 3));
-    ASSERT_PARSE("  (  1    2 3 )  ", make_list(1, 2, 3));
-    ASSERT_PARSE("1 (2 3 (4) 5 ((6 7) 8 9) 10)",
-                 1, make_list(2, 3, make_list(4), 5, make_list(make_list(6, 7), 8, 9), 10));
-    ASSERT_PARSE("  1  (  2 3 (4  ) 5 (( 6  7 )))",
-                 1, make_list(2, 3, make_list(4), 5, make_list(make_list(6, 7))));
-    ASSERT_PARSE("1 (23 (4) 5 ((67) 89) 10)",
-                 1, make_list(23, make_list(4), 5, make_list(make_list(67), 89), 10));
+    ASSERT_PARSE_OUTPUT("1", 1);
+    ASSERT_PARSE_OUTPUT("1 2", 1, 2);
+    ASSERT_PARSE_OUTPUT("123", 123);
+    ASSERT_PARSE_OUTPUT("123456789", 123456789);
+    ASSERT_PARSE_OUTPUT("1234 56789", 1234, 56789);
+    ASSERT_PARSE_OUTPUT("(1)", make_list(1));
+    ASSERT_PARSE_OUTPUT("(1 2)", make_list(1, 2));
+    ASSERT_PARSE_OUTPUT("((1))", make_list(make_list(1)));
+    ASSERT_PARSE_OUTPUT("((1) (2))", make_list(make_list(1), make_list(2)));
+    ASSERT_PARSE_OUTPUT("(1 () 2)", make_list(1, nil, 2));
+    ASSERT_PARSE_OUTPUT("1 2 3", 1, 2, 3);
+    ASSERT_PARSE_OUTPUT("(1 2 3)", make_list(1, 2, 3));
+    ASSERT_PARSE_OUTPUT("  (  1    2 3 )  ", make_list(1, 2, 3));
+    ASSERT_PARSE_OUTPUT("1 (2 3 (4) 5 ((6 7) 8 9) 10)",
+                        1, make_list(2, 3, make_list(4), 5, make_list(make_list(6, 7), 8, 9), 10));
+    ASSERT_PARSE_OUTPUT("  1  (  2 3 (4  ) 5 (( 6  7 )))",
+                        1, make_list(2, 3, make_list(4), 5, make_list(make_list(6, 7))));
+    ASSERT_PARSE_OUTPUT("1 (23 (4) 5 ((67) 89) 10)",
+                        1, make_list(23, make_list(4), 5, make_list(make_list(67), 89), 10));
 
     // decimals
-    ASSERT_PARSE(".456 1. 2.0 3.14 -4. -5.67 -.123", 0.456, 1, 2, 3.14, -4, -5.67, -0.123);
-    ASSERT_PARSE("1e10 1e2 1e1 1e0 1e-1 1e-2 1e-10", 1e10, 1e2, 1e1, 1e0, 1e-1, 1e-2, 1e-10);
+    ASSERT_PARSE_OUTPUT(".456 1. 2.0 3.14 -4. -5.67 -.123", 0.456, 1, 2, 3.14, -4, -5.67, -0.123);
+    ASSERT_PARSE_OUTPUT("1e10 1e2 1e1 1e0 1e-1 1e-2 1e-10", 1e10, 1e2, 1e1, 1e0, 1e-1, 1e-2, 1e-10);
 
     // symbols
-    ASSERT_PARSE("x", "x");
-    ASSERT_PARSE("x y", "x", "y");
-    ASSERT_PARSE("abc xyz", "abc", "xyz");
-    ASSERT_PARSE("!?_ */- \\%^", "!?_", "*/-", "\\%^");
-    ASSERT_PARSE("x y z", "x", "y", "z");
-    ASSERT_PARSE("x 1 y 2 z", "x", 1, "y", 2, "z");
-    ASSERT_PARSE("xyz a1 abc 2b def", "xyz", "a1", "abc", "2b", "def");
+    ASSERT_PARSE_OUTPUT("x", "x");
+    ASSERT_PARSE_OUTPUT("x y", "x", "y");
+    ASSERT_PARSE_OUTPUT("abc xyz", "abc", "xyz");
+    ASSERT_PARSE_OUTPUT("!?_ */- \\%^", "!?_", "*/-", "\\%^");
+    ASSERT_PARSE_OUTPUT("x y z", "x", "y", "z");
+    ASSERT_PARSE_OUTPUT("x 1 y 2 z", "x", 1, "y", 2, "z");
+    ASSERT_PARSE_OUTPUT("xyz a1 abc 2b def", "xyz", "a1", "abc", "2b", "def");
 
     // quote
-    ASSERT_PARSE("'1", make_list("quote", 1));
-    ASSERT_PARSE("  '1", make_list("quote", 1));
-    ASSERT_PARSE("  '  1", make_list("quote", 1));
-    ASSERT_PARSE("  '  1  ", make_list("quote", 1));
-    ASSERT_PARSE("'1 2", make_list("quote", 1), 2);
-    ASSERT_PARSE("1 '2", 1, make_list("quote", 2));
-    ASSERT_PARSE("'1 '2", make_list("quote", 1), make_list("quote", 2));
-    ASSERT_PARSE("''1", make_list("quote", make_list("quote", 1)));
-    ASSERT_PARSE("'''1", make_list("quote", make_list("quote", make_list("quote", 1))));
-    ASSERT_PARSE("1 2 ' (3 4 (5 6 7))", 1, 2, make_list("quote", make_list(3, 4, make_list(5, 6, 7))));
-    ASSERT_PARSE("'1 2 ' (3 4 (5 '6 7))",
-                 make_list("quote", 1), 2,
-                 make_list("quote", make_list(3, 4, make_list(5, make_list("quote", 6), 7))));
-    ASSERT_PARSE("1 2 '(3 4 '(5 6 7))",
-                 1, 2, make_list("quote", make_list(3, 4, make_list("quote", make_list(5, 6, 7)))));
-    ASSERT_PARSE("''(1 2 3)", make_list("quote", make_list("quote", make_list(1, 2, 3))));
+    ASSERT_PARSE_OUTPUT("'1", make_list("quote", 1));
+    ASSERT_PARSE_OUTPUT("  '1", make_list("quote", 1));
+    ASSERT_PARSE_OUTPUT("  '  1", make_list("quote", 1));
+    ASSERT_PARSE_OUTPUT("  '  1  ", make_list("quote", 1));
+    ASSERT_PARSE_OUTPUT("'1 2", make_list("quote", 1), 2);
+    ASSERT_PARSE_OUTPUT("1 '2", 1, make_list("quote", 2));
+    ASSERT_PARSE_OUTPUT("'1 '2", make_list("quote", 1), make_list("quote", 2));
+    ASSERT_PARSE_OUTPUT("''1", make_list("quote", make_list("quote", 1)));
+    ASSERT_PARSE_OUTPUT("'''1", make_list("quote", make_list("quote", make_list("quote", 1))));
+    ASSERT_PARSE_OUTPUT("1 2 ' (3 4 (5 6 7))", 1, 2, make_list("quote", make_list(3, 4, make_list(5, 6, 7))));
+    ASSERT_PARSE_OUTPUT("'1 2 ' (3 4 (5 '6 7))",
+                        make_list("quote", 1), 2,
+                        make_list("quote", make_list(3, 4, make_list(5, make_list("quote", 6), 7))));
+    ASSERT_PARSE_OUTPUT("1 2 '(3 4 '(5 6 7))",
+                        1, 2, make_list("quote", make_list(3, 4, make_list("quote", make_list(5, 6, 7)))));
+    ASSERT_PARSE_OUTPUT("''(1 2 3)", make_list("quote", make_list("quote", make_list(1, 2, 3))));
 
     // dot
-    ASSERT_PARSE(".", ".");
-    ASSERT_PARSE(". . . . .", ".", ".", ".", ".", ".");
-    ASSERT_PARSE("1 . 2 . 3", 1, ".", 2, ".", 3);
-    ASSERT_PARSE("(1 2) . 3 . (4 5)", make_list(1, 2), ".", 3, ".", make_list(4, 5));
-    ASSERT_PARSE("(1 . 2)", make_vpair(1, 2));
-    ASSERT_PARSE("(1 2 . 3)", make_vpair(1, make_vpair(2, 3)));
-    ASSERT_PARSE("(1 (2 . 3) . 4)", make_vpair(1, make_vpair(make_vpair(2, 3), 4)));
-    ASSERT_PARSE("(1 (2 (3 . 4) . 5) . 6)",
-                 make_vpair(1, make_vpair(make_vpair(2, make_vpair(make_vpair(3, 4), 5)), 6)));
-    ASSERT_PARSE("(1 (2 . 3))", make_list(1, make_vpair(2, 3)));
-    ASSERT_PARSE("((1 2) . 3)", make_vpair(make_list(1, 2), 3));
-    ASSERT_PARSE("((1 . 2) . 3)", make_vpair(make_vpair(1, 2), 3));
-    ASSERT_PARSE("(1 . (2 3))", make_vpair(1, make_list(2, 3)));
-    ASSERT_PARSE("(1 2 3 . (4 5 6))", make_list(1, 2, 3, 4, 5, 6));
-    ASSERT_PARSE("(. 1)", 1);
-    ASSERT_PARSE("(. (1 2))", make_list(1, 2));
-    ASSERT_PARSE("(. (1 . 2))", make_vpair(1, 2));
-    ASSERT_PARSE("(.1 . 2.)", make_vpair(0.1, 2));
-    ASSERT_PARSE("(1.2 . 3.4)", make_vpair(1.2, 3.4));
-    ASSERT_PARSE("(1 2 3 . 4)", make_vpair(1, make_vpair(2, make_vpair(3, 4))));
-    ASSERT_PARSE("'(1 . 2)", make_list("quote", make_vpair(1, 2)));
-    ASSERT_PARSE("'(. 2)", make_list("quote", 2));
+    ASSERT_PARSE_OUTPUT(".", ".");
+    ASSERT_PARSE_OUTPUT(". . . . .", ".", ".", ".", ".", ".");
+    ASSERT_PARSE_OUTPUT("1 . 2 . 3", 1, ".", 2, ".", 3);
+    ASSERT_PARSE_OUTPUT("(1 2) . 3 . (4 5)", make_list(1, 2), ".", 3, ".", make_list(4, 5));
+    ASSERT_PARSE_OUTPUT("(1 . 2)", make_vpair(1, 2));
+    ASSERT_PARSE_OUTPUT("(1 2 . 3)", make_vpair(1, make_vpair(2, 3)));
+    ASSERT_PARSE_OUTPUT("(1 (2 . 3) . 4)", make_vpair(1, make_vpair(make_vpair(2, 3), 4)));
+    ASSERT_PARSE_OUTPUT("(1 (2 (3 . 4) . 5) . 6)",
+                        make_vpair(1, make_vpair(make_vpair(2, make_vpair(make_vpair(3, 4), 5)), 6)));
+    ASSERT_PARSE_OUTPUT("(1 (2 . 3))", make_list(1, make_vpair(2, 3)));
+    ASSERT_PARSE_OUTPUT("((1 2) . 3)", make_vpair(make_list(1, 2), 3));
+    ASSERT_PARSE_OUTPUT("((1 . 2) . 3)", make_vpair(make_vpair(1, 2), 3));
+    ASSERT_PARSE_OUTPUT("(1 . (2 3))", make_vpair(1, make_list(2, 3)));
+    ASSERT_PARSE_OUTPUT("(1 2 3 . (4 5 6))", make_list(1, 2, 3, 4, 5, 6));
+    ASSERT_PARSE_OUTPUT("(. 1)", 1);
+    ASSERT_PARSE_OUTPUT("(. (1 2))", make_list(1, 2));
+    ASSERT_PARSE_OUTPUT("(. (1 . 2))", make_vpair(1, 2));
+    ASSERT_PARSE_OUTPUT("(.1 . 2.)", make_vpair(0.1, 2));
+    ASSERT_PARSE_OUTPUT("(1.2 . 3.4)", make_vpair(1.2, 3.4));
+    ASSERT_PARSE_OUTPUT("(1 2 3 . 4)", make_vpair(1, make_vpair(2, make_vpair(3, 4))));
+    ASSERT_PARSE_OUTPUT("'(1 . 2)", make_list("quote", make_vpair(1, 2)));
+    ASSERT_PARSE_OUTPUT("'(. 2)", make_list("quote", 2));
 
     // comment
-    ASSERT_PARSE("(1 2 3); comment", make_list(1, 2, 3));
-    ASSERT_PARSE("(1 2 3); (4 5 \" 6 7", make_list(1, 2, 3));
-    ASSERT_PARSE("(1 2 3)   ;   comment  ", make_list(1, 2, 3));
-    ASSERT_PARSE("\n(1 2 3)   ;   comment  \n  (4 5)", make_list(1, 2, 3), make_list(4, 5));
-    ASSERT_PARSE(" ; comment\n(1 2 3)   ;   comment  \n  (4 5)", make_list(1, 2, 3), make_list(4, 5));
+    ASSERT_PARSE_OUTPUT("(1 2 3); comment", make_list(1, 2, 3));
+    ASSERT_PARSE_OUTPUT("(1 2 3); (4 5 \" 6 7", make_list(1, 2, 3));
+    ASSERT_PARSE_OUTPUT("(1 2 3)   ;   comment  ", make_list(1, 2, 3));
+    ASSERT_PARSE_OUTPUT("\n(1 2 3)   ;   comment  \n  (4 5)", make_list(1, 2, 3), make_list(4, 5));
+    ASSERT_PARSE_OUTPUT(" ; comment\n(1 2 3)   ;   comment  \n  (4 5)", make_list(1, 2, 3), make_list(4, 5));
 
     // string
-    ASSERT_PARSE("\"\"", ""s);
-    ASSERT_PARSE("\"abc\"", "abc"s);
-    ASSERT_PARSE("\"abc def\"", "abc def"s);
-    ASSERT_PARSE("\"  abc   def   \"", "  abc   def   "s);
-    ASSERT_PARSE("\"  abc \n  def  \n \"", "  abc \n  def  \n "s);
-    ASSERT_PARSE("\"x\" \"y\" \"z\"", "x"s, "y"s, "z"s);
-    ASSERT_PARSE("\"a\\tb\"", "a\\tb"s);
-    ASSERT_PARSE("\"a\tb\"", "a\tb"s);
-    ASSERT_PARSE("\"a\\nb\"", "a\\nb"s);
-    ASSERT_PARSE("\"\na\nb\"", "\na\nb"s);
-    ASSERT_PARSE("'\"abc\"", make_list("quote", "abc"s));
-    ASSERT_PARSE("\"'abc\"", "'abc"s);
-    ASSERT_PARSE("'\"x\" \"y\" \"z\"", make_list("quote", "x"s), "y"s, "z"s);
-    ASSERT_PARSE("'(\"x\" \"y\" \"z\")", make_list("quote", make_list("x"s, "y"s, "z"s)));
+    ASSERT_PARSE_OUTPUT("\"\"", ""s);
+    ASSERT_PARSE_OUTPUT("\"abc\"", "abc"s);
+    ASSERT_PARSE_OUTPUT("\"abc def\"", "abc def"s);
+    ASSERT_PARSE_OUTPUT("\"  abc   def   \"", "  abc   def   "s);
+    ASSERT_PARSE_OUTPUT("\"  abc \n  def  \n \"", "  abc \n  def  \n "s);
+    ASSERT_PARSE_OUTPUT("\"x\" \"y\" \"z\"", "x"s, "y"s, "z"s);
+    ASSERT_PARSE_OUTPUT("\"a\\tb\"", "a\\tb"s);
+    ASSERT_PARSE_OUTPUT("\"a\tb\"", "a\tb"s);
+    ASSERT_PARSE_OUTPUT("\"a\\nb\"", "a\\nb"s);
+    ASSERT_PARSE_OUTPUT("\"\na\nb\"", "\na\nb"s);
+    ASSERT_PARSE_OUTPUT("'\"abc\"", make_list("quote", "abc"s));
+    ASSERT_PARSE_OUTPUT("\"'abc\"", "'abc"s);
+    ASSERT_PARSE_OUTPUT("'\"x\" \"y\" \"z\"", make_list("quote", "x"s), "y"s, "z"s);
+    ASSERT_PARSE_OUTPUT("'(\"x\" \"y\" \"z\")", make_list("quote", make_list("x"s, "y"s, "z"s)));
 
     // special symbols
-    ASSERT_PARSE("nil", nil);
-    ASSERT_PARSE("true", true_);
-    ASSERT_PARSE("false", false_);
-    ASSERT_PARSE("#t", true_);
-    ASSERT_PARSE("#f", false_);
+    ASSERT_PARSE_OUTPUT("nil", nil);
+    ASSERT_PARSE_OUTPUT("true", true_);
+    ASSERT_PARSE_OUTPUT("false", false_);
+    ASSERT_PARSE_OUTPUT("#t", true_);
+    ASSERT_PARSE_OUTPUT("#f", false_);
 
     // parsing errors
     ASSERT_PARSE_ERROR("(1 2", "unterminated list");
@@ -941,7 +1042,421 @@ void test_machine() {
     }
 }
 
+void test_syntax(evaluator& e) {
+    // self-evaluating
+    ASSERT_EVAL_OUTPUT(e, "1", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "-1", make_number(-1));
+    ASSERT_EVAL_OUTPUT(e, "3.14", make_number(3.14));
+    ASSERT_EVAL_OUTPUT(e, "\"\"", make_string(""));
+    ASSERT_EVAL_OUTPUT(e, "\"abc\"", make_string("abc"));
+    ASSERT_EVAL_OUTPUT(e, "true", true_);
+    ASSERT_EVAL_OUTPUT(e, "false", false_);
+    ASSERT_EVAL_OUTPUT(e, "nil", nil);
+    ASSERT_EVAL_OUTPUT(e, "()", nil);
+
+    // variable lookup
+    ASSERT_EVAL_ERROR(e, "a", "a is unbound");
+    ASSERT_EVAL_OUTPUT(e, "(define a 10)", make_info("a is defined"));
+    ASSERT_EVAL_OUTPUT(e, "a", make_number(10));
+
+    // quote
+    ASSERT_EVAL_OUTPUT(e, "(quote 1)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(quote x)", make_symbol("x"));
+    ASSERT_EVAL_OUTPUT(e, "(quote (1 2 3))", make_list(1, 2, 3));
+    ASSERT_EVAL_OUTPUT(e, "(quote (quote 1 2 3))", make_list("quote", 1, 2, 3));
+    ASSERT_EVAL_OUTPUT(e, "(quote ())", nil);
+
+    // quote errors
+    ASSERT_EVAL_ERROR(e, "(quote)", "no expression");
+    ASSERT_EVAL_ERROR(e, "(quote 1 2)", "more than one item");
+    ASSERT_EVAL_ERROR(e, "(quote 1 . 2)", "non-list structure");
+    ASSERT_EVAL_ERROR(e, "(quote . 1)", "non-list structure");
+
+    // set!
+    ASSERT_EVAL_ERROR(e, "b", "b is unbound");
+    ASSERT_EVAL_ERROR(e, "(set! b 30)", "b is unbound");
+    ASSERT_EVAL_OUTPUT(e, "(define b 20)", make_info("b is defined"));
+    ASSERT_EVAL_OUTPUT(e, "b", make_number(20));
+    ASSERT_EVAL_OUTPUT(e, "(set! b 30)", nil);
+    ASSERT_EVAL_OUTPUT(e, "b", make_number(30));
+    ASSERT_EVAL_ERROR(e, "s1", "s1 is unbound");
+    ASSERT_EVAL_OUTPUT(e, "(define (sf1) (set! s1 10) s1)", make_info("sf1 is defined"));
+    ASSERT_EVAL_ERROR(e, "(sf1)", "s1 is unbound");
+    ASSERT_EVAL_ERROR(e, "s1", "s1 is unbound");
+    ASSERT_EVAL_OUTPUT(e, "(define s1 20)", make_info("s1 is defined"));
+    ASSERT_EVAL_OUTPUT(e, "s1", make_number(20));
+    ASSERT_EVAL_OUTPUT(e, "(sf1)", make_number(10));
+    ASSERT_EVAL_OUTPUT(e, "s1", make_number(10));
+
+    // set! errors
+    ASSERT_EVAL_ERROR(e, "(set!)", "no variable");
+    ASSERT_EVAL_ERROR(e, "(set! y)", "no value");
+    ASSERT_EVAL_ERROR(e, "(set! 1 30)", "variable is not a symbol");
+    ASSERT_EVAL_ERROR(e, "(set! y 30 40)", "more than two items");
+    ASSERT_EVAL_ERROR(e, "(set! 1 . 2)", "non-list structure");
+    ASSERT_EVAL_ERROR(e, "(set! . 1)", "non-list structure");
+
+    // define
+    ASSERT_EVAL_ERROR(e, "c", "c is unbound");
+    ASSERT_EVAL_OUTPUT(e, "(define c 30)", make_info("c is defined"));
+    ASSERT_EVAL_OUTPUT(e, "c", make_number(30));
+    ASSERT_EVAL_OUTPUT(e, "(define c 40)", make_info("c is updated"));
+    ASSERT_EVAL_OUTPUT(e, "c", make_number(40));
+    ASSERT_EVAL_ERROR(e, "f", "f is unbound");
+    ASSERT_EVAL_OUTPUT(e, "(define (f x y) x y)", make_info("f is defined"));
+    ASSERT_EVAL_TO_STR(e, "f", "(lambda (x y) x y)");
+    ASSERT_EVAL_OUTPUT(e, "(define (g) 1)", make_info("g is defined"));
+    ASSERT_EVAL_TO_STR(e, "g", "(lambda () 1)");
+    ASSERT_EVAL_ERROR(e, "d1", "d1 is unbound");
+    ASSERT_EVAL_OUTPUT(e, "(define (df1) (define d1 10) d1)", make_info("df1 is defined"));
+    ASSERT_EVAL_OUTPUT(e, "(df1)", make_number(10));
+    ASSERT_EVAL_ERROR(e, "d1", "d1 is unbound");
+    ASSERT_EVAL_OUTPUT(e, "(define d1 20)", make_info("d1 is defined"));
+    ASSERT_EVAL_OUTPUT(e, "d1", make_number(20));
+    ASSERT_EVAL_OUTPUT(e, "(df1)", make_number(10));
+    ASSERT_EVAL_OUTPUT(e, "d1", make_number(20));
+
+    // define errors
+    ASSERT_EVAL_ERROR(e, "(define)", "no variable");
+    ASSERT_EVAL_ERROR(e, "(define ())", "either variable or function");
+    ASSERT_EVAL_ERROR(e, "(define (f))", "no body");
+    ASSERT_EVAL_ERROR(e, "(define (1) 1)", "function name is not a symbol");
+    ASSERT_EVAL_ERROR(e, "(define (1 x y) 1)", "function name is not a symbol");
+    ASSERT_EVAL_ERROR(e, "(define x 1 2)", "can't be more than one item");
+    ASSERT_EVAL_ERROR(e, "(define 1 2)", "either variable or function must be defined");
+    ASSERT_EVAL_ERROR(e, "(define true 2)", "either variable or function");
+    ASSERT_EVAL_ERROR(e, "(define \"x\" 2)", "either variable or function must be defined");
+    ASSERT_EVAL_ERROR(e, "(define 1 . 2)", "non-list structure");
+    ASSERT_EVAL_ERROR(e, "(define . 1)", "non-list structure");
+
+    // if
+    ASSERT_EVAL_OUTPUT(e, "(if 1 2 3)", make_number(2));
+    ASSERT_EVAL_OUTPUT(e, "(if 0 2 3)", make_number(2));
+    ASSERT_EVAL_OUTPUT(e, "(if \"\" 2 3)", make_number(2));
+    ASSERT_EVAL_OUTPUT(e, "(if \"x\" 2 3)", make_number(2));
+    ASSERT_EVAL_OUTPUT(e, "(if () 2 3)", make_number(2));
+    ASSERT_EVAL_OUTPUT(e, "(if nil 2 3)", make_number(2));
+    ASSERT_EVAL_OUTPUT(e, "(if true 2 3)", make_number(2));
+    ASSERT_EVAL_OUTPUT(e, "(if false 2 3)", make_number(3));
+    ASSERT_EVAL_OUTPUT(e, "(if 1 2)", make_number(2));
+    ASSERT_EVAL_OUTPUT(e, "(if true 2)", make_number(2));
+    ASSERT_EVAL_OUTPUT(e, "(if 0 2)", make_number(2));
+    ASSERT_EVAL_OUTPUT(e, "(if false 2)", false_);
+
+    // if errors
+    ASSERT_EVAL_ERROR(e, "(if)", "no predicate");
+    ASSERT_EVAL_ERROR(e, "(if 1)", "no consequent");
+    ASSERT_EVAL_ERROR(e, "(if 1 2 3 4)", "too many items");
+    ASSERT_EVAL_ERROR(e, "(if 1 . 2)", "non-list structure");
+    ASSERT_EVAL_ERROR(e, "(if . 1)", "non-list structure");
+
+    // lambda
+    ASSERT_EVAL_TO_STR(e, "(lambda x x)", "(lambda x x)");
+    ASSERT_EVAL_TO_STR(e, "(lambda (. x) x)", "(lambda x x)");
+    ASSERT_EVAL_TO_STR(e, "(lambda () 1)", "(lambda () 1)");
+    ASSERT_EVAL_TO_STR(e, "(lambda (x) x)", "(lambda (x) x)");
+    ASSERT_EVAL_TO_STR(e, "(lambda (x) x x)", "(lambda (x) x x)");
+    ASSERT_EVAL_TO_STR(e, "(lambda (x y) x)", "(lambda (x y) x)");
+    ASSERT_EVAL_TO_STR(e, "(lambda (x y) x y)", "(lambda (x y) x y)");
+    ASSERT_EVAL_TO_STR(e, "(lambda (x . y) x y)", "(lambda (x . y) x y)");
+
+    // lambda errors
+    ASSERT_EVAL_ERROR(e, "(lambda)", "no parameters");
+    ASSERT_EVAL_ERROR(e, "(lambda x)", "no body");
+    ASSERT_EVAL_ERROR(e, "(lambda (x))", "no body");
+    ASSERT_EVAL_ERROR(e, "(lambda ())", "no body");
+    ASSERT_EVAL_ERROR(e, "(lambda 1 1)", "some parameters are not symbols");
+    ASSERT_EVAL_ERROR(e, "(lambda (1) 1)", "some parameters are not symbols");
+    ASSERT_EVAL_ERROR(e, "(lambda (x 1) 1)", "some parameters are not symbols");
+    ASSERT_EVAL_ERROR(e, "(lambda (x x) 1)", "duplicate parameter names");
+    ASSERT_EVAL_ERROR(e, "(lambda (x y z x) 1)", "duplicate parameter names");
+    ASSERT_EVAL_ERROR(e, "(lambda (x . x) 1)", "duplicate parameter names");
+    ASSERT_EVAL_ERROR(e, "(lambda (x y z . x) 1)", "duplicate parameter names");
+    ASSERT_EVAL_ERROR(e, "(lambda 1 . 2)", "non-list structure");
+    ASSERT_EVAL_ERROR(e, "(lambda . 1)", "non-list structure");
+
+    // let
+    ASSERT_EVAL_OUTPUT(e, "(let () 1)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(let ((x 10)) x)", make_number(10));
+    ASSERT_EVAL_OUTPUT(e, "(let ((x true)) x)", true_);
+    ASSERT_EVAL_OUTPUT(e, "(let ((x \"abc\")) x)", make_string("abc"));
+    ASSERT_EVAL_OUTPUT(e, "(let ((x '(1 2 3))) x)", make_list(1, 2, 3));
+    ASSERT_EVAL_OUTPUT(e, "(let ((x ())) x)", nil);
+    ASSERT_EVAL_OUTPUT(e, "(let ((x 10) (y 20)) x y)", make_number(20));
+    ASSERT_EVAL_OUTPUT(e, "(let ((x 10) (y 20)) (+ x y))", make_number(30));
+    ASSERT_EVAL_OUTPUT(e, "(let ((x 10) (y 20)) (let ((z 30)) (+ (* x y) z)))", make_number(230));
+    ASSERT_EVAL_OUTPUT(e, "(let ((x 10)) (let ((y 20)) (let ((z 30)) (+ x (* y z)))))", make_number(610));
+
+    // let errors
+    ASSERT_EVAL_ERROR(e, "(let)", "no variables");
+    ASSERT_EVAL_ERROR(e, "(let ((x 10)))", "no body");
+    ASSERT_EVAL_ERROR(e, "(let 1 2)", "non-list variables");
+    ASSERT_EVAL_ERROR(e, "(let (()) 1)", "non-list variable pair");
+    ASSERT_EVAL_ERROR(e, "(let (1) 2)", "non-list variable pair");
+    ASSERT_EVAL_ERROR(e, "(let ((a . 1)) 3)", "non-list variable pair");
+    ASSERT_EVAL_ERROR(e, "(let ((a)) 1)", "no variable value");
+    ASSERT_EVAL_ERROR(e, "(let ((a 1 2)) 3)", "too many items in a variable pair");
+    ASSERT_EVAL_ERROR(e, "(let ((1 2)) 3)", "variable name must be a symbol");
+    ASSERT_EVAL_ERROR(e, "(let ((1)) 3)", "variable name must be a symbol");
+    ASSERT_EVAL_ERROR(e, "(let 1 . 2)", "non-list structure");
+    ASSERT_EVAL_ERROR(e, "(let . 1)", "non-list structure");
+
+    // begin
+    ASSERT_EVAL_OUTPUT(e, "(begin 1)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(begin 1 2 3)", make_number(3));
+    ASSERT_EVAL_OUTPUT(e, "(begin true false)", false_);
+    ASSERT_EVAL_OUTPUT(e, "(begin '(1 2 3) '(4 5) '())", nil);
+
+    // begin errors
+    ASSERT_EVAL_ERROR(e, "(begin)", "no expressions");
+    ASSERT_EVAL_ERROR(e, "(begin 1 . 2)", "non-list structure");
+    ASSERT_EVAL_ERROR(e, "(begin . 1)", "non-list structure");
+
+    // cond
+    ASSERT_EVAL_OUTPUT(e, "(cond (else 1))", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(cond (1 2))", make_number(2));
+    ASSERT_EVAL_OUTPUT(e, "(cond (1 2) (else 3))", make_number(2));
+    ASSERT_EVAL_OUTPUT(e, "(cond (false 2) (1 3))", make_number(3));
+    ASSERT_EVAL_OUTPUT(e, "(cond (false 2))", false_);
+    ASSERT_EVAL_OUTPUT(e, "(cond (false 2) (else 3))", make_number(3));
+    ASSERT_EVAL_OUTPUT(e, "(cond (1 2) (1 3) (else 4))", make_number(2));
+    ASSERT_EVAL_OUTPUT(e, "(cond (false 2) (1 3) (else 4))", make_number(3));
+    ASSERT_EVAL_OUTPUT(e, "(cond (false 2) (false 3))", false_);
+    ASSERT_EVAL_OUTPUT(e, "(cond (false 2) (false 3) (else 4))", make_number(4));
+    ASSERT_EVAL_OUTPUT(e, "(define (c1 x) (cond ((> x 0) 1) ((< x 0) -1) (else 0)))", make_info("c1 is defined"));
+    // ASSERT_EVAL_OUTPUT(e, "(c1 1)", make_number(1));
+    // ASSERT_EVAL_OUTPUT(e, "(c1 10)", make_number(1));
+    // ASSERT_EVAL_OUTPUT(e, "(c1 100)", make_number(1));
+    // ASSERT_EVAL_OUTPUT(e, "(c1 -1)", make_number(-1));
+    // ASSERT_EVAL_OUTPUT(e, "(c1 -10)", make_number(-1));
+    // ASSERT_EVAL_OUTPUT(e, "(c1 -100)", make_number(-1));
+    // ASSERT_EVAL_OUTPUT(e, "(c1 0)", make_number(0));
+    ASSERT_EVAL_OUTPUT(e, "(define (c2 x) (cond ((> x 0) 1) ((< x 0) -1)))", make_info("c2 is defined"));
+    // ASSERT_EVAL_OUTPUT(e, "(c2 1)", make_number(1));
+    // ASSERT_EVAL_OUTPUT(e, "(c2 10)", make_number(1));
+    // ASSERT_EVAL_OUTPUT(e, "(c2 100)", make_number(1));
+    // ASSERT_EVAL_OUTPUT(e, "(c2 -1)", make_number(-1));
+    // ASSERT_EVAL_OUTPUT(e, "(c2 -10)", make_number(-1));
+    // ASSERT_EVAL_OUTPUT(e, "(c2 -100)", make_number(-1));
+    // ASSERT_EVAL_OUTPUT(e, "(c2 0)", make_number(0));
+    ASSERT_EVAL_OUTPUT(e, "(define (c3 x) (cond (else 3.14)))", make_info("c3 is defined"));
+    ASSERT_EVAL_OUTPUT(e, "(c3 -100)", make_number(3.14));
+    ASSERT_EVAL_OUTPUT(e, "(c3 100)", make_number(3.14));
+    ASSERT_EVAL_OUTPUT(e, "(c3 0)", make_number(3.14));
+
+    // cond errors
+    ASSERT_EVAL_ERROR(e, "(cond)", "no clauses");
+    ASSERT_EVAL_ERROR(e, "(cond ())", "empty clause");
+    ASSERT_EVAL_ERROR(e, "(cond (1 2) ())", "empty clause");
+    ASSERT_EVAL_ERROR(e, "(cond 1)", "non-list clause");
+    ASSERT_EVAL_ERROR(e, "(cond (1 2) 1)", "non-list clause");
+    ASSERT_EVAL_ERROR(e, "(cond (1))", "clause without consequent");
+    ASSERT_EVAL_ERROR(e, "(cond (1 2) (1))", "clause without consequent");
+    ASSERT_EVAL_ERROR(e, "(cond (else 2) (1))", "else clause must be the last");
+    ASSERT_EVAL_ERROR(e, "(cond 1 . 2)", "non-list structure");
+    ASSERT_EVAL_ERROR(e, "(cond . 1)", "non-list structure");
+
+    // and
+    ASSERT_EVAL_OUTPUT(e, "(and)", true_);
+    ASSERT_EVAL_OUTPUT(e, "(and 1)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(and 2)", make_number(2));
+    ASSERT_EVAL_OUTPUT(e, "(and 1 2)", make_number(2));
+    ASSERT_EVAL_OUTPUT(e, "(and 1 2 3)", make_number(3));
+    ASSERT_EVAL_OUTPUT(e, "(and 3 2 1)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(and 3 2 \"abc\")", make_string("abc"));
+    ASSERT_EVAL_OUTPUT(e, "(and 3 2 true)", true_);
+    ASSERT_EVAL_OUTPUT(e, "(and 3 2 ())", nil);
+    ASSERT_EVAL_OUTPUT(e, "(and false)", false_);
+    ASSERT_EVAL_OUTPUT(e, "(and 1 false)", false_);
+    ASSERT_EVAL_OUTPUT(e, "(and false 1)", false_);
+    ASSERT_EVAL_OUTPUT(e, "(and 1 2 3 false)", false_);
+    ASSERT_EVAL_OUTPUT(e, "(and 3 2 1 false)", false_);
+    ASSERT_EVAL_OUTPUT(e, "(and false 1 2 3)", false_);
+    ASSERT_EVAL_OUTPUT(e, "(and false (/ 1 0))", false_);
+    ASSERT_EVAL_ERROR(e, "(and (/ 1 0) false)", "division by zero");
+    ASSERT_EVAL_ERROR(e, "and1", "and1 is unbound");
+    ASSERT_EVAL_OUTPUT(e, "(and (define and1 1) (define and1 2) (define and1 3))", make_info("and1 is updated"));
+    ASSERT_EVAL_OUTPUT(e, "and1", make_number(3));
+    // ASSERT_EVAL_OUTPUT(e, "(and (= and1 1) (= and1 2) (= and1 3))", false_);
+    // ASSERT_EVAL_OUTPUT(e, "(and (> and1 0) (> and1 1) (> and1 2))", make_number(1));
+
+    // and errors
+    ASSERT_EVAL_ERROR(e, "(and 1 . 2)", "non-list structure");
+    ASSERT_EVAL_ERROR(e, "(and . 1)", "non-list structure");
+
+    // or
+    ASSERT_EVAL_OUTPUT(e, "(or)", false_);
+    ASSERT_EVAL_OUTPUT(e, "(or 1)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(or 2)", make_number(2));
+    ASSERT_EVAL_OUTPUT(e, "(or 1 2)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(or 1 2 3)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(or 3 2 1)", make_number(3));
+    ASSERT_EVAL_OUTPUT(e, "(or 3 2 \"abc\")", make_number(3));
+    ASSERT_EVAL_OUTPUT(e, "(or \"abc\" 3 2)", make_string("abc"));
+    ASSERT_EVAL_OUTPUT(e, "(or 3 2 true)", make_number(3));
+    ASSERT_EVAL_OUTPUT(e, "(or true 3 2)", true_);
+    ASSERT_EVAL_OUTPUT(e, "(or 3 2 ())", make_number(3));
+    ASSERT_EVAL_OUTPUT(e, "(or () 3 2)", nil);
+    ASSERT_EVAL_OUTPUT(e, "(or false)", false_);
+    ASSERT_EVAL_OUTPUT(e, "(or 1 false)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(or false 1)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(or 1 2 3 false)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(or false 1 2 3)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(or false 3 2 1)", make_number(3));
+    ASSERT_EVAL_OUTPUT(e, "(or true (/ 1 0))", true_);
+    ASSERT_EVAL_ERROR(e, "(or (/ 1 0) true)", "division by zero");
+    ASSERT_EVAL_ERROR(e, "or1", "or1 is unbound");
+    ASSERT_EVAL_OUTPUT(e, "(or (define or1 1) (define or1 2) (define or1 3))", make_info("or1 is defined"));
+    ASSERT_EVAL_OUTPUT(e, "or1", make_number(1));
+    // ASSERT_EVAL_OUTPUT(e, "(or (= or1 1) (= or1 2) (= or1 3))", make_number(1));
+    // ASSERT_EVAL_OUTPUT(e, "(or (> or1 1) (> or1 2) (> or1 3))", make_number(0));
+
+    // or errors
+    ASSERT_EVAL_ERROR(e, "(or 1 . 2)", "non-list structure");
+    ASSERT_EVAL_ERROR(e, "(or . 1)", "non-list structure");
+
+    // eval
+    ASSERT_EVAL_OUTPUT(e, "(eval 1)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(eval 3.14)", make_number(3.14));
+    ASSERT_EVAL_OUTPUT(e, "(eval true)", true_);
+    ASSERT_EVAL_OUTPUT(e, "(eval ())", nil);
+    ASSERT_EVAL_OUTPUT(e, "(define e1 10)", make_info("e1 is defined"));
+    ASSERT_EVAL_OUTPUT(e, "(eval e1)", make_number(10));
+    ASSERT_EVAL_OUTPUT(e, "(eval 'e1)", make_number(10));
+    ASSERT_EVAL_OUTPUT(e, "(eval ''e1)", make_symbol("e1"));
+    ASSERT_EVAL_OUTPUT(e, "(eval '(+ 1 2 3))", make_number(6));
+    // ASSERT_EVAL_OUTPUT(e, "(eval (cons + '(1 2 3)))", make_number(6));
+    ASSERT_EVAL_OUTPUT(e, "(define e2 '(+ 1 2 3))", make_info("e2 is defined"));
+    ASSERT_EVAL_OUTPUT(e, "(eval e2)", make_number(6));
+    ASSERT_EVAL_OUTPUT(e, "(eval 'e2)", make_list("+", 1, 2, 3));
+    ASSERT_EVAL_OUTPUT(e, "(eval ''e2)", make_symbol("e2"));
+    ASSERT_EVAL_OUTPUT(e, "(define e3 '(cons + '(1 2 3)))", make_info("e3 is defined"));
+    // ASSERT_EVAL_TO_STR(e, "(eval e3)", "(<primitive '+'> 1 2 3)");
+    ASSERT_EVAL_TO_STR(e, "(eval 'e3)", "(cons + '(1 2 3))");
+    // ASSERT_EVAL_OUTPUT(e, "(eval (eval e3))", make_number(6));
+
+    // eval errors
+    ASSERT_EVAL_ERROR(e, "(eval)", "no expression");
+    ASSERT_EVAL_ERROR(e, "(eval 1 2)", "too many items");
+    ASSERT_EVAL_ERROR(e, "(eval 1 . 2)", "non-list structure");
+    ASSERT_EVAL_ERROR(e, "(eval . 1)", "non-list structure");
+
+    // apply
+    ASSERT_EVAL_OUTPUT(e, "(apply + '(1))", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(apply - '(1))", make_number(-1));
+    ASSERT_EVAL_OUTPUT(e, "(apply + '(1 2 3))", make_number(6));
+    ASSERT_EVAL_OUTPUT(e, "(define a1 10)", make_info("a1 is defined"));
+    // ASSERT_EVAL_OUTPUT(e, "(apply (if true + -) (list 1 a1 3))", make_number(14));
+    // ASSERT_EVAL_OUTPUT(e, "(apply (if false + -) (list 1 a1 3))", make_number(-12));
+    // ASSERT_EVAL_OUTPUT(e, "(apply car '((1 2)))", make_number(1));
+    // ASSERT_EVAL_OUTPUT(e, "(apply cdr '((1 2)))", make_list(2));
+    // ASSERT_EVAL_OUTPUT(e, "(apply cons '(0 (1 2)))", make_list(0, 1, 2));
+    // ASSERT_EVAL_OUTPUT(e, "(apply (car (list + -)) (cdr '(1 2 3)))", make_number(5));
+    // ASSERT_EVAL_OUTPUT(e, "(apply (eval (car '(+ -))) (cdr '(1 2 3)))", make_number(5));
+    // ASSERT_EVAL_OUTPUT(e, "(+ (apply (eval (car '(+ -))) (cdr '(1 2 3))) a1)", make_number(15));
+    // ASSERT_EVAL_OUTPUT(e, "(apply car '('(1 2)))", make_symbol("quote"));
+    // ASSERT_EVAL_OUTPUT(e, "(apply cdr '('(1 2)))", make_list(make_list(1, 2)));
+    // ASSERT_EVAL_TO_STR(e, "(apply cons '('0 '(1 2)))", "((quote 0) quote (1 2))");
+    // ASSERT_EVAL_OUTPUT(e, "(apply * (list (apply + '(1 2 3)) (apply - '(4 5 6))))", make_number(-42));
+
+    // apply errors
+    ASSERT_EVAL_ERROR(e, "(apply)", "no operator");
+    ASSERT_EVAL_ERROR(e, "(apply 1)", "no arguments");
+    ASSERT_EVAL_ERROR(e, "(apply 1 2 3)", "too many items");
+    ASSERT_EVAL_ERROR(e, "(apply 1 '(1 2 3))", "can't apply 1");
+    ASSERT_EVAL_ERROR(e, "(apply + 1)", "can't apply to 1");
+    ASSERT_EVAL_ERROR(e, "(apply + \"a\")", "can't apply to \"a\"");
+    ASSERT_EVAL_ERROR(e, "(apply + '(1 . 2))", "can't apply to (1 . 2)");
+    ASSERT_EVAL_ERROR(e, "(apply 1 . 2)", "non-list structure");
+    ASSERT_EVAL_ERROR(e, "(apply . 1)", "non-list structure");
+
+    // function without params
+    ASSERT_EVAL_OUTPUT(e, "(define (f0) 1)", make_info("f0 is defined"));
+    ASSERT_EVAL_OUTPUT(e, "(f0)", make_number(1));
+    ASSERT_EVAL_ERROR(e, "(f0 1)", "arguments (1) don't match");
+
+    // function with 1 param returning a constant
+    ASSERT_EVAL_OUTPUT(e, "(define (f1 x) 1)", make_info("f1 is defined"));
+    ASSERT_EVAL_OUTPUT(e, "(f1 1)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(f1 2)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(f1 \"abc\")", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(f1 '())", make_number(1));
+    ASSERT_EVAL_ERROR(e, "(f1)", "arguments () don't match");
+    ASSERT_EVAL_ERROR(e, "(f1 1 2)", "arguments (1 2) don't match");
+
+    // function with 1 param returning the 1st param
+    ASSERT_EVAL_OUTPUT(e, "(define (f2 x) x)", make_info("f2 is defined"));
+    ASSERT_EVAL_OUTPUT(e, "(f2 1)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(f2 2)", make_number(2));
+    ASSERT_EVAL_OUTPUT(e, "(f2 \"abc\")", make_string("abc"));
+    ASSERT_EVAL_OUTPUT(e, "(f2 '())", nil);
+    ASSERT_EVAL_ERROR(e, "(f2)", "arguments () don't match");
+    ASSERT_EVAL_ERROR(e, "(f2 1 2)", "arguments (1 2) don't match");
+
+    // function with 2 param returning the 1st param
+    ASSERT_EVAL_OUTPUT(e, "(define (f3 x y) x)", make_info("f3 is defined"));
+    ASSERT_EVAL_OUTPUT(e, "(f3 1 1)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(f3 1 2)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(f3 2 1)", make_number(2));
+    ASSERT_EVAL_OUTPUT(e, "(f3 2 2)", make_number(2));
+    ASSERT_EVAL_ERROR(e, "(f3)", "arguments () don't match");
+    ASSERT_EVAL_ERROR(e, "(f3 1)", "arguments (1) don't match");
+    ASSERT_EVAL_ERROR(e, "(f3 1 2 3)", "arguments (1 2 3) don't match");
+
+    // function with 2 param returning the 2nd param
+    ASSERT_EVAL_OUTPUT(e, "(define (f4 x y) y)", make_info("f4 is defined"));
+    ASSERT_EVAL_OUTPUT(e, "(f4 1 1)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(f4 1 2)", make_number(2));
+    ASSERT_EVAL_OUTPUT(e, "(f4 2 1)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(f4 2 2)", make_number(2));
+    ASSERT_EVAL_ERROR(e, "(f4)", "arguments () don't match");
+    ASSERT_EVAL_ERROR(e, "(f4 1)", "arguments (1) don't match");
+    ASSERT_EVAL_ERROR(e, "(f4 1 2 3)", "arguments (1 2 3) don't match");
+
+    // function with 2 param returning the sum of 1st and 2nd params
+    ASSERT_EVAL_OUTPUT(e, "(define (f5 x y) (+ x y))", make_info("f5 is defined"));
+    ASSERT_EVAL_OUTPUT(e, "(f5 1 1)", make_number(2));
+    ASSERT_EVAL_OUTPUT(e, "(f5 1 2)", make_number(3));
+    ASSERT_EVAL_OUTPUT(e, "(f5 2 1)", make_number(3));
+    ASSERT_EVAL_OUTPUT(e, "(f5 2 2)", make_number(4));
+    ASSERT_EVAL_ERROR(e, "(f5)", "arguments () don't match");
+    ASSERT_EVAL_ERROR(e, "(f5 1)", "arguments (1) don't match");
+    ASSERT_EVAL_ERROR(e, "(f5 1 2 3)", "arguments (1 2 3) don't match");
+
+    // function with 1 param + the rest returning the 1st param
+    ASSERT_EVAL_OUTPUT(e, "(define (f6 x . y) x)", make_info("f6 is defined"));
+    ASSERT_EVAL_OUTPUT(e, "(f6 1)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(f6 1 2)", make_number(1));
+    ASSERT_EVAL_OUTPUT(e, "(f6 1 2 3)", make_number(1));
+    ASSERT_EVAL_ERROR(e, "(f6)", "arguments () don't match");
+
+    // function with 1 param + the rest returning the rest
+    ASSERT_EVAL_OUTPUT(e, "(define (f7 x . y) y)", make_info("f7 is defined"));
+    ASSERT_EVAL_OUTPUT(e, "(f7 1)", nil);
+    ASSERT_EVAL_OUTPUT(e, "(f7 1 2)", make_list(2));
+    ASSERT_EVAL_OUTPUT(e, "(f7 1 2 3)", make_list(2, 3));
+    ASSERT_EVAL_ERROR(e, "(f7)", "arguments () don't match");
+
+    // function with the rest returning the rest
+    ASSERT_EVAL_OUTPUT(e, "(define (f8 . x) x)", make_info("f8 is defined"));
+    ASSERT_EVAL_OUTPUT(e, "(f8)", nil);
+    ASSERT_EVAL_OUTPUT(e, "(f8 1)", make_list(1));
+    ASSERT_EVAL_OUTPUT(e, "(f8 1 2)", make_list(1, 2));
+    ASSERT_EVAL_OUTPUT(e, "(f8 1 2 3)", make_list(1, 2, 3));
+
+    // application errors
+    ASSERT_EVAL_ERROR(e, "(1)", "can't apply 1");
+    ASSERT_EVAL_ERROR(e, "(1 2 3)", "can't apply 1");
+    ASSERT_EVAL_ERROR(e, "(\"x\" 2 3)", "can't apply \"x\"");
+    ASSERT_EVAL_ERROR(e, "(true 2 3)", "can't apply true");
+    ASSERT_EVAL_ERROR(e, "('() 2 3)", "can't apply ()");
+    ASSERT_EVAL_ERROR(e, "(+ 1 . 2)", "can't apply to (1 . 2)");
+    ASSERT_EVAL_ERROR(e, "(+ . 1)", "can't apply to 1");
+}
+
 int main() {
+    evaluator e{path{"./lib/machines/evaluator.scm"}};
+
     try {
         RUN_TEST_FUNCTION(test_value);
         RUN_TEST_FUNCTION(test_pair);
@@ -951,7 +1466,9 @@ int main() {
         RUN_TEST_FUNCTION(test_code);
         RUN_TEST_FUNCTION(test_machine);
 
-        cout << "all tests have passed!\n";
+        RUN_EVAL_TEST_FUNCTION(e, test_syntax);
+
+        cout << "all tests have been passed!\n";
         return EXIT_SUCCESS;
     } catch (test_error&) {
         cout << "a test has failed.\n";

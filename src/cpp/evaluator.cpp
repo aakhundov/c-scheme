@@ -343,7 +343,7 @@ shared_ptr<value> evaluator::op_define_variable(const vector<value_pair*>& args)
 shared_ptr<value> evaluator::op_extend_environment(const vector<value_pair*>& args) {
     auto parameters = args[0]->car();
     auto arguments = args[1]->car();
-    auto base_env = to_ptr<value_environment>(args[2]->car());
+    auto base_env = to_sptr<value_environment>(args[2]->car());
 
     auto param = parameters;
     auto arg = arguments;

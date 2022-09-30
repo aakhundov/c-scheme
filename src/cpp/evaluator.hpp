@@ -30,7 +30,7 @@ class evaluator {
     evaluator& operator=(evaluator&&) = default;
 
     shared_ptr<value> evaluate(const shared_ptr<value>& expression) {
-        return _machine.run({{"exp", expression}}, "val");
+        return _machine.run({{"exp", expression}, {"env", _global}}, "val");
     }
 
     const unordered_map<string, shared_ptr<value>>& global() const {
@@ -39,7 +39,6 @@ class evaluator {
 
     void reset() {
         _global = _make_global();
-        _machine.write_to("env", _global);
     }
 
     void trace(machine_trace trace) {
@@ -50,7 +49,7 @@ class evaluator {
     class value_environment : public value {
        public:
         value_environment() : value(value_t::environment) {}
-        value_environment(value_environment* base)
+        value_environment(shared_ptr<value_environment> base)
             : value(value_t::environment), _base(base) {}
 
         ostream& write(ostream& os) const override {
@@ -58,7 +57,7 @@ class evaluator {
                 return (os << "<global>");
             } else {
                 os << "<env";
-                for (auto& [name, val] : _values) {
+                for (const auto& [name, val] : _values) {
                     os << " " << name << "=" << *val;
                 }
                 os << ">";
@@ -99,7 +98,7 @@ class evaluator {
 
        private:
         unordered_map<string, shared_ptr<value>> _values;
-        value_environment* _base{nullptr};
+        shared_ptr<value_environment> _base{nullptr};
     };
 
     class value_primitive_op : public value {
@@ -108,7 +107,7 @@ class evaluator {
             : value(value_t::primitive_op), _name(name), _op(op) {}
 
         ostream& write(ostream& os) const override {
-            return (os << "<op '" << _name << "'>");
+            return (os << "<primitive '" << _name << "'>");
         };
 
         const string& name() const { return _name; }
@@ -128,7 +127,9 @@ class evaluator {
             : value(value_t::compound_op), _params(params), _body(body), _env(env) {}
 
         ostream& write(ostream& os) const override {
-            return (os << "(lambda " << *_params << " " << *_body << ")");
+            string body = _body->str();
+            body = body.substr(1, body.size() - 2);  // drop outer braces
+            return (os << "(lambda " << *_params << " " << body << ")");
         };
 
         const shared_ptr<value>& params() const { return _params; }
