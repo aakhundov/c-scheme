@@ -508,17 +508,19 @@ machine::~machine() {
 }
 
 shared_ptr<value> machine::run(const vector<pair<string, shared_ptr<value>>>& inputs, const string& output_register) {
+    // define and reset the output register
+    _output = _get_register(output_register);
+    _output->car(nil);
+
     // write the inputs one by one
     // to the designated registers
     for (const auto& [input_register, v] : inputs) {
         write_to(input_register, v);
     }
 
-    _stack.clear();                            // clear the stack
-    _move_pc_to_beginning();                   // set the pc to program start
-    _output = _get_register(output_register);  // define the output register
-    _output->car(nil);                         // reset the output register
-    _counter = 0;                              // reset the instruction counter
+    _stack.clear();           // clear the stack
+    _move_pc_to_beginning();  // set the pc to program start
+    _counter = 0;             // reset the instruction counter
 
     if (_trace != machine_trace::code) {
         // without code tracing
