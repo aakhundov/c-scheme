@@ -567,7 +567,7 @@ shared_ptr<value> get_operator(const shared_ptr<value>& compound) {
 
 shared_ptr<value> get_operands(const shared_ptr<value>& compound) {
     // (p1 p2 ...) from (f p1 p2 ...)
-    return to_ptr<value_pair>(compound)->car();
+    return to_ptr<value_pair>(compound)->cdr();
 }
 
 bool has_no_operands(const shared_ptr<value>& operands) {

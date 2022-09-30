@@ -183,6 +183,7 @@ class machine {
     void _trace_before(ostream& os, const value_instruction* instruction) {
         os << BLUE(<< setfill('0') << setw(5) << ++_counter <<) " ";
         instruction->trace_before(os);
+        os.flush();
     }
 
     void _trace_after(ostream& os, const value_instruction* instruction) {

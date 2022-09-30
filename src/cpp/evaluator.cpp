@@ -182,7 +182,7 @@ shared_ptr<value> evaluator::op_rest_exps(const vector<value_pair*>& args) {
 }
 
 shared_ptr<value> evaluator::op_operator(const vector<value_pair*>& args) {
-    return get_operands(args[0]->car());
+    return get_operator(args[0]->car());
 }
 
 shared_ptr<value> evaluator::op_operands(const vector<value_pair*>& args) {
@@ -239,6 +239,10 @@ shared_ptr<value> evaluator::op_compound_procedure_q(const vector<value_pair*>& 
     return (args[0]->car()->type() == value_t::compound_op ? true_ : false_);
 }
 
+shared_ptr<value> evaluator::op_compiled_procedure_q(const vector<value_pair*>& args) {
+    return (args[0]->car()->type() == value_t::compiled_op ? true_ : false_);
+}
+
 shared_ptr<value> evaluator::op_compound_parameters(const vector<value_pair*>& args) {
     return to_ptr<value_compound_op>(args[0]->car())->params();
 }
@@ -290,7 +294,7 @@ shared_ptr<value> evaluator::op_signal_error(const vector<value_pair*>& args) {
 
 shared_ptr<value> evaluator::op_apply_primitive_procedure(const vector<value_pair*>& args) {
     auto procedure = to_ptr<value_primitive_op>(args[0]->car());
-    auto arguments = to_ptr<const value_pair>(args[0]->car());
+    auto arguments = to_ptr<const value_pair>(args[1]->car());
 
     auto result = procedure->op()(arguments);
     if (result->type() == value_t::error) {
@@ -332,24 +336,104 @@ shared_ptr<value> evaluator::op_define_variable(const vector<value_pair*>& args)
         return make_info("%s is updated", name->symbol().c_str());
     } else {
         env->add(name->symbol(), val);
-        return make_error("%s is defined", name->symbol().c_str());
+        return make_info("%s is defined", name->symbol().c_str());
     }
 }
 
-// shared_ptr<value> evaluator::op_extend_environment(const vector<value_pair*>& args) {
-// }
+shared_ptr<value> evaluator::op_extend_environment(const vector<value_pair*>& args) {
+    auto parameters = args[0]->car();
+    auto arguments = args[1]->car();
+    auto base_env = to_ptr<value_environment>(args[2]->car());
 
-// shared_ptr<value> evaluator::op_dispatch_table_ready_q(const vector<value_pair*>& args) {
-// }
+    auto param = parameters;
+    auto arg = arguments;
+    while (param != nil) {
+        if (param->type() == value_t::symbol) {
+            // params are terminated by a symbol cdr:
+            // it should bind the remaining args
+            param = nil;
+            arg = nil;
+            break;
+        } else if (arg == nil) {
+            // no more args
+            break;
+        } else {
+            param = to_ptr<value_pair>(param)->cdr();
+            arg = to_ptr<value_pair>(arg)->cdr();
+        }
+    }
 
-// shared_ptr<value> evaluator::op_make_dispatch_table(const vector<value_pair*>& args) {
-// }
+    if (param != nil || arg != nil) {
+        return make_error(
+            "the arguments %s don't match the parameters %s",
+            arguments->str().c_str(), parameters->str().c_str());
+    }
 
-// shared_ptr<value> evaluator::op_add_dispatch_record(const vector<value_pair*>& args) {
-// }
+    shared_ptr<value_environment> env = make_shared<value_environment>(base_env);
 
-// shared_ptr<value> evaluator::op_dispatch_on_type(const vector<value_pair*>& args) {
-// }
+    while (parameters != nil) {
+        if (parameters->type() == value_t::symbol) {
+            // the rest of the args are bound to z in (x y . z)
+            auto name = to_ptr<value_symbol>(parameters)->symbol();
+            env->add(name, arguments);
+            break;
+        } else {
+            // bind the param name to the next arg
+            auto next_name = to_ptr<value_pair>(parameters)->car();
+            auto next_val = to_ptr<value_pair>(arguments)->car();
+            auto name = to_ptr<value_symbol>(next_name)->symbol();
+            env->add(name, next_val);
+        }
+        parameters = to_ptr<value_pair>(parameters)->cdr();
+        arguments = to_ptr<value_pair>(arguments)->cdr();
+    }
+
+    return env;
+}
+
+shared_ptr<value> evaluator::op_dispatch_table_ready_q(const vector<value_pair*>& args) {
+    return (args[0]->car()->type() == value_t::environment ? true_ : false_);
+}
+
+shared_ptr<value> evaluator::op_make_dispatch_table(const vector<value_pair*>& args) {
+    return make_shared<value_environment>();
+}
+
+shared_ptr<value> evaluator::op_add_dispatch_record(const vector<value_pair*>& args) {
+    auto dispatch = to_ptr<value_environment>(args[0]->car());
+    auto name = to_ptr<value_string>(args[1]->car())->string_();
+    auto code = args[2]->car();  // position of the label
+
+    dispatch->add(name, code);
+
+    return args[0]->car();  // dispatch
+}
+
+shared_ptr<value> evaluator::op_dispatch_on_type(const vector<value_pair*>& args) {
+    auto exp = args[0]->car();
+    auto dispatch = to_ptr<value_environment>(args[1]->car());
+
+    shared_ptr<value> code = nullptr;
+    if (is_self_evaluating(exp)) {
+        // self-evaluating expression
+        code = dispatch->lookup("self", false);
+    } else if (is_variable(exp)) {
+        // named variable
+        code = dispatch->lookup("var", false);
+    } else if (exp->type() == value_t::pair &&
+               to_ptr<value_pair>(exp)->car()->type() == value_t::symbol) {
+        // maybe special form (list starting with a symbol)
+        auto symbol = to_ptr<value_symbol>(to_ptr<value_pair>(exp)->car())->symbol();
+        code = dispatch->lookup(symbol, false);
+    }
+
+    if (!code) {
+        // default dispatch (application)
+        code = dispatch->lookup("default", 0);
+    }
+
+    return code;
+}
 
 // evaluator
 
@@ -421,6 +505,7 @@ void evaluator::_bind_machine_ops(machine& m) {
 
     m.bind_op("primitive-procedure?", evaluator::op_primitive_procedure_q);
     m.bind_op("compound-procedure?", evaluator::op_compound_procedure_q);
+    m.bind_op("compiled-procedure?", evaluator::op_compiled_procedure_q);
 
     m.bind_op("compound-parameters", evaluator::op_compound_parameters);
     m.bind_op("compound-body", evaluator::op_compound_body);
@@ -434,12 +519,12 @@ void evaluator::_bind_machine_ops(machine& m) {
     m.bind_op("lookup-variable-value", evaluator::op_lookup_variable_value);
     m.bind_op("set-variable-value!", evaluator::op_set_variable_value);
     m.bind_op("define-variable!", evaluator::op_define_variable);
-    // m.bind_op("extend-environment", evaluator::op_extend_environment);
+    m.bind_op("extend-environment", evaluator::op_extend_environment);
 
-    // m.bind_op("dispatch-table-ready?", evaluator::op_dispatch_table_ready_q);
-    // m.bind_op("make-dispatch-table", evaluator::op_make_dispatch_table);
-    // m.bind_op("add-dispatch-record", evaluator::op_add_dispatch_record);
-    // m.bind_op("dispatch-on-type", evaluator::op_dispatch_on_type);
+    m.bind_op("dispatch-table-ready?", evaluator::op_dispatch_table_ready_q);
+    m.bind_op("make-dispatch-table", evaluator::op_make_dispatch_table);
+    m.bind_op("add-dispatch-record", evaluator::op_add_dispatch_record);
+    m.bind_op("dispatch-on-type", evaluator::op_dispatch_on_type);
 }
 
 machine evaluator::_make_machine(path path_to_code) {

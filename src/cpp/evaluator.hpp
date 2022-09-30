@@ -42,6 +42,10 @@ class evaluator {
         _machine.write_to("env", _global);
     }
 
+    void trace(machine_trace trace) {
+        _machine.trace(trace);
+    }
+
    private:
     class value_environment : public value {
        public:
@@ -50,7 +54,16 @@ class evaluator {
             : value(value_t::environment), _base(base) {}
 
         ostream& write(ostream& os) const override {
-            return (os << "<env>");
+            if (!_base) {
+                return (os << "<global>");
+            } else {
+                os << "<env";
+                for (auto& [name, val] : _values) {
+                    os << " " << name << "=" << *val;
+                }
+                os << ">";
+                return os;
+            }
         }
 
         shared_ptr<value> lookup(const string& name, bool recursive = true) const {
@@ -95,7 +108,7 @@ class evaluator {
             : value(value_t::primitive_op), _name(name), _op(op) {}
 
         ostream& write(ostream& os) const override {
-            return (os << "<primitive op '" << _name << "'>");
+            return (os << "<op '" << _name << "'>");
         };
 
         const string& name() const { return _name; }
@@ -178,6 +191,7 @@ class evaluator {
     static shared_ptr<value> op_make_false(const vector<value_pair*>& args);
     static shared_ptr<value> op_primitive_procedure_q(const vector<value_pair*>& args);
     static shared_ptr<value> op_compound_procedure_q(const vector<value_pair*>& args);
+    static shared_ptr<value> op_compiled_procedure_q(const vector<value_pair*>& args);
     static shared_ptr<value> op_compound_parameters(const vector<value_pair*>& args);
     static shared_ptr<value> op_compound_body(const vector<value_pair*>& args);
     static shared_ptr<value> op_compound_environment(const vector<value_pair*>& args);

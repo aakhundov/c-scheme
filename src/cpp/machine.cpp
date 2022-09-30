@@ -517,6 +517,7 @@ shared_ptr<value> machine::run(const vector<pair<string, shared_ptr<value>>>& in
     _stack.clear();                            // clear the stack
     _move_pc_to_beginning();                   // set the pc to program start
     _output = _get_register(output_register);  // define the output register
+    _output->car(nil);                         // reset the output register
     _counter = 0;                              // reset the instruction counter
 
     if (_trace != machine_trace::code) {
