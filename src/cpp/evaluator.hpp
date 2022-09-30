@@ -18,8 +18,8 @@ using std::filesystem::path;
 class evaluator {
    public:
     evaluator(path path_to_code)
-        : _machine(_make_machine(path_to_code)),
-          _global(_make_global()) {
+        : _global(_make_global()),
+          _machine(_make_machine(path_to_code)) {
         _machine.write_to("env", _global);
     }
 
@@ -212,8 +212,8 @@ class evaluator {
     machine _make_machine(path path_to_code);
     shared_ptr<value_environment> _make_global();
 
-    machine _machine;
     shared_ptr<value_environment> _global;
+    machine _machine;
 };
 
 #endif  // EVALUATOR_H_
