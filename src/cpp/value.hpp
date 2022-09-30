@@ -295,6 +295,11 @@ class value_pair : public value {
         const shared_ptr<value>& cdr)
         : value_pair(value_t::pair, car, cdr) {}
 
+    ~value_pair() {
+        _car.reset();
+        _cdr.reset();
+    }
+
     virtual iterator begin() const {
         return iterator(this);
     }

@@ -23,6 +23,10 @@ class evaluator {
         _machine.write_to("env", _global);
     }
 
+    ~evaluator() {
+        _global.reset();
+    }
+
     // can't copy, can move
     evaluator(const evaluator&) = delete;
     void operator=(evaluator const&) = delete;
@@ -51,6 +55,13 @@ class evaluator {
         value_environment() : value(value_t::environment) {}
         value_environment(shared_ptr<value_environment> base)
             : value(value_t::environment), _base(base) {}
+
+        ~value_environment() {
+            _base.reset();
+            for (auto& record : _values) {
+                record.second.reset();
+            }
+        }
 
         ostream& write(ostream& os) const override {
             if (!_base) {
@@ -125,6 +136,12 @@ class evaluator {
             const shared_ptr<value>& body,
             const shared_ptr<value_environment>& env)
             : value(value_t::compound_op), _params(params), _body(body), _env(env) {}
+
+        ~value_compound_op() {
+            _params.reset();
+            _body.reset();
+            _env.reset();
+        }
 
         ostream& write(ostream& os) const override {
             string body = _body->str();
